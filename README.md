@@ -1,51 +1,60 @@
-# 2_jubair_2 - iMP3 Project
-Backend + Frontend system for the iMP3 Music Application, developed for COM S/SE 309 (Fall 2025) at 
-Iowa State University. This app allows users to create and manage playlists, browse songs and albums,
-post reviews, follow other users, and receive real-time notifications through WebSockets.
+# iMP3 Project
+Full stack system using Android Studio and Springboot. iMP3 was developed by 4 people, Cayden Olsen, 
+Graysen Schwaller, Penny Mayer, and Sara Theriault over the course of the Fall 2025 semester for
+COM S 3090 at Iowa State University. iMP3 is a music exploration app inspired by Letterboxd.
 
 
 ## Description
 The iMP3 Project is a full-stack music application that mimics key features of modern streaming platforms. Users can:
-- Create, edit, and delete personal playlists/lists
-- Browse albums and songs stored in the music catalog
-- Post, edit, and view reviews for songs/albums
-- Follow other users and receive updates in a live notification feed
-- Log in and maintain persistent sessions through SpringBoot's HttpSession
+- Express their interests by customizing their own profile with their name, username, profile picture,
+  bio, and custom user tags
+- Connect their Spotify acount via Spotify API
+- Browse through a collection of albums, songs, and artists
+- Leave a review on different music for other users to see
+- Add music to custom playlists and express their taste
+- Connect with other users by following
+- Interact with others via live websocket chat and notification systems
+- Send music recommendations to other users
+- Get recommendations from Gemini AI based on Spotify account data
+- Vote on a random "song of the day" once every day
+
+## Disclaimers
+* iMP3 is an academic project with Iowa State University and belongs to Cayden Olsen, 
+Graysen Schwaller, Penny Mayer, and Sara Theriault. This project is for viewing purposes only
+* All frontend classes & methods developed by myself are labeled with /** @author Cayden Olsen **/
+* Since the project's server was based on an Iowa State University domain, the server is no longer
+active as of 12/10/2025.
+-Please watch [this video](https://youtu.be/kHMzPLT80t8) to see the app's functionality.
 
 ## Tech Overview
 - **Backend**: Java 17, Spring Boot 3, Maven, JPA (Hibernate), MariaDB
-- **Frontend**: Android Studio (Java), using Volley for REST and WebSocket API communication
+- **Frontend**: Android Studio (Java & Xml), using Volley for REST and WebSocket API communication
 - **Architecture**: REST + WebSocket hybrid with Model-View-Controller organization
+- **API**: Spotify and Gemini Generative Language
 
-## Badges
-TODO
+## Git usage
+COM S 3090 uses Gitlab to replicate a professional full stack environment
+* Use Git version control with staging, committing, pushing, merging, and pulling
+* iMP3 was developed with over 600 commits and 50 branches to create our
+  own work/group environment
+* Use labels, issues, and the issue board
+
+![Project Media](documents/ProjectMedia/IssueBoard)
+
+* Use CI/CD for continuous development
+
+![Project Media](documents/ProjectMedia/CI/CDRunners)
+
+![Project Media](documents/ProjectMedia/CI/CD)
 
 ## Visuals
-Screenshots and screen sketches are includes in the Documents folder. Key UI views include:
-- Signup/Login
-- Music Catalog
-- My Lists (playlists)
-- Notifications feed
-- etc
+All visual requirements for this project are in the /DOCUMENTS/ProjectMedia directory 
+named 'PO3_BlockDiagramsAndApi' and 'Screen_Sketches_2_jubair_2'
 
-## Installation
-TODO
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+## Documentation
+Frontend developers were required to create JavaDocs for 2 of their classes using
+Android Studio. My JavaDocs are located in /DOCUMENTS/MusicCatalogue_JavaDoc and
+/DOCUMENTS/NotificationsPage_JavaDoc
 
 ## Authors and acknowledgment
 - **Jubair**: Team lead/TA
@@ -53,10 +62,3 @@ You can also document commands to lint the code or run tests. These steps help t
 - **Penny**: Backend Developer
 - **Cayden**: Frontend Developer
 - **Graysen**: Frontend Developer
-
-## License
-This project is private and intended for **academic use only** under the Iowa State University COMS/SE 309
-Fall 2025 course agreement. 
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
