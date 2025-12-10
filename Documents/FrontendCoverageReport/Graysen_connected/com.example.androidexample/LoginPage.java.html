@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoginPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">LoginPage.java</span></div><h1>LoginPage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.os.Bundle;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Intent;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import java.util.HashMap;
+import java.util.Map;
+import org.json.JSONObject;
+import com.android.volley.NetworkResponse;
+import com.android.volley.Response;
+import java.util.Map;
+
+
+
+/**
+ * @author Graysen Schwaller
+ * LoginPage allows a user to login to get to the Music Catalogue, or choose to signup
+ */
+<span class="fc" id="L31">public class LoginPage extends AppCompatActivity {</span>
+
+    private EditText emailEditText; // Email EditText
+    private EditText passwordEditText; // Password EditText
+    private TextView errorText; // Error message TextView
+    private Button loginButton; // &quot;Login&quot; button Button
+    private Button signupButton; // &quot;Signup&quot; button Button
+
+    // Error codes and Error information
+    static int lastError;
+    static int errorNumber;
+    public static int ERROR_FORBIDDEN;
+    public static int ERROR_UNAUTHORIZED;
+    public static int STATUS_ACCEPTED;
+    public static int ERROR_UNKNOWN;
+
+    // Constant Variables
+    static String serverUrl;
+
+    private static int userID;
+
+    static {
+<span class="fc" id="L53">        serverUrl = &quot;http://coms-3090-027.class.las.iastate.edu:8080/users/login&quot;;</span>
+        // serverUrl = &quot;https://29cdf532-e52c-4146-a2fd-0365337ea5fa.mock.pstmn.io&quot;;
+<span class="fc" id="L55">        errorNumber = -1;</span>
+<span class="fc" id="L56">        lastError = 0;</span>
+
+<span class="fc" id="L58">        ERROR_FORBIDDEN = 403;</span>
+<span class="fc" id="L59">        ERROR_UNAUTHORIZED = 401;</span>
+<span class="fc" id="L60">        ERROR_UNKNOWN = -1;</span>
+<span class="fc" id="L61">        STATUS_ACCEPTED = 200;</span>
+<span class="fc" id="L62">    }</span>
+
+
+    // Volley Request Queue
+    // private static Context ctx;
+    private RequestQueue requestQueue; // = Volley.newRequestQueue(ctx.getApplicationContext());
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="fc" id="L71">        super.onCreate(savedInstanceState);</span>
+<span class="fc" id="L72">        setContentView(R.layout.login_page);</span>
+
+        /* initialize UI elements */
+<span class="fc" id="L75">        emailEditText = findViewById(R.id.login_email_edit);</span>
+<span class="fc" id="L76">        passwordEditText = findViewById(R.id.login_password_edit);</span>
+<span class="fc" id="L77">        loginButton = findViewById(R.id.login_login_btn);</span>
+<span class="fc" id="L78">        signupButton = findViewById(R.id.login_signup_btn);</span>
+<span class="fc" id="L79">        errorText = findViewById(R.id.login_error_txt);</span>
+
+        /* click listener on login button press */
+<span class="fc" id="L82">        loginButton.setOnClickListener(new View.OnClickListener() {</span>
+            @Override
+            public void onClick(View v) {
+
+                /* grab strings from user inputs */
+<span class="nc" id="L87">                String email = emailEditText.getText().toString();</span>
+<span class="nc" id="L88">                String password = passwordEditText.getText().toString();</span>
+<span class="nc" id="L89">                HashMap&lt;String, String&gt; creds = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L90">                creds.put(&quot;email&quot;, email);</span>
+<span class="nc" id="L91">                creds.put(&quot;password&quot;, password);</span>
+<span class="nc" id="L92">                makeJsonObjPOSTReq(&quot;&quot;,new JSONObject(creds));</span>
+<span class="nc" id="L93">            }</span>
+        });
+
+        /* click listener on signup button press */
+<span class="fc" id="L97">        signupButton.setOnClickListener(new View.OnClickListener(){</span>
+            @Override
+            public void onClick(View v){
+<span class="nc" id="L100">                sendToSignup();</span>
+<span class="nc" id="L101">            }</span>
+        });
+<span class="fc" id="L103">    }</span>
+
+
+    /**
+     * @param urlAdd A string to add to the server's basic URL, usually a path
+     * @param sendJSON A JSONObject to be sent to the server as a part of the request body | null accepting
+     */
+    private void makeJsonObjPOSTReq(String urlAdd, JSONObject sendJSON) {
+
+<span class="nc" id="L112">        JsonObjectRequest jsonObjReq = new JsonObjectRequest(</span>
+                Request.Method.POST,
+                serverUrl + urlAdd,
+                sendJSON,
+
+                response -&gt; {
+                    try {
+<span class="nc" id="L119">                        int status = response.getInt(&quot;status&quot;);</span>
+
+<span class="nc bnc" id="L121" title="All 2 branches missed.">                        if (status == STATUS_ACCEPTED) {</span>
+<span class="nc" id="L122">                            userID = response.getInt(&quot;user&quot;);</span>
+<span class="nc" id="L123">                            sendToProfile(userID);</span>
+                        }
+<span class="nc bnc" id="L125" title="All 2 branches missed.">                        else if (status == ERROR_FORBIDDEN) {</span>
+<span class="nc" id="L126">                            errorText.setText(&quot;Error: Credentials not recognized by server&quot;);</span>
+                        }
+<span class="nc bnc" id="L128" title="All 2 branches missed.">                        else if (status == ERROR_UNAUTHORIZED) {</span>
+<span class="nc" id="L129">                            errorText.setText(&quot;Error: Email or password unrecognized&quot;);</span>
+                        }
+                        else {
+<span class="nc" id="L132">                            errorText.setText(&quot;Error: Unknown Error&quot;);</span>
+                        }
+
+<span class="nc" id="L135">                    } catch (Exception e) {</span>
+<span class="nc" id="L136">                        errorText.setText(&quot;Error: &quot; + e.toString());</span>
+<span class="nc" id="L137">                    }</span>
+<span class="nc" id="L138">                },</span>
+
+<span class="nc" id="L140">                error -&gt; errorText.setText(&quot;Error: &quot; + error.toString())</span>
+
+<span class="nc" id="L142">        ) {</span>
+            @Override
+            protected Response&lt;JSONObject&gt; parseNetworkResponse(NetworkResponse response) {
+<span class="nc" id="L145">                Map&lt;String, String&gt; headers = response.headers;</span>
+
+<span class="nc" id="L147">                String cookie = headers.get(&quot;Set-Cookie&quot;);</span>
+<span class="nc bnc" id="L148" title="All 4 branches missed.">                if (cookie != null &amp;&amp; cookie.contains(&quot;JSESSIONID&quot;)) {</span>
+<span class="nc" id="L149">                    String sessionId = cookie.split(&quot;;&quot;)[0].replace(&quot;JSESSIONID=&quot;, &quot;&quot;);</span>
+<span class="nc" id="L150">                    QueueApplication.setSessionId(sessionId);</span>
+                }
+
+<span class="nc" id="L153">                return super.parseNetworkResponse(response);</span>
+            }
+        };
+
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (requestQueue == null) {</span>
+<span class="nc" id="L158">            requestQueue = QueueApplication.getQueue();</span>
+        }
+
+<span class="nc" id="L161">        requestQueue.add(jsonObjReq);</span>
+<span class="nc" id="L162">    }</span>
+
+
+
+    /**
+     *  Changes intent view to Signup
+     *  Used when user selects sign-up
+     */
+    protected void sendToSignup(){
+<span class="nc" id="L171">        startActivity(new Intent(LoginPage.this, SignupPage.class)); // Sends user to signup page</span>
+<span class="nc" id="L172">    }</span>
+    /**
+     *  Changes intent view to Profile Page
+     *  Used when user logs in
+     */
+    protected void sendToProfile(int id) {
+<span class="nc" id="L178">        Intent profilePage = new Intent(LoginPage.this, ProfilePage.class);</span>
+<span class="nc" id="L179">        profilePage.putExtra(&quot;userId&quot;, id);</span>
+<span class="nc" id="L180">        startActivity(profilePage);</span>
+<span class="nc" id="L181">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

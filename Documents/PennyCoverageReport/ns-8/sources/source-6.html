@@ -1,0 +1,88 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > NotificationRepository</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.notification</a>
+</div>
+
+<h1>Coverage Summary for Class: NotificationRepository (com.imp3.Backend.notification)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+</tr>
+<tr>
+  <td class="name">NotificationRepository</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.notification;
+&nbsp;import com.imp3.Backend.notification.Notification;
+&nbsp;import org.springframework.data.jpa.repository.JpaRepository;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;public interface NotificationRepository extends JpaRepository&lt;Notification, Integer&gt; {
+&nbsp;    //LIST -- all notifications for a user, newest first
+&nbsp;    List&lt;Notification&gt; findByRecipient_IdOrderByCreatedAtDesc(Integer recipientId);
+&nbsp;
+&nbsp;    //READ - get one notification, and make sure it belongs to the current user
+&nbsp;    Optional&lt;Notification&gt; findByNotifIdAndRecipient_Id(Integer NotifId, Integer recipientId);
+&nbsp;
+&nbsp;    //DELETE - Remove a notification owned by this user
+&nbsp;    void deleteByNotifIdAndRecipient_Id(Integer NotifId, Integer recipientId);
+&nbsp;
+&nbsp;    //COUNT -- quick unread count for badges
+&nbsp;    long countByRecipient_IdAndReadAtIsNull(Integer recipientId);
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-09 15:12</div>
+</div>
+</body>
+</html>

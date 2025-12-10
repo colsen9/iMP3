@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000D0C0C"
+    android:orientation="vertical"
+    tools:context=".OtherUserProfile">
+
+    <Button
+        android:id="@+id/backButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Back" />
+
+    <ImageView
+        android:id="@+id/profile_picture"
+        android:layout_width="125dp"
+        android:layout_height="125dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="50dp"
+        android:background="@drawable/circle"
+        android:scaleType="centerCrop"
+        android:clipToOutline="true"
+        android:contentDescription="profile picture"
+        app:srcCompat="@drawable/imp3" />
+
+    <TextView
+        android:id="@+id/user_fullname"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:textAlignment="center"
+        android:textSize="22sp"
+        android:textColor="@android:color/black"
+        android:visibility="gone"
+        tools:text="John Doe" />
+
+    <TextView
+        android:id="@+id/user_bio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:padding="10dp"
+        android:textColor="@android:color/black"
+        android:textAlignment="center"
+        android:textSize="16sp"
+        android:visibility="gone"
+        tools:text="bio" />
+
+    <TextView
+        android:id="@+id/spotify_status_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Checking Spotify status..."
+        android:textSize="18sp"
+        android:textColor="@android:color/black"
+        android:layout_marginTop="30dp"
+        android:gravity="center"/>
+
+    <!-- USER TAG SECTION -->
+    <TextView
+        android:id="@+id/user_tags_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Your Tags"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_marginTop="35dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginBottom="10dp" />
+
+    <!-- Container for user tags -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="100dp"
+        android:fillViewport="true">
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/userTagContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:paddingTop="5dp"
+            android:paddingBottom="10dp"
+            app:flexWrap="wrap"
+            app:flexDirection="row"
+            app:justifyContent="flex_start"
+            app:alignItems="center" />
+    </androidx.core.widget.NestedScrollView>
+
+    <Button
+        android:id="@+id/music_btn"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="25dp"
+        android:text="Music Catalogue"
+        android:textAlignment="viewStart"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textColor="@android:color/black"
+        android:textColorLink="#040404" />
+
+    <Button
+        android:id="@+id/friends_btn"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="-13dp"
+        android:text="Friends"
+        android:textAlignment="viewStart"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textColor="@android:color/black"
+        android:textColorLink="#040404" />
+
+    <Button
+        android:id="@+id/lists_btn"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="-13dp"
+        android:text="Playlists"
+        android:textAlignment="viewStart"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textColor="@android:color/black"
+        android:textColorLink="#040404" />
+
+    <!-- Later to be expanded with more buttons as we add more features -->
+
+
+</androidx.appcompat.widget.LinearLayoutCompat>

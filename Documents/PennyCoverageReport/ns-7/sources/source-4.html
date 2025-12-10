@@ -1,0 +1,242 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > Artist</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.music</a>
+</div>
+
+<h1>Coverage Summary for Class: Artist (com.imp3.Backend.music)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">Artist</td>
+<td class="coverageStat">
+  <span class="percent">
+    72.2%
+  </span>
+  <span class="absValue">
+    (13/18)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    48.4%
+  </span>
+  <span class="absValue">
+    (15/31)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">Artist$HibernateInstantiator</td>
+  </tr>
+  <tr>
+    <td class="name">Artist$HibernateProxy</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    72.2%
+  </span>
+  <span class="absValue">
+    (13/18)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    48.4%
+  </span>
+  <span class="absValue">
+    (15/31)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.music;
+&nbsp;
+&nbsp;import com.imp3.Backend.tag.Tag;
+&nbsp;import jakarta.persistence.*;
+&nbsp;import lombok.Getter;
+&nbsp;import lombok.NoArgsConstructor;
+&nbsp;import lombok.Setter;
+&nbsp;
+&nbsp;import java.util.HashSet;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Set;
+&nbsp;
+&nbsp;@Getter
+<b class="fc">&nbsp;@Setter</b>
+<b class="fc">&nbsp;@NoArgsConstructor</b>
+&nbsp;@Entity
+&nbsp;@Table(name= &quot;artists&quot;)
+&nbsp;public class Artist {
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Internal Table Data
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    @Id
+&nbsp;    @GeneratedValue(strategy = GenerationType.IDENTITY)
+<b class="fc">&nbsp;    private Integer id;</b>
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Required Artist Details
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // artist&#39;s name, string
+&nbsp;    @Column(name = &quot;name&quot;, nullable = false, unique = false)
+<b class="fc">&nbsp;    private String name;</b>
+&nbsp;
+&nbsp;    @Column(unique = true)
+<b class="fc">&nbsp;    private String spotifyId;</b>
+&nbsp;
+&nbsp;    // album owns this relation via the join table in Album.java
+<b class="fc">&nbsp;    @ManyToMany(mappedBy = &quot;artists&quot;)</b>
+<b class="fc">&nbsp;    private Set&lt;Album&gt; albums = new HashSet&lt;&gt;();</b>
+&nbsp;
+&nbsp;    // track owns this relation via the join table in Track.java
+<b class="fc">&nbsp;    @ManyToMany(mappedBy = &quot;artists&quot;)</b>
+<b class="fc">&nbsp;    private Set&lt;Track&gt; tracks = new HashSet&lt;&gt;();</b>
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Optional Metadata (objective)
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // photo of artist
+&nbsp;    @Column(name = &quot;picture&quot;, nullable = true, unique = false, columnDefinition = &quot;LONGBLOB&quot;)
+<b class="fc">&nbsp;    private byte[] picture;</b>
+&nbsp;
+&nbsp;    //photo URL from Spotify
+&nbsp;    @Column
+<b class="fc">&nbsp;    private String pictureUrl;</b>
+&nbsp;
+&nbsp;    // biography
+&nbsp;    @Column(name = &quot;bio&quot;, nullable = true, unique = false, columnDefinition = &quot;TEXT&quot;)
+<b class="fc">&nbsp;    private String bio;</b>
+&nbsp;
+&nbsp;    // years active
+&nbsp;    @ElementCollection
+&nbsp;    @CollectionTable(
+&nbsp;            name = &quot;artist_years&quot;,
+&nbsp;            joinColumns = @JoinColumn(name = &quot;artist_id&quot;)
+&nbsp;    )
+&nbsp;    @Column(name = &quot;years&quot;)
+<b class="fc">&nbsp;    private List&lt;Integer&gt; years;</b>
+&nbsp;
+<b class="fc">&nbsp;    @ManyToMany</b>
+&nbsp;    @JoinTable(
+&nbsp;            name = &quot;artist_tags&quot;,
+&nbsp;            joinColumns = @JoinColumn(name = &quot;artist_id&quot;),
+&nbsp;            inverseJoinColumns = @JoinColumn(name = &quot;tag_id&quot;)
+&nbsp;    )
+<b class="fc">&nbsp;    private Set&lt;Tag&gt; tags = new HashSet&lt;&gt;();</b>
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Constructor
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    public Artist(String name, Set&lt;Album&gt; albums, Set&lt;Track&gt; tracks,
+<b class="nc">&nbsp;                  byte[] picture, String bio, List&lt;Integer&gt; years) {</b>
+&nbsp;
+<b class="nc">&nbsp;        this.name = name;</b>
+<b class="nc">&nbsp;        this.albums = albums;</b>
+<b class="nc">&nbsp;        this.tracks = tracks;</b>
+&nbsp;
+<b class="nc">&nbsp;        this.picture = picture;</b>
+<b class="nc">&nbsp;        this.bio = bio;</b>
+<b class="nc">&nbsp;        this.years = years;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Helper Functions
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    public void addAlbum(Album album) {
+<b class="nc">&nbsp;        this.albums.add(album);</b>
+<b class="nc">&nbsp;        album.getArtists().add(this);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void removeAlbum(Album album) {
+<b class="nc">&nbsp;        this.albums.remove(album);</b>
+<b class="nc">&nbsp;        album.getArtists().remove(this);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void addTrack(Track track) {
+<b class="nc">&nbsp;        this.tracks.add(track);</b>
+<b class="nc">&nbsp;        track.getArtists().add(this);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void removeTrack(Track track) {
+<b class="nc">&nbsp;        this.tracks.remove(track);</b>
+<b class="nc">&nbsp;        track.getArtists().remove(this);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void addTag(Tag tag){
+<b class="nc">&nbsp;        this.tags.add(tag);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-09 15:12</div>
+</div>
+</body>
+</html>

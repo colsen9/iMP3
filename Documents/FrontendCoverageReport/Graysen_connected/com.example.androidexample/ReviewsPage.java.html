@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReviewsPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">ReviewsPage.java</span></div><h1>ReviewsPage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.*;
+import android.widget.*;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.android.volley.Request;
+import com.android.volley.toolbox.ImageRequest;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.RequestQueue;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.*;
+/**
+ * @author Graysen Schwaller
+ * Reviews page allows a user to see and edit their own review, as well as see other reviews for the chosen object
+ */
+<span class="fc" id="L30">public class ReviewsPage extends AppCompatActivity {</span>
+<span class="fc" id="L31">    private final String TAG = &quot;ReviewsPage&quot;;</span>
+<span class="fc" id="L32">    private final String serverBase = &quot;http://coms-3090-027.class.las.iastate.edu:8080&quot;;</span>
+
+    private RecyclerView rv;
+    private ReviewsAdapter adapter;
+<span class="fc" id="L36">    private List&lt;ReviewModel&gt; reviews = new ArrayList&lt;&gt;();</span>
+    private RequestQueue requestQueue;
+
+    private int usersReviewId;
+    private TextView tvItemName;
+    private EditText etSummary, etFullReview;
+    private RatingBar ratingBar;
+    private Button btnPost, btnBack;
+
+    private ImageButton btnDel;
+
+    private int userId;
+    private int itemId, albumId;
+    private String itemType, itemName;
+<span class="fc" id="L50">    private boolean postedReview = false;</span>
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="fc" id="L54">        super.onCreate(savedInstanceState);</span>
+<span class="fc" id="L55">        setContentView(R.layout.reviews_page);</span>
+
+<span class="fc" id="L57">        userId = getIntent().getIntExtra(&quot;userId&quot;, -1);</span>
+<span class="fc" id="L58">        itemId = getIntent().getIntExtra(&quot;itemId&quot;, -1);</span>
+<span class="fc" id="L59">        itemType = getIntent().getStringExtra(&quot;itemType&quot;);</span>
+<span class="fc" id="L60">        itemName = getIntent().getStringExtra(&quot;itemName&quot;);</span>
+<span class="fc" id="L61">        albumId = getIntent().getIntExtra(&quot;albumId&quot;,-1);</span>
+<span class="fc" id="L62">        requestQueue = QueueApplication.getQueue();</span>
+
+<span class="fc" id="L64">        rv = findViewById(R.id.rvReviews);</span>
+<span class="fc" id="L65">        rv.setLayoutManager(new LinearLayoutManager(this));</span>
+<span class="fc" id="L66">        adapter = new ReviewsAdapter(reviews);</span>
+<span class="fc" id="L67">        rv.setAdapter(adapter);</span>
+
+<span class="fc" id="L69">        tvItemName = findViewById(R.id.tvItemName);</span>
+<span class="fc" id="L70">        tvItemName.setText(itemName + &quot; Reviews&quot;);</span>
+
+<span class="fc" id="L72">        etSummary = findViewById(R.id.etSummary);</span>
+<span class="fc" id="L73">        etFullReview = findViewById(R.id.etFullReview);</span>
+<span class="fc" id="L74">        ratingBar = findViewById(R.id.ratingBar);</span>
+<span class="fc" id="L75">        btnPost = findViewById(R.id.btnPostReview);</span>
+<span class="fc" id="L76">        btnBack = findViewById(R.id.btnBack);</span>
+<span class="fc" id="L77">        btnDel = findViewById(R.id.btnTrashReview);</span>
+
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (itemType.equals(&quot;albums&quot;)) {</span>
+<span class="fc" id="L80">            fetchUserAlbumReview(albumId, userId);</span>
+        }
+
+<span class="fc" id="L83">        btnBack.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L84">            Intent back = new Intent();</span>
+<span class="nc" id="L85">            back.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L86">            setResult(RESULT_OK, back);</span>
+<span class="nc" id="L87">            finish();</span>
+<span class="nc" id="L88">        });</span>
+
+<span class="fc" id="L90">        btnPost.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L91">            Log.i(&quot;post&quot;, &quot;Post button pressed&quot;);</span>
+
+<span class="nc bnc" id="L93" title="All 2 branches missed.">            if (!postedReview) {</span>
+<span class="nc" id="L94">                createReview();</span>
+            } else {
+<span class="nc" id="L96">                editReview();</span>
+            }
+<span class="nc" id="L98">        });</span>
+
+
+<span class="fc" id="L101">        btnDel.setVisibility(Button.INVISIBLE);</span>
+<span class="fc" id="L102">        fetchReviews();</span>
+        // getReviewDebug();
+
+<span class="fc" id="L105">    }</span>
+
+    /**
+     * Fetches all reviews and displays them in their appropriate area.
+     * Displays current user's review in text box for editing
+     * Clears reviews first thing when running
+     */
+    private void fetchReviews() {
+        String url;
+
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        if (itemType.equals(&quot;albums&quot;)) {</span>
+<span class="fc" id="L116">            url = serverBase + &quot;/reviews/albums/&quot; + albumId;</span>
+        } else { // songs
+<span class="nc" id="L118">            url = serverBase + &quot;/reviews/tracks/&quot; + itemId;</span>
+        }
+
+<span class="fc" id="L121">        JsonArrayRequest req = new JsonArrayRequest(</span>
+                com.android.volley.Request.Method.GET,
+                url,
+                null,
+                response -&gt; {
+<span class="fc" id="L126">                    reviews.clear();</span>
+<span class="fc" id="L127">                    postedReview = false;</span>
+<span class="fc" id="L128">                    ratingBar.setRating(0);</span>
+<span class="fc" id="L129">                    etSummary.setText(&quot;&quot;);</span>
+<span class="fc" id="L130">                    etFullReview.setText(&quot;&quot;);</span>
+<span class="fc" id="L131">                    btnPost.setText(&quot;Post Review&quot;);</span>
+<span class="fc" id="L132">                    btnDel.setVisibility(Button.INVISIBLE);</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">                    for (int i = response.length() - 1; i &gt;= 0; i--) {</span>
+                        try {
+<span class="nc" id="L135">                            JSONObject o = response.getJSONObject(i);</span>
+<span class="nc" id="L136">                            Log.d(&quot;review JSONObject&quot;,o.toString());</span>
+<span class="nc" id="L137">                            Log.d(&quot;reviews JSONArray&quot;,response.toString());</span>
+                            // The check for if the user reviewed this object
+<span class="nc bnc" id="L139" title="All 4 branches missed.">                            if(o.getInt(&quot;userId&quot;) == userId &amp;&amp; userId != -1){</span>
+<span class="nc" id="L140">                                postedReview = true;</span>
+<span class="nc" id="L141">                                usersReviewId= o.getInt(&quot;id&quot;);</span>
+<span class="nc" id="L142">                                ratingBar.setRating( (float)o.getInt(&quot;rating&quot;) / 2);</span>
+<span class="nc" id="L143">                                String combined = o.optString(&quot;review&quot;, &quot;&quot;);</span>
+<span class="nc" id="L144">                                String[] parts = combined.split(&quot;\\|\\|&quot;, 2);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">                                etSummary.setText(parts.length &gt; 0 ? parts[0] : &quot;&quot;);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                                etFullReview.setText(parts.length &gt; 1 ? parts[1] : &quot;&quot;);</span>
+<span class="nc" id="L147">                                btnPost.setText(&quot;Edit Review&quot;);</span>
+<span class="nc" id="L148">                                btnDel.setVisibility(Button.VISIBLE);</span>
+<span class="nc" id="L149">                                btnDel.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L150">                                    deleteReview(o);</span>
+<span class="nc" id="L151">                                });</span>
+                            }
+<span class="nc" id="L153">                            reviews.add(ReviewModel.fromJson(o));</span>
+<span class="nc" id="L154">                        } catch (JSONException e) {</span>
+<span class="nc" id="L155">                            e.printStackTrace();</span>
+<span class="nc" id="L156">                        }</span>
+                    }
+<span class="fc" id="L158">                    adapter.notifyDataSetChanged();</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">                    for (ReviewModel review : reviews) {</span>
+<span class="nc" id="L160">                        fetchUserInfo(review);</span>
+<span class="nc" id="L161">                    }</span>
+<span class="fc" id="L162">                },</span>
+<span class="nc" id="L163">                error -&gt; Log.e(TAG, &quot;fetchReviews error: &quot; + error.toString())</span>
+        );
+<span class="fc" id="L165">        requestQueue.add(req);</span>
+<span class="fc" id="L166">    }</span>
+
+    /**
+     * Creates a review object to then send to the database
+     * review: &quot;summary fake || review fake&quot;
+     * rating: (int) 1-10
+     * songId
+     * albumId
+     */
+    private void createReview() {
+<span class="nc" id="L176">        String summary = etSummary.getText().toString().trim();</span>
+<span class="nc" id="L177">        String reviewText = etFullReview.getText().toString().trim();</span>
+<span class="nc" id="L178">        int rating = (int)(ratingBar.getRating() * 2) ;</span>
+
+<span class="nc bnc" id="L180" title="All 4 branches missed.">        if (TextUtils.isEmpty(summary) || rating == 0) {</span>
+<span class="nc" id="L181">            Toast.makeText(this, &quot;Enter summary and rating&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L182">            return;</span>
+        }
+
+<span class="nc" id="L185">        String url = serverBase + &quot;/reviews/new&quot;;</span>
+<span class="nc" id="L186">        JSONObject obj = new JSONObject();</span>
+        try {
+            // obj.put(&quot;id&quot;,reviews.size());
+<span class="nc" id="L189">            obj.put(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L190">            String combinedReview = summary + &quot;||&quot; + reviewText;</span>
+<span class="nc" id="L191">            obj.put(&quot;review&quot;, combinedReview);</span>
+<span class="nc" id="L192">            obj.put(&quot;rating&quot;, rating);</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">            if (itemType.equals(&quot;albums&quot;)) {</span>
+<span class="nc" id="L194">                obj.put(&quot;songId&quot;, JSONObject.NULL);</span>
+<span class="nc" id="L195">                obj.put(&quot;albumId&quot;, albumId);</span>
+            } else {
+<span class="nc" id="L197">                obj.put(&quot;songId&quot;, itemId);</span>
+<span class="nc" id="L198">                obj.put(&quot;albumId&quot;, albumId);</span>
+            }
+<span class="nc" id="L200">            Log.d(&quot;Create review&quot;, &quot;Json Object sent: &quot; + obj.toString());</span>
+<span class="nc" id="L201">        } catch (JSONException e) {</span>
+<span class="nc" id="L202">            e.printStackTrace();</span>
+<span class="nc" id="L203">        }</span>
+
+<span class="nc" id="L205">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                com.android.volley.Request.Method.POST,
+                url,
+                obj,
+                response -&gt; {
+                    try {
+<span class="nc" id="L211">                        reviews.add(0, ReviewModel.fromJson(response));</span>
+<span class="nc" id="L212">                        adapter.notifyItemInserted(0);</span>
+<span class="nc" id="L213">                        rv.scrollToPosition(0);</span>
+<span class="nc" id="L214">                        etSummary.setText(&quot;&quot;);</span>
+<span class="nc" id="L215">                        etFullReview.setText(&quot;&quot;);</span>
+<span class="nc" id="L216">                        ratingBar.setRating(0);</span>
+<span class="nc" id="L217">                        fetchReviews();</span>
+<span class="nc" id="L218">                    } catch (JSONException e) {</span>
+<span class="nc" id="L219">                        e.printStackTrace();</span>
+<span class="nc" id="L220">                    }</span>
+<span class="nc" id="L221">                },</span>
+<span class="nc" id="L222">                error -&gt; Log.e(TAG, &quot;postReview error: &quot; + error.toString())</span>
+        );
+<span class="nc" id="L224">        requestQueue.add(req);</span>
+<span class="nc" id="L225">    }</span>
+
+    /**
+     * Allows for the editing of reviews already in database
+     * Takes given review and sends put request to replace the database review
+     */
+    private void editReview() {
+<span class="nc" id="L232">        String summary = etSummary.getText().toString().trim();</span>
+<span class="nc" id="L233">        String reviewText = etFullReview.getText().toString().trim();</span>
+<span class="nc" id="L234">        int rating = (int)(ratingBar.getRating() * 2) ;</span>
+
+<span class="nc bnc" id="L236" title="All 4 branches missed.">        if (TextUtils.isEmpty(summary) || rating == 0) {</span>
+<span class="nc" id="L237">            Toast.makeText(this, &quot;Enter summary and rating&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L238">            return;</span>
+        }
+
+<span class="nc" id="L241">        String url = serverBase + &quot;/reviews/edit&quot;;</span>
+<span class="nc" id="L242">        JSONObject obj = new JSONObject();</span>
+        try {
+<span class="nc" id="L244">            obj.put(&quot;id&quot;,usersReviewId);</span>
+<span class="nc" id="L245">            obj.put(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L246">            String combinedReview = summary + &quot;||&quot; + reviewText;</span>
+<span class="nc" id="L247">            obj.put(&quot;review&quot;, combinedReview);</span>
+<span class="nc" id="L248">            obj.put(&quot;text&quot;, reviewText);</span>
+<span class="nc" id="L249">            obj.put(&quot;rating&quot;, rating);</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">            if (itemType.equals(&quot;albums&quot;)) {</span>
+<span class="nc" id="L251">                obj.put(&quot;songId&quot;, JSONObject.NULL);</span>
+<span class="nc" id="L252">                obj.put(&quot;albumId&quot;, albumId);</span>
+            } else {
+<span class="nc" id="L254">                obj.put(&quot;songId&quot;, itemId);</span>
+<span class="nc" id="L255">                obj.put(&quot;albumId&quot;, albumId);</span>
+            }
+<span class="nc" id="L257">        } catch (JSONException e) {</span>
+<span class="nc" id="L258">            e.printStackTrace();</span>
+<span class="nc" id="L259">            Log.e(&quot;Review error&quot;, e.toString());</span>
+<span class="nc" id="L260">        }</span>
+
+<span class="nc" id="L262">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                com.android.volley.Request.Method.PUT,
+                url,
+                obj,
+                response -&gt; {
+                    try {
+<span class="nc" id="L268">                        reviews.add(0, ReviewModel.fromJson(response));</span>
+<span class="nc" id="L269">                        adapter.notifyItemInserted(0);</span>
+<span class="nc" id="L270">                        rv.scrollToPosition(0);</span>
+<span class="nc" id="L271">                        etSummary.setText(&quot;&quot;);</span>
+<span class="nc" id="L272">                        etFullReview.setText(&quot;&quot;);</span>
+<span class="nc" id="L273">                        ratingBar.setRating(0);</span>
+<span class="nc" id="L274">                        fetchReviews();</span>
+<span class="nc" id="L275">                    } catch (JSONException e) {</span>
+<span class="nc" id="L276">                        e.printStackTrace();</span>
+<span class="nc" id="L277">                    }</span>
+<span class="nc" id="L278">                },</span>
+<span class="nc" id="L279">                error -&gt; Log.e(TAG, &quot;putReview error: &quot; + error.toString())</span>
+        );
+<span class="nc" id="L281">        requestQueue.add(req);</span>
+<span class="nc" id="L282">    }</span>
+
+    private void deleteReview(JSONObject o) {
+<span class="nc" id="L285">        String url = serverBase + &quot;/reviews/delete/&quot; + usersReviewId;</span>
+
+<span class="nc" id="L287">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                com.android.volley.Request.Method.DELETE,
+                url,
+                o,
+                response -&gt; {
+<span class="nc" id="L292">                    fetchReviews();</span>
+
+<span class="nc" id="L294">                },</span>
+<span class="nc" id="L295">                error -&gt; Log.e(TAG, &quot;deleteReview error: &quot; + error.toString())</span>
+        );
+<span class="nc" id="L297">        requestQueue.add(req);</span>
+<span class="nc" id="L298">    }</span>
+
+    /** MODEL **/
+<span class="nc" id="L301">    static class ReviewModel {</span>
+        String firstName, userType, username, summary, text;
+        int rating, itemId, userId, ratingId;
+        Bitmap profileBitmap;
+
+        static ReviewModel fromJson(JSONObject o) throws JSONException {
+<span class="nc" id="L307">            ReviewModel r = new ReviewModel();</span>
+<span class="nc" id="L308">            r.firstName = o.optString(&quot;firstname&quot;, &quot;Anonymous&quot;);</span>
+<span class="nc" id="L309">            r.username = &quot;@&quot; + o.optString(&quot;username&quot;, &quot;user&quot;);   // ← ADD THIS</span>
+<span class="nc" id="L310">            r.userType = o.optString(&quot;userType&quot;, &quot;User&quot;);</span>
+
+<span class="nc" id="L312">            String combined = o.optString(&quot;review&quot;, &quot;&quot;);</span>
+<span class="nc" id="L313">            String[] parts = combined.split(&quot;\\|\\|&quot;, 2);</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">            r.summary = parts.length &gt; 0 ? parts[0] : &quot;&quot;;</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">            r.text = parts.length &gt; 1 ? parts[1] : &quot;&quot;;</span>
+
+<span class="nc" id="L317">            r.rating = o.optInt(&quot;rating&quot;, 0);</span>
+<span class="nc" id="L318">            r.ratingId = o.optInt(&quot;id&quot;,-1);</span>
+<span class="nc" id="L319">            r.userId = o.optInt(&quot;userId&quot;,-1);</span>
+
+<span class="nc" id="L321">            return r;</span>
+        }
+
+    }
+
+    /**
+     * A method that fetches a user's info to then fill in review objects
+     */
+    private void fetchUserInfo(ReviewModel review) {
+<span class="nc bnc" id="L330" title="All 2 branches missed.">        if (review.userId == -1) return;</span>
+
+<span class="nc" id="L332">        String url = serverBase + &quot;/users/&quot; + review.userId;</span>
+
+<span class="nc" id="L334">        JsonObjectRequest userReq = new JsonObjectRequest(</span>
+                com.android.volley.Request.Method.GET,
+                url,
+                null,
+                response -&gt; {
+                    try {
+<span class="nc" id="L340">                        review.firstName = response.optString(&quot;firstname&quot;, &quot;Anonymous&quot;);</span>
+<span class="nc" id="L341">                        review.username = &quot;@&quot; + response.optString(&quot;username&quot;, &quot;@user&quot;);</span>
+<span class="nc" id="L342">                        review.userType = response.optString(&quot;userType&quot;, &quot;User&quot;);</span>
+<span class="nc" id="L343">                        adapter.notifyDataSetChanged(); // update UI once info arrives</span>
+<span class="nc" id="L344">                    } catch (Exception e) {</span>
+<span class="nc" id="L345">                        e.printStackTrace();</span>
+<span class="nc" id="L346">                    }</span>
+<span class="nc" id="L347">                },</span>
+<span class="nc" id="L348">                error -&gt; Log.e(TAG, &quot;fetchUserInfo error: &quot; + error.toString())</span>
+        );
+
+<span class="nc" id="L351">        requestQueue.add(userReq);</span>
+
+        // Fetch profile picture
+<span class="nc" id="L354">        String picUrl = serverBase + &quot;/users/&quot; + review.userId + &quot;/picture&quot;;</span>
+<span class="nc" id="L355">        ImageRequest imageRequest = new ImageRequest(</span>
+                picUrl,
+                bitmap -&gt; {
+<span class="nc" id="L358">                    review.profileBitmap = bitmap;</span>
+<span class="nc" id="L359">                    adapter.notifyDataSetChanged();</span>
+<span class="nc" id="L360">                },</span>
+                0, 0, ImageView.ScaleType.CENTER_CROP,
+                Bitmap.Config.ARGB_8888,
+<span class="nc" id="L363">                error -&gt; Log.e(TAG, &quot;fetchProfilePic error: &quot; + error.toString())</span>
+        );
+<span class="nc" id="L365">        requestQueue.add(imageRequest);</span>
+<span class="nc" id="L366">    }</span>
+
+    private void fetchUserAlbumReview(int albumId, int userId) {
+<span class="fc" id="L369">        String url = serverBase + &quot;/reviews/albums/&quot; + albumId + &quot;/&quot; + userId;</span>
+
+<span class="fc" id="L371">        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">                    if (response.length() == 0) return;</span>
+
+                    try {
+<span class="nc" id="L376">                        JSONObject o = response.getJSONObject(0);</span>
+
+<span class="nc" id="L378">                        postedReview = true;</span>
+<span class="nc" id="L379">                        usersReviewId = o.getInt(&quot;id&quot;);</span>
+
+<span class="nc" id="L381">                        ratingBar.setRating((float)o.getInt(&quot;rating&quot;) / 2);</span>
+
+<span class="nc" id="L383">                        String combined = o.optString(&quot;review&quot;, &quot;&quot;);</span>
+<span class="nc" id="L384">                        String[] parts = combined.split(&quot;\\|\\|&quot;, 2);</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">                        etSummary.setText(parts.length &gt; 0 ? parts[0] : &quot;&quot;);</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">                        etFullReview.setText(parts.length &gt; 1 ? parts[1] : &quot;&quot;);</span>
+
+<span class="nc" id="L388">                        btnPost.setText(&quot;Edit Review&quot;);</span>
+<span class="nc" id="L389">                        btnDel.setVisibility(Button.VISIBLE);</span>
+
+<span class="nc" id="L391">                        btnDel.setOnClickListener(v -&gt; deleteReview(o));</span>
+
+<span class="nc" id="L393">                    } catch (JSONException e) {</span>
+<span class="nc" id="L394">                        e.printStackTrace();</span>
+<span class="nc" id="L395">                    }</span>
+<span class="nc" id="L396">                },</span>
+<span class="nc" id="L397">                error -&gt; Log.e(TAG, &quot;Could not load user's album review&quot;)</span>
+        );
+
+<span class="fc" id="L400">        requestQueue.add(req);</span>
+<span class="fc" id="L401">    }</span>
+
+    /** ADAPTER **/
+    private static class ReviewsAdapter extends RecyclerView.Adapter&lt;ReviewsAdapter.VH&gt; {
+        private final List&lt;ReviewModel&gt; items;
+
+<span class="fc" id="L407">        ReviewsAdapter(List&lt;ReviewModel&gt; items) { this.items = items; }</span>
+
+        @NonNull
+        @Override
+        public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+<span class="nc" id="L412">            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_review, parent, false);</span>
+<span class="nc" id="L413">            return new VH(v);</span>
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull VH h, int pos) {
+<span class="nc" id="L418">            ReviewModel r = items.get(pos);</span>
+<span class="nc" id="L419">            h.tvName.setText(r.firstName);</span>
+<span class="nc" id="L420">            h.tvUserType.setText(r.userType);</span>
+<span class="nc" id="L421">            h.tvUsername.setText(r.username);</span>
+<span class="nc" id="L422">            h.tvSummary.setText(r.summary);</span>
+<span class="nc" id="L423">            h.tvReview.setText(r.text);</span>
+<span class="nc" id="L424">            h.reviewRating.setStepSize(0.5f);</span>
+<span class="nc" id="L425">            h.reviewRating.setRating((float) r.rating / 2.0f);</span>
+
+<span class="nc bnc" id="L427" title="All 2 branches missed.">            if (r.profileBitmap != null) {</span>
+<span class="nc" id="L428">                h.ivProfile.setImageBitmap(r.profileBitmap);</span>
+            } else {
+<span class="nc" id="L430">                h.ivProfile.setImageResource(R.drawable.imp3);</span>
+            }
+<span class="nc" id="L432">        }</span>
+
+        @Override
+<span class="fc" id="L435">        public int getItemCount() { return items.size(); }</span>
+
+        static class VH extends RecyclerView.ViewHolder {
+            ImageView ivProfile;
+            TextView tvName, tvUserType, tvUsername, tvSummary, tvReview;
+            RatingBar reviewRating;
+
+            VH(@NonNull View itemView) {
+<span class="nc" id="L443">                super(itemView);</span>
+<span class="nc" id="L444">                ivProfile = itemView.findViewById(R.id.ivProfilePic);</span>
+<span class="nc" id="L445">                tvName = itemView.findViewById(R.id.tvName);</span>
+<span class="nc" id="L446">                tvUserType = itemView.findViewById(R.id.tvUserType);</span>
+<span class="nc" id="L447">                tvUsername = itemView.findViewById(R.id.tvUsername);</span>
+<span class="nc" id="L448">                tvSummary = itemView.findViewById(R.id.tvSummary);</span>
+<span class="nc" id="L449">                tvReview = itemView.findViewById(R.id.tvReview);</span>
+<span class="nc" id="L450">                reviewRating = itemView.findViewById(R.id.reviewRating);</span>
+<span class="nc" id="L451">            }</span>
+        }
+
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

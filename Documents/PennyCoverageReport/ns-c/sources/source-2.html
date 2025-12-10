@@ -1,0 +1,269 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TagController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.tag</a>
+</div>
+
+<h1>Coverage Summary for Class: TagController (com.imp3.Backend.tag)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TagController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    28.6%
+  </span>
+  <span class="absValue">
+    (2/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/28)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    7.1%
+  </span>
+  <span class="absValue">
+    (3/42)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.tag;
+&nbsp;
+&nbsp;import com.imp3.Backend.common.AbstractController;
+&nbsp;import jakarta.servlet.http.HttpSession;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;import org.springframework.web.server.ResponseStatusException;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;/tag&quot;)
+<b class="fc">&nbsp;public class TagController extends AbstractController {</b>
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    TagRepository tagrepository;
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    UserTagRepository usertagrepository;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * LIST (GET) - Browse/search all tags in the system
+&nbsp;     * @param search optional search term
+&nbsp;     * @param category optional category filter
+&nbsp;     * @return list of tags
+&nbsp;     */
+&nbsp;    @GetMapping
+&nbsp;    public List&lt;Tag&gt; getAllTags(@RequestParam(required = false) String search,
+&nbsp;                                @RequestParam(required = false) Tag.TagCategory category){
+<b class="nc">&nbsp;        if(search != null &amp;&amp; !search.isBlank()){</b>
+<b class="nc">&nbsp;            return tagrepository.findByNameContainingIgnoreCase(search.trim());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(category != null) {</b>
+<b class="nc">&nbsp;            return tagrepository.findByCategory(category);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return tagrepository.findAll();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * READ (GET) - Fetch one specific tag by id
+&nbsp;     * @param tagId of the tag
+&nbsp;     * @return the tag
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{tagId}&quot;)
+&nbsp;    public Tag getTag(@PathVariable Integer tagId){
+<b class="nc">&nbsp;        return tagrepository.findById(tagId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Tag not found&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * CREATE (POST) - Create a new tag
+&nbsp;     * @param request containing tag details
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     * @return the created tag
+&nbsp;     */
+&nbsp;    @PostMapping
+&nbsp;    @ResponseStatus(HttpStatus.CREATED)
+&nbsp;    public Tag createTag(@RequestBody TagRequest request, HttpSession session){
+<b class="nc">&nbsp;        Integer uid = getSessionUid(session);</b>
+&nbsp;
+&nbsp;        //validate required fields
+<b class="nc">&nbsp;        if(request.getName() == null || request.getName().isBlank()){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Tag name is required&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //check for duplicate tags
+<b class="nc">&nbsp;        String normalizedName = request.getName().trim().toLowerCase();</b>
+<b class="nc">&nbsp;        if(tagrepository.existsByNameIgnoreCase(normalizedName)){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;Tag aleady exists&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        Tag tag = new Tag();</b>
+<b class="nc">&nbsp;        tag.setName(normalizedName);</b>
+&nbsp;
+<b class="nc">&nbsp;        if(request.getCategory() != null){</b>
+<b class="nc">&nbsp;            tag.setCategory(request.getCategory());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(request.getDescription() != null){</b>
+<b class="nc">&nbsp;            tag.setDescription(request.getDescription());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return tagrepository.save(tag);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  UPDATE (PUT) - Rename or update a tag
+&nbsp;     * @param tagId of the tag
+&nbsp;     * @param request containing updated details
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     * @return the updated tag
+&nbsp;     */
+&nbsp;    @PutMapping(&quot;/{tagId}&quot;)
+&nbsp;    public Tag updateTag(@PathVariable Integer tagId,
+&nbsp;                         @RequestBody TagRequest request, HttpSession session){
+<b class="nc">&nbsp;        Integer uid = getSessionUid(session);</b>
+&nbsp;
+<b class="nc">&nbsp;        Tag tag = tagrepository.findById(tagId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Tag not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        if(request.getName() != null &amp;&amp; !request.getName().isBlank()){</b>
+<b class="nc">&nbsp;            String normalizedName = request.getName().trim().toLowerCase();</b>
+&nbsp;
+<b class="nc">&nbsp;            tagrepository.findByNameIgnoreCase(normalizedName).ifPresent(existing -&gt; {</b>
+<b class="nc">&nbsp;                if(!existing.getTagId().equals(tagId)){</b>
+<b class="nc">&nbsp;                    throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;Tag name already exists&quot;);</b>
+&nbsp;                }
+&nbsp;            });
+<b class="nc">&nbsp;        tag.setName(normalizedName);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(request.getCategory() != null){</b>
+<b class="nc">&nbsp;            tag.setCategory(request.getCategory());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(request.getDescription() != null){</b>
+<b class="nc">&nbsp;            tag.setDescription(request.getDescription());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return tagrepository.save(tag);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * DELETE (DELETE) - Delete a tag from the system
+&nbsp;     * @param tagId of the tag
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     */
+&nbsp;    @DeleteMapping(&quot;/{tagId}&quot;)
+&nbsp;    @ResponseStatus(HttpStatus.NO_CONTENT)
+&nbsp;    public void deleteTag(@PathVariable Integer tagId, HttpSession session){
+&nbsp;
+<b class="fc">&nbsp;        Tag tag = tagrepository.findById(tagId)</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Tag not found&quot;));</b>
+&nbsp;
+&nbsp;        // only admins can delete tags
+<b class="nc">&nbsp;        String userType = (String)session.getAttribute(&quot;type&quot;);</b>
+<b class="nc">&nbsp;        if (!userType.equals(&quot;admin&quot;)) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Must be Admin&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //delete all userTag references first
+<b class="nc">&nbsp;        usertagrepository.deleteByTag_TagId(tagId);</b>
+&nbsp;
+&nbsp;        //delete the tag
+<b class="nc">&nbsp;        tagrepository.delete(tag);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-09 15:12</div>
+</div>
+</body>
+</html>

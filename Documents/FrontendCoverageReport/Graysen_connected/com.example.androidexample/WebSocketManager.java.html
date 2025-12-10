@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WebSocketManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">WebSocketManager.java</span></div><h1>WebSocketManager.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.util.Log;
+
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
+
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.HttpCookie;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Singleton WebSocketManager instance used for managing WebSocket connections
+ * in the Android application.
+ *
+ * This instance ensures that there is only one WebSocketManager throughout
+ * the application's lifecycle, allowing for centralized WebSocket handling.
+ */
+public class WebSocketManager {
+
+    private static WebSocketManager instance;
+    private MyWebSocketClient webSocketClient;
+    private WebSocketListener webSocketListener;
+
+    private WebSocketManager() {}
+
+    /**
+     * Retrieves a synchronized instance of the WebSocketManager, ensuring that
+     * only one instance of the WebSocketManager exists throughout the application.
+     * Synchronization ensures thread safety when accessing or creating the instance.
+     *
+     * @return A synchronized instance of WebSocketManager.
+     */
+    public static synchronized WebSocketManager getInstance() {
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (instance == null) {</span>
+<span class="fc" id="L40">            Log.d(&quot;WebSocket&quot;, &quot;Creating new WebSocketManager instance&quot;);</span>
+<span class="fc" id="L41">            instance = new WebSocketManager();</span>
+        } else {
+<span class="fc" id="L43">            Log.d(&quot;WebSocket&quot;, &quot;Reusing existing WebSocketManager instance: &quot; + instance);</span>
+        }
+<span class="fc" id="L45">        return instance;</span>
+    }
+
+    /**
+     * Sets the WebSocketListener for this WebSocketManager instance. The WebSocketListener
+     * is responsible for handling WebSocket events, such as received messages and errors.
+     *
+     * @param listener The WebSocketListener to be set for this WebSocketManager.
+     */
+    public void setWebSocketListener(WebSocketListener listener) {
+<span class="fc" id="L55">        this.webSocketListener = listener;</span>
+<span class="fc" id="L56">        Log.d(&quot;WebSocket&quot;, &quot;Listener set: &quot; + listener);</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * Removes the currently set WebSocketListener from this WebSocketManager instance.
+     * This action effectively disconnects the listener from handling WebSocket events.
+     */
+    public void removeWebSocketListener() {
+<span class="nc" id="L64">        Log.d(&quot;WebSocket&quot;, &quot;Listener removed&quot;);</span>
+<span class="nc" id="L65">        this.webSocketListener = null;</span>
+<span class="nc" id="L66">    }</span>
+
+    /**
+     * Initiates a WebSocket connection to the specified server URL. This method
+     * establishes a connection with the WebSocket server located at the given URL.
+     *
+     * @param serverUrl The URL of the WebSocket server to connect to.
+     */
+    public void connectWebSocket(String serverUrl) {
+        try {
+<span class="fc" id="L76">            Log.d(&quot;WebSocket&quot;, &quot;connectWebSocket() called with URL: &quot; + serverUrl);</span>
+<span class="fc" id="L77">            Log.d(&quot;WebSocket&quot;, &quot;Current listener: &quot; + webSocketListener);</span>
+<span class="fc" id="L78">            Log.d(&quot;WebSocket&quot;, &quot;Existing client: &quot; + webSocketClient);</span>
+
+<span class="fc" id="L80">            URI serverUri = URI.create(serverUrl);</span>
+<span class="fc" id="L81">            Map&lt;String, String&gt; headers = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L83">            CookieManager cookieManager = (CookieManager) CookieHandler.getDefault();</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">            if (cookieManager != null) {</span>
+<span class="fc" id="L85">                List&lt;HttpCookie&gt; cookies = cookieManager.getCookieStore().getCookies();</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">                if (!cookies.isEmpty()) {</span>
+<span class="fc" id="L87">                    StringBuilder cookieHeader = new StringBuilder();</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">                    for (HttpCookie cookie : cookies) {</span>
+<span class="fc" id="L89">                        cookieHeader.append(cookie.getName()).append(&quot;=&quot;).append(cookie.getValue()).append(&quot;; &quot;);</span>
+<span class="fc" id="L90">                    }</span>
+<span class="fc" id="L91">                    headers.put(&quot;Cookie&quot;, cookieHeader.toString());</span>
+<span class="fc" id="L92">                    Log.d(&quot;WebSocket&quot;, &quot;Sending cookies in handshake: &quot; + cookieHeader);</span>
+<span class="fc" id="L93">                } else {</span>
+<span class="nc" id="L94">                    Log.w(&quot;WebSocket&quot;, &quot;No cookies found in CookieManager&quot;);</span>
+                }
+            }
+
+<span class="fc" id="L98">            webSocketClient = new MyWebSocketClient(serverUri, headers);</span>
+<span class="fc" id="L99">            Log.d(&quot;WebSocket&quot;, &quot;Connecting WebSocket client: &quot; + webSocketClient);</span>
+<span class="fc" id="L100">            webSocketClient.connect();</span>
+<span class="nc" id="L101">        } catch (Exception e) {</span>
+<span class="nc" id="L102">            Log.e(&quot;WebSocket&quot;, &quot;Error connecting WebSocket&quot;, e);</span>
+<span class="fc" id="L103">        }</span>
+<span class="fc" id="L104">    }</span>
+
+    /**
+     * Sends a WebSocket message to the connected WebSocket server. This method allows
+     * the application to send a message to the server through the established WebSocket
+     * connection.
+     *
+     * @param message The message to be sent to the WebSocket server.
+     */
+    public void sendMessage(String message) {
+<span class="nc bnc" id="L114" title="All 4 branches missed.">        if (webSocketClient != null &amp;&amp; webSocketClient.isOpen()) {</span>
+<span class="nc" id="L115">            Log.d(&quot;WebSocket&quot;, &quot;Sending message: &quot; + message);</span>
+<span class="nc" id="L116">            webSocketClient.send(message);</span>
+        } else {
+<span class="nc" id="L118">            Log.w(&quot;WebSocket&quot;, &quot;Cannot send message. Client not open.&quot;);</span>
+        }
+<span class="nc" id="L120">    }</span>
+
+    /**
+     * Disconnects the WebSocket connection, terminating the communication with the
+     * WebSocket server.
+     */
+    public void disconnectWebSocket() {
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (webSocketClient != null) {</span>
+<span class="fc" id="L128">            Log.d(&quot;WebSocket&quot;, &quot;Disconnecting WebSocket&quot;);</span>
+<span class="fc" id="L129">            webSocketClient.close();</span>
+        }
+<span class="fc" id="L131">    }</span>
+
+    public boolean isConnected() {
+<span class="nc bnc" id="L134" title="All 4 branches missed.">        return webSocketClient != null &amp;&amp; webSocketClient.isOpen();</span>
+    }
+
+    /**
+     * A private inner class that extends WebSocketClient and represents a WebSocket
+     * client instance tailored for specific functionalities within the WebSocketManager.
+     * This class encapsulates the WebSocketClient and provides custom behavior or
+     * handling for WebSocket communication as needed by the application.
+     */
+    private class MyWebSocketClient extends WebSocketClient {
+
+<span class="fc" id="L145">        private MyWebSocketClient(URI serverUri, Map&lt;String, String&gt; headers) {</span>
+<span class="fc" id="L146">            super(serverUri, headers);</span>
+<span class="fc" id="L147">            Log.d(&quot;WebSocket&quot;, &quot;MyWebSocketClient created with URI: &quot; + serverUri);</span>
+<span class="fc" id="L148">        }</span>
+
+        /**
+         * Called when the WebSocket connection is successfully opened and a handshake
+         * with the server has been completed. This method is invoked to handle the event
+         * when the WebSocket connection becomes ready for sending and receiving messages.
+         *
+         * @param handshakedata The ServerHandshake object containing details about the
+         *                      handshake with the server.
+         */
+        @Override
+        public void onOpen(ServerHandshake handshakedata) {
+<span class="fc" id="L160">            Log.d(&quot;WebSocket&quot;, &quot;Connected&quot;);</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">            if (webSocketListener != null) {</span>
+<span class="fc" id="L162">                webSocketListener.onWebSocketOpen(handshakedata);</span>
+            } else {
+<span class="nc" id="L164">                Log.w(&quot;WebSocket&quot;, &quot;Listener null in onOpen()&quot;);</span>
+            }
+<span class="fc" id="L166">        }</span>
+
+        /**
+         * Called when a WebSocket message is received from the server. This method is
+         * invoked to handle incoming WebSocket messages and allows the application to
+         * process and respond to messages as needed.
+         *
+         * @param message The WebSocket message received from the server as a string.
+         */
+        @Override
+        public void onMessage(String message) {
+<span class="nc" id="L177">            Log.d(&quot;WebSocket&quot;, &quot;Received message: &quot; + message + &quot; | listener=&quot; + webSocketListener);</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">            if (webSocketListener != null) {</span>
+<span class="nc" id="L179">                webSocketListener.onWebSocketMessage(message);</span>
+            } else {
+<span class="nc" id="L181">                Log.w(&quot;WebSocket&quot;, &quot;Listener is null — message dropped!&quot;);</span>
+            }
+<span class="nc" id="L183">        }</span>
+
+        /**
+         * Called when the WebSocket connection is closed, either due to a client request
+         * or a server-initiated close. This method is invoked to handle the WebSocket
+         * connection closure event and provides details about the closure, such as the
+         * closing code, reason, and whether it was initiated remotely.
+         *
+         * @param code   The WebSocket closing code indicating the reason for closure.
+         * @param reason A human-readable explanation for the WebSocket connection closure.
+         * @param remote A boolean flag indicating whether the closure was initiated remotely.
+         *               'true' if initiated remotely, 'false' if initiated by the client.
+         */
+        @Override
+        public void onClose(int code, String reason, boolean remote) {
+<span class="fc" id="L198">            Log.d(&quot;WebSocket&quot;, &quot;Closed (code=&quot; + code + &quot;, reason=&quot; + reason + &quot;, remote=&quot; + remote + &quot;)&quot;);</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">            if (webSocketListener != null) {</span>
+<span class="fc" id="L200">                webSocketListener.onWebSocketClose(code, reason, remote);</span>
+            } else {
+<span class="nc" id="L202">                Log.w(&quot;WebSocket&quot;, &quot;Listener null in onClose()&quot;);</span>
+            }
+<span class="fc" id="L204">        }</span>
+
+        /**
+         * Called when an error occurs during WebSocket communication. This method is
+         * invoked to handle WebSocket-related errors and allows the application to
+         * respond to and log error details.
+         *
+         * @param ex The Exception representing the WebSocket communication error.
+         */
+        @Override
+        public void onError(Exception ex) {
+<span class="nc" id="L215">            Log.e(&quot;WebSocket&quot;, &quot;Error&quot;, ex);</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">            if (webSocketListener != null) {</span>
+<span class="nc" id="L217">                webSocketListener.onWebSocketError(ex);</span>
+            } else {
+<span class="nc" id="L219">                Log.w(&quot;WebSocket&quot;, &quot;Listener null in onError()&quot;);</span>
+            }
+<span class="nc" id="L221">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

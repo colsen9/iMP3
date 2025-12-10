@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SignupPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">SignupPage.java</span></div><h1>SignupPage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Patterns;
+import android.widget.Button;
+import android.widget.EditText;
+
+import com.android.volley.Request;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
+import com.android.volley.VolleyError;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+<span class="nc" id="L19">public class SignupPage extends AppCompatActivity {</span>
+    /* define username edit text variable */
+    private EditText emailEditText;
+    /* define password edit text variable */
+    private EditText passwordEditText;
+    /* define confirm edit text variable */
+    private EditText confirmEditText;
+    /* define username edit text variable */
+    private EditText usernameEditText;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="nc" id="L31">        super.onCreate(savedInstanceState);</span>
+<span class="nc" id="L32">        setContentView(R.layout.signup_page);</span>
+
+        /* initialize UI elements */
+        /* link to email text edit in the Signup XML */
+<span class="nc" id="L36">        emailEditText = findViewById(R.id.email_edit);</span>
+        /* link to password text edit in the Signup XML */
+<span class="nc" id="L38">        passwordEditText = findViewById(R.id.password_edit);</span>
+        /* link to confirm text edit in the Signup XML */
+<span class="nc" id="L40">        confirmEditText = findViewById(R.id.confirm_edit);</span>
+        /* link to username text edit in the Signup XML */
+<span class="nc" id="L42">        usernameEditText = findViewById(R.id.username_edit);</span>
+
+        /* define login button variable &amp; link to login button in the Signup XML */
+<span class="nc" id="L45">        Button loginButton = findViewById(R.id.login_btn);</span>
+        /* define signup button variable &amp; link to signup button in the Signup XML */
+<span class="nc" id="L47">        Button signupButton = findViewById(R.id.signup_btn);</span>
+
+        /* click listener on login button pressed */
+<span class="nc" id="L50">        loginButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L51">            startActivity(new Intent(SignupPage.this, LoginPage.class));</span>
+<span class="nc" id="L52">        });</span>
+
+        /* click listener on signup button pressed */
+<span class="nc" id="L55">        signupButton.setOnClickListener(v -&gt; {</span>
+
+            /* grab strings from user inputs */
+<span class="nc" id="L58">            String username = usernameEditText.getText().toString();</span>
+<span class="nc" id="L59">            String email = emailEditText.getText().toString();</span>
+<span class="nc" id="L60">            String password = passwordEditText.getText().toString();</span>
+<span class="nc" id="L61">            String confirm = confirmEditText.getText().toString();</span>
+
+            /* define error variable */
+<span class="nc" id="L64">            boolean hasError = false;</span>
+
+            /* Reset errors */
+<span class="nc" id="L67">            usernameEditText.setError(null);</span>
+<span class="nc" id="L68">            emailEditText.setError(null);</span>
+<span class="nc" id="L69">            passwordEditText.setError(null);</span>
+<span class="nc" id="L70">            confirmEditText.setError(null);</span>
+
+            // Check if username is valid
+<span class="nc bnc" id="L73" title="All 2 branches missed.">            if (username.isEmpty()) {</span>
+<span class="nc" id="L74">                usernameEditText.setError(&quot;Username is required&quot;);</span>
+<span class="nc" id="L75">                hasError = true;</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            } else if (username.length() &lt; 3) {</span>
+<span class="nc" id="L77">                usernameEditText.setError(&quot;Username must be at least 3 characters&quot;);</span>
+<span class="nc" id="L78">                hasError = true;</span>
+            }
+
+            /* Check if email is valid */
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (email.isEmpty()) {</span>
+<span class="nc" id="L83">                emailEditText.setError(&quot;Email is required&quot;);</span>
+<span class="nc" id="L84">                hasError = true;</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            } else if (!isValidEmail(email)) {</span>
+<span class="nc" id="L86">                emailEditText.setError(&quot;Invalid email format&quot;);</span>
+<span class="nc" id="L87">                hasError = true;</span>
+            }
+
+            /* Check if password is valid */
+<span class="nc" id="L91">            String passwordError = isValidPassword(password);</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">            if (password.isEmpty()) {</span>
+<span class="nc" id="L93">                passwordEditText.setError(&quot;Password is required&quot;);</span>
+<span class="nc" id="L94">                hasError = true;</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">            } else if (passwordError != null) {</span>
+<span class="nc" id="L96">                passwordEditText.setError(passwordError);</span>
+<span class="nc" id="L97">                hasError = true;</span>
+            }
+
+            /* Check if password and confirm match */
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            if (confirm.isEmpty()) {</span>
+<span class="nc" id="L102">                confirmEditText.setError(&quot;Please confirm your password&quot;);</span>
+<span class="nc" id="L103">                hasError = true;</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">            } else if (!password.equals(confirm)) {</span>
+<span class="nc" id="L105">                confirmEditText.setError(&quot;Passwords do not match&quot;);</span>
+<span class="nc" id="L106">                hasError = true;</span>
+            }
+
+            /* Proceed to profile page if all inputs are valid */
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            if (!hasError) {</span>
+<span class="nc" id="L111">                volleySignup(email, username, password);</span>
+            }
+<span class="nc" id="L113">        });</span>
+<span class="nc" id="L114">    }</span>
+
+    /* Signup with backend using Volley */
+    private void volleySignup(String email, String username, String password) {
+<span class="nc" id="L118">        String url = &quot;http://coms-3090-027.class.las.iastate.edu:8080/users/signup&quot;;</span>
+
+<span class="nc" id="L120">        JSONObject requestBody = new JSONObject();</span>
+        try {
+<span class="nc" id="L122">            requestBody.put(&quot;username&quot;, username);</span>
+<span class="nc" id="L123">            requestBody.put(&quot;email&quot;, email);</span>
+<span class="nc" id="L124">            requestBody.put(&quot;password&quot;, password);</span>
+<span class="nc" id="L125">            requestBody.put(&quot;type&quot;, &quot;user&quot;);</span>
+<span class="nc" id="L126">        } catch (JSONException e) {</span>
+<span class="nc" id="L127">            e.printStackTrace();</span>
+<span class="nc" id="L128">        }</span>
+
+<span class="nc" id="L130">        JsonObjectRequest request = new JsonObjectRequest(</span>
+                Request.Method.POST,
+                url,
+                requestBody,
+                response -&gt; {
+                    try {
+<span class="nc" id="L136">                        int userId = response.getInt(&quot;id&quot;);</span>
+<span class="nc" id="L137">                        String userEmail = response.getString(&quot;email&quot;);</span>
+
+<span class="nc" id="L139">                        Intent intent = new Intent(SignupPage.this, ProfilePage.class);</span>
+<span class="nc" id="L140">                        intent.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L141">                        intent.putExtra(&quot;email&quot;, userEmail);</span>
+<span class="nc" id="L142">                        startActivity(intent);</span>
+<span class="nc" id="L143">                    } catch (JSONException e) {</span>
+<span class="nc" id="L144">                        e.printStackTrace();</span>
+<span class="nc" id="L145">                        emailEditText.setError(&quot;Response parse error&quot;);</span>
+<span class="nc" id="L146">                    }</span>
+<span class="nc" id="L147">                },</span>
+                this::handleVolleyError
+        );
+
+<span class="nc" id="L151">        QueueApplication.getQueue().add(request);</span>
+<span class="nc" id="L152">    }</span>
+
+    /* Handle backend errors */
+    private void handleVolleyError(VolleyError error) {
+<span class="nc bnc" id="L156" title="All 4 branches missed.">        if (error.networkResponse != null &amp;&amp; error.networkResponse.statusCode == 409) {</span>
+
+            // Backend returns 409 for username OR email conflict
+<span class="nc" id="L159">            String msg = &quot;Email or username already exists&quot;;</span>
+
+<span class="nc" id="L161">            emailEditText.setError(msg);</span>
+<span class="nc" id="L162">            usernameEditText.setError(msg);</span>
+<span class="nc" id="L163">        } else {</span>
+<span class="nc" id="L164">            emailEditText.setError(&quot;Signup failed: &quot; + error.toString());</span>
+        }
+<span class="nc" id="L166">    }</span>
+
+    /* Check if email is valid */
+    private boolean isValidEmail(String email) {
+<span class="nc bnc" id="L170" title="All 4 branches missed.">        return email != null &amp;&amp; Patterns.EMAIL_ADDRESS.matcher(email).matches();</span>
+    }
+
+    /* Check if password is valid */
+    private String isValidPassword(String password) {
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        if (password.length() &lt; 8) {</span>
+<span class="nc" id="L176">            return &quot;Password must be at least 8 characters long&quot;;</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        } else if (!password.matches(&quot;.*[A-Z].*&quot;)) {</span>
+<span class="nc" id="L178">            return &quot;Password must contain at least one uppercase letter&quot;;</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        } else if (!password.matches(&quot;.*[a-z].*&quot;)) {</span>
+<span class="nc" id="L180">            return &quot;Password must contain at least one lowercase letter&quot;;</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">        } else if (!password.matches(&quot;.*[0-9].*&quot;)) {</span>
+<span class="nc" id="L182">            return &quot;Password must contain at least one digit&quot;;</span>
+        } else {
+<span class="nc" id="L184">            return null;</span>
+        }
+    }
+}
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

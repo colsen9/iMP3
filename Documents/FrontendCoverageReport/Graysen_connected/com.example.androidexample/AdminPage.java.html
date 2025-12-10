@@ -1,0 +1,1055 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AdminPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">AdminPage.java</span></div><h1>AdminPage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Build;
+import android.os.Bundle;
+import android.util.Base64;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.Toast;
+
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+<span class="nc" id="L43">public class AdminPage extends AppCompatActivity {</span>
+    private static final int ALBUM_FORM = 1;
+    private static final int ARTIST_FORM = 2;
+<span class="nc" id="L46">    private int currentForm = 0;</span>
+    private RecyclerView rvAlbums, rvTracks, rvArtists, rvUserList;
+    private LinearLayout albumForm, trackForm, artistForm;
+    private Button btnAddAlbum, btnSaveAlbum, btnCancelAlbum;
+    private Button btnAddTrack, btnSaveTrack, btnCancelTrack;
+    private Button btnAddArtist, btnSaveArtist, btnCancelArtist, btnSelectArtistPicture;
+    private Button btnReturnProfile, btnSelectAlbumArt, btnLoadUsers;
+    private Button btnCloseUserList;
+    private RequestQueue requestQueue;
+    private EditText etAlbumName, etAlbumArtistIds, etAlbumTrackIds, etAlbumDuration, etAlbumReleaseDate;
+    private EditText etTrackName, etTrackArtistIds, etTrackAlbumIds, etTrackMood;
+    private EditText etTrackGenre, etTrackDuration, etTrackTrackNumber, etTrackBPM;
+    private EditText etArtistName, etArtistBio, etArtistAlbumIds, etArtistTrackIds, etArtistYears;
+    private EditText etTrackSearch;
+    private Button btnTrackSearch;
+    private EditText etAlbumSearch;
+    private Button btnAlbumSearch;
+    private AlbumAdapter albumAdapter;
+    private TrackAdapter trackAdapter;
+    private ArtistAdapter artistAdapter;
+    private UserAdapter userAdapter;
+<span class="nc" id="L67">    private ArrayList&lt;Album&gt; albumList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L68">    private ArrayList&lt;Track&gt; trackList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L69">    private ArrayList&lt;Artist&gt; artistList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L70">    private ArrayList&lt;User&gt; userList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L71">    private Set&lt;Integer&gt; backendArtistIds = new HashSet&lt;&gt;();</span>
+    private int userId;
+<span class="nc" id="L73">    private String selectedSpotifyId = null;</span>
+<span class="nc" id="L74">    private Integer editingAlbumId = null;</span>
+<span class="nc" id="L75">    private Integer editingTrackId = null;</span>
+<span class="nc" id="L76">    private Integer editingArtistId = null;</span>
+<span class="nc" id="L77">    private String albumImageBase64 = null;</span>
+<span class="nc" id="L78">    private String artistImageBase64 = null;</span>
+<span class="nc" id="L79">    private final int PICK_IMAGE_REQUEST = 1;</span>
+<span class="nc" id="L80">    private final String BASE_URL = &quot;http://coms-3090-027.class.las.iastate.edu:8080&quot;;</span>
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="nc" id="L84">        super.onCreate(savedInstanceState);</span>
+<span class="nc" id="L85">        setContentView(R.layout.admin_view);</span>
+
+<span class="nc" id="L87">        userId = getIntent().getIntExtra(&quot;userId&quot;, -1);</span>
+<span class="nc" id="L88">        requestQueue = QueueApplication.getQueue();</span>
+
+<span class="nc" id="L90">        setupViews();</span>
+<span class="nc" id="L91">        setupRecyclerViews();</span>
+<span class="nc" id="L92">        setupListeners();</span>
+
+<span class="nc" id="L94">        loadAlbums();</span>
+<span class="nc" id="L95">        loadTracks();</span>
+<span class="nc" id="L96">        loadArtists();</span>
+<span class="nc" id="L97">        loadBackendArtists();</span>
+<span class="nc" id="L98">    }</span>
+
+    private void setupViews() {
+<span class="nc" id="L101">        rvAlbums = findViewById(R.id.rvAlbumList);</span>
+<span class="nc" id="L102">        rvTracks = findViewById(R.id.rvTrackList);</span>
+<span class="nc" id="L103">        rvArtists = findViewById(R.id.rvArtistList);</span>
+<span class="nc" id="L104">        rvUserList = findViewById(R.id.rvUserList);</span>
+
+<span class="nc" id="L106">        albumForm = findViewById(R.id.albumForm);</span>
+<span class="nc" id="L107">        trackForm = findViewById(R.id.trackForm);</span>
+<span class="nc" id="L108">        artistForm = findViewById(R.id.artistForm);</span>
+
+<span class="nc" id="L110">        btnAddAlbum = findViewById(R.id.btnAddAlbum);</span>
+<span class="nc" id="L111">        btnSaveAlbum = findViewById(R.id.btnSaveAlbum);</span>
+<span class="nc" id="L112">        btnCancelAlbum = findViewById(R.id.btnCancelAlbum);</span>
+
+<span class="nc" id="L114">        btnAddTrack = findViewById(R.id.btnAddTrack);</span>
+<span class="nc" id="L115">        btnSaveTrack = findViewById(R.id.btnSaveTrack);</span>
+<span class="nc" id="L116">        btnCancelTrack = findViewById(R.id.btnCancelTrack);</span>
+
+<span class="nc" id="L118">        btnAddArtist = findViewById(R.id.btnAddArtist);</span>
+<span class="nc" id="L119">        btnSaveArtist = findViewById(R.id.btnSaveArtist);</span>
+<span class="nc" id="L120">        btnCancelArtist = findViewById(R.id.btnCancelArtist);</span>
+<span class="nc" id="L121">        btnSelectArtistPicture = findViewById(R.id.btnSelectArtistPicture);</span>
+
+<span class="nc" id="L123">        btnLoadUsers = findViewById(R.id.btnLoadUsers);</span>
+<span class="nc" id="L124">        btnCloseUserList = findViewById(R.id.btnCloseUserList);</span>
+<span class="nc" id="L125">        btnCloseUserList.setVisibility(View.GONE);</span>
+
+<span class="nc" id="L127">        btnReturnProfile = findViewById(R.id.btnReturnProfile);</span>
+<span class="nc" id="L128">        btnSelectAlbumArt = findViewById(R.id.btnSelectAlbumArt);</span>
+
+<span class="nc" id="L130">        etAlbumName = findViewById(R.id.etAlbumName);</span>
+<span class="nc" id="L131">        etAlbumArtistIds = findViewById(R.id.etAlbumArtistIds);</span>
+<span class="nc" id="L132">        etAlbumTrackIds = findViewById(R.id.etAlbumTrackIds);</span>
+<span class="nc" id="L133">        etAlbumDuration = findViewById(R.id.etAlbumDuration);</span>
+<span class="nc" id="L134">        etAlbumReleaseDate = findViewById(R.id.etAlbumReleaseDate);</span>
+
+<span class="nc" id="L136">        etTrackName = findViewById(R.id.etTrackName);</span>
+<span class="nc" id="L137">        etTrackArtistIds = findViewById(R.id.etTrackArtistIds);</span>
+<span class="nc" id="L138">        etTrackAlbumIds = findViewById(R.id.etTrackAlbumIds);</span>
+<span class="nc" id="L139">        etTrackMood = findViewById(R.id.etTrackMood);</span>
+<span class="nc" id="L140">        etTrackGenre = findViewById(R.id.etTrackGenre);</span>
+<span class="nc" id="L141">        etTrackDuration = findViewById(R.id.etTrackDuration);</span>
+<span class="nc" id="L142">        etTrackTrackNumber = findViewById(R.id.etTrackTrackNumber);</span>
+<span class="nc" id="L143">        etTrackBPM = findViewById(R.id.etTrackBPM);</span>
+
+<span class="nc" id="L145">        etArtistName = findViewById(R.id.etArtistName);</span>
+<span class="nc" id="L146">        etArtistBio = findViewById(R.id.etArtistBio);</span>
+<span class="nc" id="L147">        etArtistAlbumIds = findViewById(R.id.etArtistAlbumIds);</span>
+<span class="nc" id="L148">        etArtistTrackIds = findViewById(R.id.etArtistTrackIds);</span>
+<span class="nc" id="L149">        etArtistYears = findViewById(R.id.etArtistYears);</span>
+
+<span class="nc" id="L151">        etAlbumSearch = findViewById(R.id.etAlbumSearch);</span>
+<span class="nc" id="L152">        btnAlbumSearch = findViewById(R.id.btnAlbumSearch);</span>
+
+<span class="nc" id="L154">        etTrackSearch = findViewById(R.id.etTrackSearch);</span>
+<span class="nc" id="L155">        btnTrackSearch = findViewById(R.id.btnTrackSearch);</span>
+<span class="nc" id="L156">    }</span>
+
+    private void setupRecyclerViews() {
+<span class="nc" id="L159">        albumAdapter = new AlbumAdapter(albumList, new AlbumAdapter.OnAlbumClickListener() {</span>
+<span class="nc" id="L160">            @Override public void onEdit(Album album) { openEditAlbum(album); }</span>
+<span class="nc" id="L161">            @Override public void onDelete(Album album) { deleteAlbum(album); }</span>
+        });
+<span class="nc" id="L163">        rvAlbums.setLayoutManager(new LinearLayoutManager(this));</span>
+<span class="nc" id="L164">        rvAlbums.setAdapter(albumAdapter);</span>
+
+<span class="nc" id="L166">        trackAdapter = new TrackAdapter(trackList, new TrackAdapter.OnTrackClickListener() {</span>
+<span class="nc" id="L167">            @Override public void onEdit(Track track) { openEditTrack(track); }</span>
+<span class="nc" id="L168">            @Override public void onDelete(Track track) { deleteTrack(track); }</span>
+        });
+<span class="nc" id="L170">        rvTracks.setLayoutManager(new LinearLayoutManager(this));</span>
+<span class="nc" id="L171">        rvTracks.setAdapter(trackAdapter);</span>
+
+<span class="nc" id="L173">        artistAdapter = new ArtistAdapter(artistList, new ArtistAdapter.OnArtistClickListener() {</span>
+<span class="nc" id="L174">            @Override public void onEdit(Artist artist) { openEditArtist(artist); }</span>
+<span class="nc" id="L175">            @Override public void onDelete(Artist artist) { deleteArtist(artist); }</span>
+        });
+<span class="nc" id="L177">        rvArtists.setLayoutManager(new LinearLayoutManager(this));</span>
+<span class="nc" id="L178">        rvArtists.setAdapter(artistAdapter);</span>
+
+<span class="nc" id="L180">        userAdapter = new UserAdapter(userList, new UserAdapter.OnUserActionListener() {</span>
+            @Override
+            public void onPerms(User user) {
+<span class="nc" id="L183">                showEditUserTypeDialog(user);</span>
+<span class="nc" id="L184">            }</span>
+
+            @Override
+            public void onBan(User user) {
+<span class="nc bnc" id="L188" title="All 2 branches missed.">                if (&quot;banned&quot;.equalsIgnoreCase(user.getType())) {</span>
+<span class="nc" id="L189">                    unbanUser(user.getId());</span>
+                } else {
+<span class="nc" id="L191">                    banUser(user.getId());</span>
+                }
+<span class="nc" id="L193">            }</span>
+        });
+<span class="nc" id="L195">        rvUserList.setLayoutManager(new LinearLayoutManager(this));</span>
+<span class="nc" id="L196">        rvUserList.setAdapter(userAdapter);</span>
+
+<span class="nc" id="L198">    }</span>
+
+    private void setupListeners() {
+<span class="nc" id="L201">        btnReturnProfile.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L202">            Intent tempMain = new Intent(AdminPage.this, ProfilePage.class);</span>
+<span class="nc" id="L203">            tempMain.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L204">            startActivity(tempMain);</span>
+<span class="nc" id="L205">        });</span>
+
+<span class="nc" id="L207">        btnLoadUsers.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L208">            loadUsers();</span>
+<span class="nc" id="L209">            btnLoadUsers.setVisibility(View.GONE);</span>
+<span class="nc" id="L210">            btnCloseUserList.setVisibility(View.VISIBLE);</span>
+<span class="nc" id="L211">        });</span>
+
+<span class="nc" id="L213">        btnCloseUserList.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L214">            rvUserList.setVisibility(View.GONE);</span>
+<span class="nc" id="L215">            btnCloseUserList.setVisibility(View.GONE);</span>
+<span class="nc" id="L216">            btnLoadUsers.setVisibility(View.VISIBLE);</span>
+<span class="nc" id="L217">        });</span>
+
+<span class="nc" id="L219">        btnAddAlbum.setOnClickListener(v -&gt; openAddAlbumForm());</span>
+<span class="nc" id="L220">        btnCancelAlbum.setOnClickListener(v -&gt; closeAlbumForm());</span>
+<span class="nc" id="L221">        btnSaveAlbum.setOnClickListener(v -&gt; saveAlbum());</span>
+
+<span class="nc" id="L223">        btnAddTrack.setOnClickListener(v -&gt; openAddTrackForm());</span>
+<span class="nc" id="L224">        btnCancelTrack.setOnClickListener(v -&gt; closeTrackForm());</span>
+<span class="nc" id="L225">        btnSaveTrack.setOnClickListener(v -&gt; saveTrack());</span>
+
+<span class="nc" id="L227">        btnAddArtist.setOnClickListener(v -&gt; openAddArtistForm());</span>
+<span class="nc" id="L228">        btnCancelArtist.setOnClickListener(v -&gt; closeArtistForm());</span>
+<span class="nc" id="L229">        btnSaveArtist.setOnClickListener(v -&gt; saveArtist());</span>
+
+<span class="nc" id="L231">        btnAlbumSearch.setOnClickListener(v -&gt; performAlbumSpotifySearch());</span>
+<span class="nc" id="L232">        btnTrackSearch.setOnClickListener(v -&gt; performTrackSpotifySearch());</span>
+
+<span class="nc" id="L234">        btnSelectAlbumArt.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L235">            Intent intent = new Intent();</span>
+<span class="nc" id="L236">            intent.setType(&quot;image/*&quot;);</span>
+<span class="nc" id="L237">            intent.setAction(Intent.ACTION_GET_CONTENT);</span>
+<span class="nc" id="L238">            startActivityForResult(Intent.createChooser(intent, &quot;Select Album Art&quot;), PICK_IMAGE_REQUEST);</span>
+<span class="nc" id="L239">        });</span>
+
+<span class="nc" id="L241">        btnSelectArtistPicture.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L242">            Intent intent = new Intent();</span>
+<span class="nc" id="L243">            intent.setType(&quot;image/*&quot;);</span>
+<span class="nc" id="L244">            intent.setAction(Intent.ACTION_GET_CONTENT);</span>
+<span class="nc" id="L245">            startActivityForResult(Intent.createChooser(intent, &quot;Select Artist Picture&quot;), PICK_IMAGE_REQUEST);</span>
+<span class="nc" id="L246">        });</span>
+<span class="nc" id="L247">    }</span>
+
+    private void performAlbumSpotifySearch() {
+<span class="nc" id="L250">        String query = etAlbumSearch.getText().toString().trim();</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">        if (query.isEmpty()) {</span>
+<span class="nc" id="L252">            Toast.makeText(this, &quot;Enter a search term&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L253">            return;</span>
+        }
+
+<span class="nc" id="L256">        String tokenUrl = BASE_URL + &quot;/api/spotify/token?uid=&quot; + userId;</span>
+
+<span class="nc" id="L258">        JsonObjectRequest tokenRequest = new JsonObjectRequest(Request.Method.GET, tokenUrl, null,</span>
+                tokenResponse -&gt; {
+<span class="nc" id="L260">                    String accessToken = tokenResponse.optString(&quot;accessToken&quot;, null);</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">                    if (accessToken == null) {</span>
+<span class="nc" id="L262">                        Toast.makeText(this, &quot;Spotify not linked or token expired&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L263">                        return;</span>
+                    }
+
+<span class="nc" id="L266">                    String searchUrl = null;</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">                    if (Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.TIRAMISU) {</span>
+<span class="nc" id="L268">                        searchUrl = BASE_URL + &quot;/api/spotify/search?uid=&quot; + userId + &quot;&amp;q=&quot; +</span>
+<span class="nc" id="L269">                                URLEncoder.encode(query, StandardCharsets.UTF_8) + &quot;&amp;type=album&quot;;</span>
+                    }
+
+<span class="nc" id="L272">                    JsonObjectRequest searchRequest = new JsonObjectRequest(Request.Method.GET, searchUrl, null,</span>
+                            response -&gt; {
+                                try {
+<span class="nc" id="L275">                                    JSONObject albumsObj = response.optJSONObject(&quot;albums&quot;);</span>
+<span class="nc" id="L276">                                    JSONArray items = albumsObj.optJSONArray(&quot;items&quot;);</span>
+<span class="nc bnc" id="L277" title="All 4 branches missed.">                                    if (items == null || items.length() == 0) {</span>
+<span class="nc" id="L278">                                        Toast.makeText(this, &quot;No Spotify results&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L279">                                        return;</span>
+                                    }
+<span class="nc" id="L281">                                    JSONObject album = items.getJSONObject(0);</span>
+<span class="nc" id="L282">                                    autofillAlbumFromSpotify(album);</span>
+<span class="nc" id="L283">                                } catch (Exception e) {</span>
+<span class="nc" id="L284">                                    Toast.makeText(this, &quot;Failed to parse Spotify response&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L285">                                    e.printStackTrace();</span>
+<span class="nc" id="L286">                                }</span>
+<span class="nc" id="L287">                            },</span>
+<span class="nc" id="L288">                            error -&gt; Toast.makeText(this, &quot;Spotify album search failed&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L289">                    ) {</span>
+                        @Override
+                        public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L292">                            Map&lt;String, String&gt; headers = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L293">                            headers.put(&quot;Authorization&quot;, &quot;Bearer &quot; + accessToken);</span>
+<span class="nc" id="L294">                            return headers;</span>
+                        }
+                    };
+
+<span class="nc" id="L298">                    requestQueue.add(searchRequest);</span>
+
+<span class="nc" id="L300">                },</span>
+<span class="nc" id="L301">                error -&gt; Toast.makeText(this, &quot;Failed to get Spotify token&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+
+<span class="nc" id="L304">        requestQueue.add(tokenRequest);</span>
+<span class="nc" id="L305">    }</span>
+
+    private void performTrackSpotifySearch() {
+<span class="nc" id="L308">        String query = etTrackSearch.getText().toString().trim();</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">        if (query.isEmpty()) {</span>
+<span class="nc" id="L310">            Toast.makeText(this, &quot;Enter a search term&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L311">            return;</span>
+        }
+
+<span class="nc" id="L314">        String tokenUrl = BASE_URL + &quot;/api/spotify/token?uid=&quot; + userId;</span>
+
+<span class="nc" id="L316">        JsonObjectRequest tokenRequest = new JsonObjectRequest(Request.Method.GET, tokenUrl, null,</span>
+                tokenResponse -&gt; {
+<span class="nc" id="L318">                    String accessToken = tokenResponse.optString(&quot;accessToken&quot;, null);</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">                    if (accessToken == null) {</span>
+<span class="nc" id="L320">                        Toast.makeText(this, &quot;Spotify not linked or token expired&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L321">                        return;</span>
+                    }
+
+<span class="nc" id="L324">                    String searchUrl = null;</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">                    if (Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.TIRAMISU) {</span>
+<span class="nc" id="L326">                        searchUrl = BASE_URL + &quot;/api/spotify/search?uid=&quot; + userId + &quot;&amp;q=&quot; +</span>
+<span class="nc" id="L327">                                URLEncoder.encode(query, StandardCharsets.UTF_8) + &quot;&amp;type=track&quot;;</span>
+                    }
+
+<span class="nc" id="L330">                    JsonObjectRequest searchRequest = new JsonObjectRequest(Request.Method.GET, searchUrl, null,</span>
+                            response -&gt; {
+                                try {
+<span class="nc" id="L333">                                    JSONObject tracksObj = response.optJSONObject(&quot;tracks&quot;);</span>
+<span class="nc" id="L334">                                    JSONArray items = tracksObj.optJSONArray(&quot;items&quot;);</span>
+<span class="nc bnc" id="L335" title="All 4 branches missed.">                                    if (items == null || items.length() == 0) {</span>
+<span class="nc" id="L336">                                        Toast.makeText(this, &quot;No Spotify results&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L337">                                        return;</span>
+                                    }
+<span class="nc" id="L339">                                    JSONObject track = items.getJSONObject(0);</span>
+<span class="nc" id="L340">                                    autofillTrackFromSpotify(track);</span>
+<span class="nc" id="L341">                                } catch (Exception e) {</span>
+<span class="nc" id="L342">                                    Toast.makeText(this, &quot;Failed to parse Spotify response&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L343">                                    e.printStackTrace();</span>
+<span class="nc" id="L344">                                }</span>
+<span class="nc" id="L345">                            },</span>
+<span class="nc" id="L346">                            error -&gt; Toast.makeText(this, &quot;Spotify search failed&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L347">                    ) {</span>
+                        @Override
+                        public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L350">                            Map&lt;String, String&gt; headers = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L351">                            headers.put(&quot;Authorization&quot;, &quot;Bearer &quot; + accessToken);</span>
+<span class="nc" id="L352">                            return headers;</span>
+                        }
+                    };
+
+<span class="nc" id="L356">                    requestQueue.add(searchRequest);</span>
+
+<span class="nc" id="L358">                },</span>
+<span class="nc" id="L359">                error -&gt; Toast.makeText(this, &quot;Failed to get Spotify token&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+
+<span class="nc" id="L362">        requestQueue.add(tokenRequest);</span>
+<span class="nc" id="L363">    }</span>
+
+    private void autofillAlbumFromSpotify(JSONObject album) {
+        try {
+            // Store Spotify ID
+<span class="nc" id="L368">            selectedSpotifyId = album.optString(&quot;id&quot;);</span>
+
+            // Album name
+<span class="nc" id="L371">            String name = album.optString(&quot;name&quot;);</span>
+<span class="nc" id="L372">            etAlbumName.setText(name);</span>
+
+            // Release year
+<span class="nc" id="L375">            int releaseYear = 0;</span>
+<span class="nc" id="L376">            String releaseDateStr = album.optString(&quot;release_date&quot;);</span>
+<span class="nc bnc" id="L377" title="All 4 branches missed.">            if (!releaseDateStr.isEmpty() &amp;&amp; releaseDateStr.length() &gt;= 4) {</span>
+<span class="nc" id="L378">                releaseYear = Integer.parseInt(releaseDateStr.substring(0, 4));</span>
+            }
+<span class="nc bnc" id="L380" title="All 2 branches missed.">            etAlbumReleaseDate.setText(releaseYear &gt; 0 ? String.valueOf(releaseYear) : &quot;&quot;);</span>
+
+            // Clear artist and track IDs (user will fill manually)
+<span class="nc" id="L383">            etAlbumArtistIds.setText(&quot;&quot;);</span>
+<span class="nc" id="L384">            etAlbumTrackIds.setText(&quot;&quot;);</span>
+
+            // Load the first album image as Base64
+<span class="nc" id="L387">            JSONArray images = album.optJSONArray(&quot;images&quot;);</span>
+<span class="nc bnc" id="L388" title="All 4 branches missed.">            if (images != null &amp;&amp; images.length() &gt; 0) {</span>
+<span class="nc" id="L389">                String imageUrl = images.getJSONObject(0).optString(&quot;url&quot;);</span>
+<span class="nc bnc" id="L390" title="All 2 branches missed.">                if (!imageUrl.isEmpty()) {</span>
+<span class="nc" id="L391">                    new Thread(() -&gt; {</span>
+                        try {
+<span class="nc" id="L393">                            InputStream in = new java.net.URL(imageUrl).openStream();</span>
+<span class="nc" id="L394">                            Bitmap bitmap = BitmapFactory.decodeStream(in);</span>
+<span class="nc" id="L395">                            Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, 300, 300, true);</span>
+<span class="nc" id="L396">                            ByteArrayOutputStream baos = new ByteArrayOutputStream();</span>
+<span class="nc" id="L397">                            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);</span>
+<span class="nc" id="L398">                            byte[] bytes = baos.toByteArray();</span>
+<span class="nc" id="L399">                            albumImageBase64 = Base64.encodeToString(bytes, Base64.DEFAULT);</span>
+<span class="nc" id="L400">                            runOnUiThread(() -&gt; Toast.makeText(this, &quot;Album image loaded&quot;, Toast.LENGTH_SHORT).show());</span>
+<span class="nc" id="L401">                        } catch (Exception e) {</span>
+<span class="nc" id="L402">                            e.printStackTrace();</span>
+<span class="nc" id="L403">                        }</span>
+<span class="nc" id="L404">                    }).start();</span>
+                }
+            }
+
+<span class="nc" id="L408">            Toast.makeText(this, &quot;Spotify album info loaded&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L409">        } catch (Exception e) {</span>
+<span class="nc" id="L410">            Toast.makeText(this, &quot;Failed to autofill album from Spotify&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L411">            e.printStackTrace();</span>
+<span class="nc" id="L412">        }</span>
+<span class="nc" id="L413">    }</span>
+
+    private void autofillTrackFromSpotify(JSONObject track) {
+        try {
+            // Track basic info
+<span class="nc" id="L418">            String name = track.optString(&quot;name&quot;);</span>
+<span class="nc" id="L419">            int durationMs = track.optInt(&quot;duration_ms&quot;);</span>
+<span class="nc" id="L420">            int trackNum = track.optInt(&quot;track_number&quot;);</span>
+
+<span class="nc" id="L422">            selectedSpotifyId = track.optString(&quot;id&quot;);</span>
+
+<span class="nc" id="L424">            etTrackName.setText(name);</span>
+<span class="nc" id="L425">            etTrackDuration.setText(String.valueOf(durationMs));</span>
+<span class="nc" id="L426">            etTrackTrackNumber.setText(String.valueOf(trackNum));</span>
+
+<span class="nc" id="L428">            etTrackBPM.setText(&quot;&quot;);</span>
+
+<span class="nc" id="L430">            etTrackGenre.setText(&quot;&quot;);</span>
+<span class="nc" id="L431">            etTrackMood.setText(&quot;&quot;);</span>
+<span class="nc" id="L432">            etTrackArtistIds.setText(&quot;&quot;);</span>
+<span class="nc" id="L433">            etTrackAlbumIds.setText(&quot;&quot;);</span>
+
+<span class="nc" id="L435">            Toast.makeText(this, &quot;Spotify track info loaded&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L436">        } catch (Exception e) {</span>
+<span class="nc" id="L437">            Toast.makeText(this, &quot;Failed to autofill track from Spotify&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L438">            e.printStackTrace();</span>
+<span class="nc" id="L439">        }</span>
+<span class="nc" id="L440">    }</span>
+
+    private void loadAlbums() {
+<span class="nc" id="L443">        String url = BASE_URL + &quot;/music/albums&quot;;</span>
+
+<span class="nc" id="L445">        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+
+<span class="nc" id="L448">                    albumList.clear();</span>
+<span class="nc bnc" id="L449" title="All 2 branches missed.">                    for (int i = 0; i &lt; response.length(); i++) {</span>
+<span class="nc" id="L450">                        JSONObject obj = response.optJSONObject(i);</span>
+<span class="nc" id="L451">                        Album album = jsonToAlbum(obj);</span>
+<span class="nc" id="L452">                        albumList.add(album);</span>
+<span class="nc" id="L453">                        Log.d(&quot;ALBUM_LOG&quot;, &quot;ID: &quot; + album.getId() + &quot;, Name: &quot; + album.getName());</span>
+                    }
+<span class="nc" id="L455">                    albumAdapter.notifyDataSetChanged();</span>
+<span class="nc" id="L456">                },</span>
+<span class="nc" id="L457">                error -&gt; Toast.makeText(this, &quot;Failed to load albums&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="nc" id="L459">        requestQueue.add(req);</span>
+<span class="nc" id="L460">    }</span>
+
+    private void loadTracks() {
+<span class="nc" id="L463">        String url = BASE_URL + &quot;/music/tracks&quot;;</span>
+
+<span class="nc" id="L465">        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L467">                    trackList.clear();</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">                    for (int i = 0; i &lt; response.length(); i++) {</span>
+<span class="nc" id="L469">                        JSONObject obj = response.optJSONObject(i);</span>
+<span class="nc" id="L470">                        Track track = jsonToTrack(obj);</span>
+<span class="nc" id="L471">                        trackList.add(track);</span>
+<span class="nc" id="L472">                        Log.d(&quot;TRACK_LOG&quot;, &quot;ID: &quot; + track.getId() + &quot;, Name: &quot; + track.getName());</span>
+                    }
+<span class="nc" id="L474">                    trackAdapter.notifyDataSetChanged();</span>
+<span class="nc" id="L475">                },</span>
+<span class="nc" id="L476">                error -&gt; Toast.makeText(this, &quot;Failed to load tracks&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="nc" id="L478">        requestQueue.add(req);</span>
+<span class="nc" id="L479">    }</span>
+
+    private void loadArtists() {
+<span class="nc" id="L482">        String url = BASE_URL + &quot;/music/artists/&quot;;</span>
+
+<span class="nc" id="L484">        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L486">                    artistList.clear();</span>
+<span class="nc bnc" id="L487" title="All 2 branches missed.">                    for (int i = 0; i &lt; response.length(); i++) {</span>
+<span class="nc" id="L488">                        JSONObject obj = response.optJSONObject(i);</span>
+<span class="nc" id="L489">                        Artist artist = jsonToArtist(obj);</span>
+<span class="nc" id="L490">                        artistList.add(artist);</span>
+<span class="nc" id="L491">                        Log.d(&quot;ARTIST_LOG&quot;, &quot;ID: &quot; + artist.getId() + &quot;, Name: &quot; + artist.getName());</span>
+                    }
+<span class="nc" id="L493">                    artistAdapter.notifyDataSetChanged();</span>
+<span class="nc" id="L494">                },</span>
+<span class="nc" id="L495">                error -&gt; Toast.makeText(this, &quot;Failed to load artists&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="nc" id="L497">        requestQueue.add(req);</span>
+<span class="nc" id="L498">    }</span>
+    private void loadBackendArtists() {
+<span class="nc" id="L500">        String url = BASE_URL + &quot;/music/artists/&quot;;</span>
+
+<span class="nc" id="L502">        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L504">                    backendArtistIds.clear();</span>
+<span class="nc bnc" id="L505" title="All 2 branches missed.">                    for (int i = 0; i &lt; response.length(); i++) {</span>
+<span class="nc" id="L506">                        JSONObject obj = response.optJSONObject(i);</span>
+<span class="nc" id="L507">                        backendArtistIds.add(obj.optInt(&quot;id&quot;));</span>
+                    }
+<span class="nc" id="L509">                },</span>
+<span class="nc" id="L510">                error -&gt; Toast.makeText(this, &quot;Failed to load artists&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+
+<span class="nc" id="L513">        requestQueue.add(req);</span>
+<span class="nc" id="L514">    }</span>
+
+    private void loadUsers() {
+<span class="nc" id="L517">        String url = BASE_URL + &quot;/users/all&quot;;</span>
+
+<span class="nc" id="L519">        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L521">                    userList.clear();</span>
+<span class="nc bnc" id="L522" title="All 2 branches missed.">                    for (int i = 0; i &lt; response.length(); i++) {</span>
+<span class="nc" id="L523">                        JSONObject obj = response.optJSONObject(i);</span>
+<span class="nc bnc" id="L524" title="All 2 branches missed.">                        if (obj != null) {</span>
+<span class="nc" id="L525">                            String username = obj.optString(&quot;username&quot;);</span>
+<span class="nc" id="L526">                            int id = obj.optInt(&quot;id&quot;);</span>
+<span class="nc" id="L527">                            String type = obj.optString(&quot;type&quot;, &quot;user&quot;);</span>
+
+<span class="nc" id="L529">                            byte[] pictureBytes = null;</span>
+<span class="nc bnc" id="L530" title="All 2 branches missed.">                            if (!obj.isNull(&quot;picture&quot;)) {</span>
+<span class="nc" id="L531">                                String base64 = obj.optString(&quot;picture&quot;);</span>
+<span class="nc bnc" id="L532" title="All 6 branches missed.">                                if (base64 != null &amp;&amp; !base64.isEmpty() &amp;&amp; !base64.equals(&quot;null&quot;)) {</span>
+<span class="nc" id="L533">                                    pictureBytes = Base64.decode(base64, Base64.DEFAULT);</span>
+                                }
+<span class="nc bnc" id="L535" title="All 2 branches missed.">                            } else if (!obj.isNull(&quot;profilePicture&quot;)) {</span>
+<span class="nc" id="L536">                                JSONArray picArr = obj.optJSONArray(&quot;profilePicture&quot;);</span>
+<span class="nc bnc" id="L537" title="All 4 branches missed.">                                if (picArr != null &amp;&amp; picArr.length() &gt; 0) {</span>
+<span class="nc" id="L538">                                    pictureBytes = new byte[picArr.length()];</span>
+<span class="nc bnc" id="L539" title="All 2 branches missed.">                                    for (int j = 0; j &lt; picArr.length(); j++) {</span>
+<span class="nc" id="L540">                                        pictureBytes[j] = (byte) (picArr.optInt(j) &amp; 0xFF);</span>
+                                    }
+                                }
+                            }
+
+<span class="nc" id="L545">                            userList.add(new User(username, id, pictureBytes, type));</span>
+                        }
+                    }
+
+<span class="nc" id="L549">                    userAdapter.notifyDataSetChanged();</span>
+<span class="nc" id="L550">                    rvUserList.setVisibility(View.VISIBLE);</span>
+<span class="nc" id="L551">                },</span>
+<span class="nc" id="L552">                error -&gt; Toast.makeText(this, &quot;Failed to load users&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+
+<span class="nc" id="L555">        requestQueue.add(req);</span>
+<span class="nc" id="L556">    }</span>
+
+    private void showEditUserTypeDialog(User user) {
+<span class="nc" id="L559">        EditText etUserType = new EditText(this);</span>
+<span class="nc" id="L560">        etUserType.setHint(&quot;admin, user, or artist&quot;);</span>
+
+<span class="nc" id="L562">        String url = BASE_URL + &quot;/users/&quot; + user.getId();</span>
+<span class="nc" id="L563">        JsonObjectRequest getRequest = new JsonObjectRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L565">                    String type = response.optString(&quot;type&quot;, &quot;user&quot;);</span>
+<span class="nc" id="L566">                    etUserType.setText(type);</span>
+<span class="nc" id="L567">                },</span>
+<span class="nc" id="L568">                error -&gt; Toast.makeText(this, &quot;Failed to fetch user details&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="nc" id="L570">        requestQueue.add(getRequest);</span>
+
+<span class="nc" id="L572">        new androidx.appcompat.app.AlertDialog.Builder(this)</span>
+<span class="nc" id="L573">                .setTitle(&quot;Edit User Type: &quot; + user.getUsername())</span>
+<span class="nc" id="L574">                .setView(etUserType)</span>
+<span class="nc" id="L575">                .setPositiveButton(&quot;Save&quot;, (dialog, which) -&gt; {</span>
+<span class="nc" id="L576">                    String newType = etUserType.getText().toString().trim();</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">                    if (newType.isEmpty()) {</span>
+<span class="nc" id="L578">                        Toast.makeText(this, &quot;Type cannot be empty&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L579">                        return;</span>
+                    }
+<span class="nc" id="L581">                    updateUserType(user.getId(), newType);</span>
+<span class="nc" id="L582">                })</span>
+<span class="nc" id="L583">                .setNegativeButton(&quot;Cancel&quot;, null)</span>
+<span class="nc" id="L584">                .show();</span>
+<span class="nc" id="L585">    }</span>
+
+    private void updateUserType(int userId, String newType) {
+<span class="nc" id="L588">        String url = BASE_URL + &quot;/users/&quot; + userId;</span>
+
+<span class="nc" id="L590">        JSONObject body = new JSONObject();</span>
+        try {
+<span class="nc" id="L592">            body.put(&quot;type&quot;, newType);</span>
+<span class="nc" id="L593">        } catch (JSONException e) {</span>
+<span class="nc" id="L594">            e.printStackTrace();</span>
+<span class="nc" id="L595">            Toast.makeText(this, &quot;Failed to create request&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L596">            return;</span>
+<span class="nc" id="L597">        }</span>
+
+<span class="nc" id="L599">        JsonObjectRequest putRequest = new JsonObjectRequest(Request.Method.PUT, url, body,</span>
+<span class="nc" id="L600">                response -&gt; Toast.makeText(this, &quot;User type updated&quot;, Toast.LENGTH_SHORT).show(),</span>
+<span class="nc" id="L601">                error -&gt; Toast.makeText(this, &quot;Failed to update user type&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+
+<span class="nc" id="L604">        requestQueue.add(putRequest);</span>
+<span class="nc" id="L605">    }</span>
+
+    private void banUser(int userId) {
+<span class="nc" id="L608">        String url = BASE_URL + &quot;/users/ban/&quot; + userId;</span>
+
+<span class="nc" id="L610">        JSONObject emptyBody = new JSONObject();</span>
+
+<span class="nc" id="L612">        JsonObjectRequest request = new JsonObjectRequest(</span>
+                Request.Method.PUT,
+                url,
+                emptyBody,
+                response -&gt; {
+<span class="nc" id="L617">                    Toast.makeText(this, &quot;User banned&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L618">                    loadUsers();</span>
+<span class="nc" id="L619">                },</span>
+                error -&gt; {
+<span class="nc" id="L621">                    Toast.makeText(this, &quot;Failed to ban user&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L622">                }</span>
+        );
+
+<span class="nc" id="L625">        requestQueue.add(request);</span>
+<span class="nc" id="L626">    }</span>
+
+    private void unbanUser(int userId) {
+<span class="nc" id="L629">        String url = BASE_URL + &quot;/users/unban/&quot; + userId;</span>
+
+<span class="nc" id="L631">        JsonObjectRequest request = new JsonObjectRequest(</span>
+                Request.Method.PUT,
+                url,
+                new JSONObject(),
+                response -&gt; {
+<span class="nc" id="L636">                    Toast.makeText(this, &quot;User unbanned&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L637">                    loadUsers();</span>
+<span class="nc" id="L638">                },</span>
+                error -&gt; {
+<span class="nc" id="L640">                    Toast.makeText(this, &quot;Failed to unban user&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L641">                }</span>
+        );
+
+<span class="nc" id="L644">        requestQueue.add(request);</span>
+<span class="nc" id="L645">    }</span>
+
+    private void openAddAlbumForm() {
+<span class="nc" id="L648">        editingAlbumId = null;</span>
+<span class="nc" id="L649">        clearAlbumForm();</span>
+<span class="nc" id="L650">        albumForm.setVisibility(View.VISIBLE);</span>
+<span class="nc" id="L651">        currentForm = ALBUM_FORM;</span>
+
+<span class="nc" id="L653">    }</span>
+
+    private void openEditAlbum(Album album) {
+<span class="nc" id="L656">        editingAlbumId = album.getId();</span>
+<span class="nc" id="L657">        albumForm.setVisibility(View.VISIBLE);</span>
+<span class="nc" id="L658">        currentForm = ALBUM_FORM;</span>
+
+<span class="nc" id="L660">        etAlbumName.setText(album.getName());</span>
+<span class="nc" id="L661">        etAlbumArtistIds.setText(setToCSV(album.getArtistIds()));</span>
+<span class="nc" id="L662">        etAlbumTrackIds.setText(setToCSV(album.getTrackIds()));</span>
+<span class="nc bnc" id="L663" title="All 2 branches missed.">        etAlbumDuration.setText(album.getDuration() != null ? album.getDuration().toString() : &quot;&quot;);</span>
+<span class="nc bnc" id="L664" title="All 2 branches missed.">        etAlbumReleaseDate.setText(album.getReleaseDate() != null ? album.getReleaseDate().toString() : &quot;&quot;);</span>
+<span class="nc" id="L665">    }</span>
+
+    private void closeAlbumForm() {
+<span class="nc" id="L668">        albumForm.setVisibility(View.GONE);</span>
+<span class="nc" id="L669">        clearAlbumForm();</span>
+<span class="nc" id="L670">        editingAlbumId = null;</span>
+<span class="nc" id="L671">        currentForm = 0;</span>
+<span class="nc" id="L672">    }</span>
+
+    private void openAddTrackForm() {
+<span class="nc" id="L675">        editingTrackId = null;</span>
+<span class="nc" id="L676">        clearTrackForm();</span>
+<span class="nc" id="L677">        trackForm.setVisibility(View.VISIBLE);</span>
+<span class="nc" id="L678">    }</span>
+
+    private void openEditTrack(Track track) {
+<span class="nc" id="L681">        editingTrackId = track.getId();</span>
+<span class="nc" id="L682">        trackForm.setVisibility(View.VISIBLE);</span>
+
+<span class="nc" id="L684">        etTrackName.setText(track.getName());</span>
+<span class="nc" id="L685">        etTrackMood.setText(track.getMood());</span>
+<span class="nc" id="L686">        etTrackGenre.setText(track.getGenre());</span>
+<span class="nc bnc" id="L687" title="All 2 branches missed.">        etTrackDuration.setText(track.getDuration() != null ? track.getDuration().toString() : &quot;&quot;);</span>
+<span class="nc bnc" id="L688" title="All 2 branches missed.">        etTrackTrackNumber.setText(track.getTrackNumber() != null ? track.getTrackNumber().toString() : &quot;&quot;);</span>
+<span class="nc bnc" id="L689" title="All 2 branches missed.">        etTrackBPM.setText(track.getBpm() != null ? track.getBpm().toString() : &quot;&quot;);</span>
+<span class="nc" id="L690">        etTrackArtistIds.setText(setToCSV(track.getArtistIds()));</span>
+<span class="nc" id="L691">        etTrackAlbumIds.setText(setToCSV(track.getAlbumIds()));</span>
+<span class="nc" id="L692">    }</span>
+
+    private void closeTrackForm() {
+<span class="nc" id="L695">        trackForm.setVisibility(View.GONE);</span>
+<span class="nc" id="L696">        clearTrackForm();</span>
+<span class="nc" id="L697">        editingTrackId = null;</span>
+<span class="nc" id="L698">    }</span>
+
+    private void openAddArtistForm() {
+<span class="nc" id="L701">        editingArtistId = null;</span>
+<span class="nc" id="L702">        clearArtistForm();</span>
+<span class="nc" id="L703">        artistForm.setVisibility(View.VISIBLE);</span>
+<span class="nc" id="L704">        currentForm = ARTIST_FORM;</span>
+<span class="nc" id="L705">    }</span>
+
+    private void openEditArtist(Artist artist) {
+<span class="nc" id="L708">        editingArtistId = artist.getId();</span>
+<span class="nc" id="L709">        artistForm.setVisibility(View.VISIBLE);</span>
+<span class="nc" id="L710">        currentForm = ARTIST_FORM;</span>
+
+<span class="nc" id="L712">        etArtistName.setText(artist.getName());</span>
+<span class="nc" id="L713">        etArtistBio.setText(artist.getBio());</span>
+<span class="nc" id="L714">        etArtistAlbumIds.setText(setToCSV(artist.getAlbumIds()));</span>
+<span class="nc" id="L715">        etArtistTrackIds.setText(setToCSV(artist.getTrackIds()));</span>
+<span class="nc" id="L716">        etArtistYears.setText(listToCSV(artist.getYears()));</span>
+<span class="nc" id="L717">    }</span>
+
+    private void closeArtistForm() {
+<span class="nc" id="L720">        artistForm.setVisibility(View.GONE);</span>
+<span class="nc" id="L721">        clearArtistForm();</span>
+<span class="nc" id="L722">        editingArtistId = null;</span>
+<span class="nc" id="L723">        currentForm = 0;</span>
+<span class="nc" id="L724">    }</span>
+
+    private void saveAlbum() {
+<span class="nc" id="L727">        JSONObject body = new JSONObject();</span>
+        try {
+            // Basic album info
+<span class="nc" id="L730">            body.put(&quot;name&quot;, etAlbumName.getText().toString().trim());</span>
+<span class="nc bnc" id="L731" title="All 2 branches missed.">            body.put(&quot;spotifyId&quot;, selectedSpotifyId != null ? selectedSpotifyId : &quot;&quot;);</span>
+<span class="nc" id="L732">            body.put(&quot;albumArtUrl&quot;, JSONObject.NULL);  // permanent null</span>
+
+            // Duration &amp; release date
+<span class="nc" id="L735">            body.put(&quot;duration&quot;, parseIntSafe(etAlbumDuration.getText().toString().trim()));</span>
+<span class="nc" id="L736">            body.put(&quot;releaseDate&quot;, parseIntSafe(etAlbumReleaseDate.getText().toString().trim()));</span>
+
+            // Artist &amp; track IDs
+<span class="nc" id="L739">            String artistCsv = etAlbumArtistIds.getText().toString().trim();</span>
+<span class="nc" id="L740">            Set&lt;Integer&gt; artistSet = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L741" title="All 2 branches missed.">            if (!artistCsv.isEmpty()) {</span>
+<span class="nc" id="L742">                String[] parts = artistCsv.split(&quot;,&quot;);</span>
+<span class="nc bnc" id="L743" title="All 2 branches missed.">                for (String s : parts) {</span>
+                    try {
+<span class="nc" id="L745">                        int id = Integer.parseInt(s.trim());</span>
+<span class="nc bnc" id="L746" title="All 2 branches missed.">                        if (backendArtistIds.contains(id)) {  // only include valid backend artist IDs</span>
+<span class="nc" id="L747">                            artistSet.add(id);</span>
+                        }
+<span class="nc" id="L749">                    } catch (NumberFormatException ignored) {}</span>
+                }
+            }
+
+<span class="nc" id="L753">            JSONArray artistArray = new JSONArray();</span>
+<span class="nc bnc" id="L754" title="All 2 branches missed.">            for (int id : artistSet) artistArray.put(id);</span>
+
+<span class="nc" id="L756">            body.put(&quot;artistIds&quot;, artistArray);</span>
+<span class="nc" id="L757">            body.put(&quot;trackIds&quot;, csvToJSONArray(etAlbumTrackIds.getText().toString().trim()));</span>
+
+            // Tags (empty for now)
+<span class="nc" id="L760">            body.put(&quot;tags&quot;, new JSONArray());</span>
+
+            // Album art
+<span class="nc bnc" id="L763" title="All 2 branches missed.">            if (albumImageBase64 != null) {</span>
+<span class="nc" id="L764">                byte[] bytes = Base64.decode(albumImageBase64, Base64.DEFAULT);</span>
+<span class="nc" id="L765">                JSONArray byteArrayJson = new JSONArray();</span>
+<span class="nc bnc" id="L766" title="All 2 branches missed.">                for (byte b : bytes) byteArrayJson.put(b &amp; 0xFF);</span>
+<span class="nc" id="L767">                body.put(&quot;albumArt&quot;, byteArrayJson);</span>
+<span class="nc" id="L768">            } else {</span>
+<span class="nc" id="L769">                body.put(&quot;albumArt&quot;, new JSONArray()); // send empty array if no art</span>
+            }
+
+            // Editing album
+<span class="nc bnc" id="L773" title="All 2 branches missed.">            if (editingAlbumId != null) body.put(&quot;id&quot;, editingAlbumId);</span>
+
+<span class="nc" id="L775">        } catch (JSONException ignored) {}</span>
+
+<span class="nc bnc" id="L777" title="All 2 branches missed.">        String url = editingAlbumId == null ? BASE_URL + &quot;/music/albums/new&quot; : BASE_URL + &quot;/music/albums/edit&quot;;</span>
+<span class="nc bnc" id="L778" title="All 2 branches missed.">        int method = editingAlbumId == null ? Request.Method.POST : Request.Method.PUT;</span>
+
+<span class="nc" id="L780">        JsonObjectRequest req = new JsonObjectRequest(method, url, body,</span>
+                response -&gt; {
+<span class="nc" id="L782">                    Toast.makeText(this, &quot;Album saved&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L783">                    closeAlbumForm();</span>
+<span class="nc" id="L784">                    loadAlbums();</span>
+<span class="nc" id="L785">                },</span>
+<span class="nc" id="L786">                error -&gt; Toast.makeText(this, &quot;Failed to save album&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+
+<span class="nc" id="L789">        requestQueue.add(req);</span>
+<span class="nc" id="L790">    }</span>
+
+    private void deleteAlbum(Album album) {
+<span class="nc" id="L793">        String url = BASE_URL + &quot;/music/albums/delete/&quot; + album.getId();</span>
+<span class="nc" id="L794">        StringRequest req = new StringRequest(Request.Method.DELETE, url,</span>
+<span class="nc" id="L795">                response -&gt; { Toast.makeText(this, &quot;Album deleted&quot;, Toast.LENGTH_SHORT).show(); loadAlbums(); },</span>
+<span class="nc" id="L796">                error -&gt; Toast.makeText(this, &quot;Failed to delete album&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="nc" id="L798">        requestQueue.add(req);</span>
+<span class="nc" id="L799">    }</span>
+
+    private void saveTrack() {
+<span class="nc" id="L802">        String artistCsv = etTrackArtistIds.getText().toString().trim();</span>
+<span class="nc bnc" id="L803" title="All 2 branches missed.">        if (artistCsv.isEmpty()) {</span>
+<span class="nc" id="L804">            Toast.makeText(this, &quot;Track must have at least one artist&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L805">            return;</span>
+        }
+
+<span class="nc bnc" id="L808" title="All 2 branches missed.">        if (!validateArtistIds(artistCsv)) return;</span>
+
+<span class="nc" id="L810">        JSONObject body = new JSONObject();</span>
+        try {
+<span class="nc" id="L812">            body.put(&quot;name&quot;, etTrackName.getText().toString().trim());</span>
+<span class="nc" id="L813">            body.put(&quot;mood&quot;, etTrackMood.getText().toString().trim());</span>
+<span class="nc" id="L814">            body.put(&quot;genre&quot;, etTrackGenre.getText().toString().trim());</span>
+<span class="nc" id="L815">            body.put(&quot;duration&quot;, parseIntSafe(etTrackDuration.getText().toString().trim()));</span>
+<span class="nc" id="L816">            body.put(&quot;trackNumber&quot;, parseIntSafe(etTrackTrackNumber.getText().toString().trim()));</span>
+<span class="nc" id="L817">            body.put(&quot;bpm&quot;, parseIntSafe(etTrackBPM.getText().toString().trim()));</span>
+<span class="nc" id="L818">            body.put(&quot;artistIds&quot;, csvToJSONArray(artistCsv));</span>
+<span class="nc" id="L819">            body.put(&quot;albumIds&quot;, csvToJSONArray(etTrackAlbumIds.getText().toString().trim()));</span>
+<span class="nc bnc" id="L820" title="All 2 branches missed.">            body.put(&quot;spotifyId&quot;, selectedSpotifyId != null ? selectedSpotifyId : &quot;&quot;);</span>
+<span class="nc" id="L821">            body.put(&quot;tags&quot;, new JSONArray());</span>
+
+<span class="nc bnc" id="L823" title="All 2 branches missed.">            if (editingTrackId != null) body.put(&quot;id&quot;, editingTrackId);</span>
+<span class="nc" id="L824">        } catch (JSONException ignored) {}</span>
+
+<span class="nc bnc" id="L826" title="All 2 branches missed.">        String url = editingTrackId == null ? BASE_URL + &quot;/music/tracks/new&quot; : BASE_URL + &quot;/music/tracks/edit&quot;;</span>
+<span class="nc bnc" id="L827" title="All 2 branches missed.">        int method = editingTrackId == null ? Request.Method.POST : Request.Method.PUT;</span>
+
+<span class="nc" id="L829">        JsonObjectRequest req = new JsonObjectRequest(method, url, body,</span>
+<span class="nc" id="L830">                response -&gt; { Toast.makeText(this, &quot;Track saved&quot;, Toast.LENGTH_SHORT).show(); closeTrackForm(); loadTracks(); },</span>
+<span class="nc" id="L831">                error -&gt; Toast.makeText(this, &quot;Failed to save track&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="nc" id="L833">        requestQueue.add(req);</span>
+<span class="nc" id="L834">    }</span>
+
+    private void deleteTrack(Track track) {
+<span class="nc" id="L837">        String url = BASE_URL + &quot;/music/tracks/delete/&quot; + track.getId();</span>
+<span class="nc" id="L838">        StringRequest req = new StringRequest(Request.Method.DELETE, url,</span>
+<span class="nc" id="L839">                response -&gt; { Toast.makeText(this, &quot;Track deleted&quot;, Toast.LENGTH_SHORT).show(); loadTracks(); },</span>
+<span class="nc" id="L840">                error -&gt; Toast.makeText(this, &quot;Failed to delete track&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="nc" id="L842">        requestQueue.add(req);</span>
+<span class="nc" id="L843">    }</span>
+
+    private void saveArtist() {
+<span class="nc" id="L846">        JSONObject body = new JSONObject();</span>
+        try {
+<span class="nc" id="L848">            body.put(&quot;name&quot;, etArtistName.getText().toString().trim());</span>
+<span class="nc" id="L849">            body.put(&quot;bio&quot;, etArtistBio.getText().toString().trim());</span>
+<span class="nc" id="L850">            body.put(&quot;spotifyId&quot;, &quot;&quot;);</span>
+<span class="nc" id="L851">            body.put(&quot;pictureUrl&quot;, JSONObject.NULL); // permanent null</span>
+
+<span class="nc" id="L853">            body.put(&quot;albumIds&quot;, csvToJSONArray(etArtistAlbumIds.getText().toString().trim()));</span>
+<span class="nc" id="L854">            body.put(&quot;trackIds&quot;, csvToJSONArray(etArtistTrackIds.getText().toString().trim()));</span>
+<span class="nc" id="L855">            body.put(&quot;years&quot;, csvToJSONArray(etArtistYears.getText().toString().trim()));</span>
+<span class="nc" id="L856">            body.put(&quot;tags&quot;, new JSONArray());</span>
+
+            // Picture as byte array (like albums)
+<span class="nc bnc" id="L859" title="All 2 branches missed.">            if (artistImageBase64 != null) {</span>
+<span class="nc" id="L860">                byte[] bytes = Base64.decode(artistImageBase64, Base64.DEFAULT);</span>
+<span class="nc" id="L861">                JSONArray byteArrayJson = new JSONArray();</span>
+<span class="nc bnc" id="L862" title="All 2 branches missed.">                for (byte b : bytes) {</span>
+<span class="nc" id="L863">                    byteArrayJson.put(b &amp; 0xFF);</span>
+                }
+<span class="nc" id="L865">                body.put(&quot;picture&quot;, byteArrayJson);</span>
+<span class="nc" id="L866">            } else {</span>
+<span class="nc" id="L867">                body.put(&quot;picture&quot;, new JSONArray()); // empty array if no picture</span>
+            }
+
+<span class="nc bnc" id="L870" title="All 2 branches missed.">            if (editingArtistId != null) body.put(&quot;id&quot;, editingArtistId);</span>
+
+<span class="nc" id="L872">        } catch (JSONException ignored) {}</span>
+
+<span class="nc bnc" id="L874" title="All 2 branches missed.">        String url = editingArtistId == null ? BASE_URL + &quot;/music/artists/new&quot; : BASE_URL + &quot;/music/artists/edit&quot;;</span>
+<span class="nc bnc" id="L875" title="All 2 branches missed.">        int method = editingArtistId == null ? Request.Method.POST : Request.Method.PUT;</span>
+
+<span class="nc" id="L877">        JsonObjectRequest req = new JsonObjectRequest(method, url, body,</span>
+                response -&gt; {
+<span class="nc" id="L879">                    Toast.makeText(this, &quot;Artist saved&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L880">                    closeArtistForm();</span>
+<span class="nc" id="L881">                    loadArtists();</span>
+<span class="nc" id="L882">                },</span>
+<span class="nc" id="L883">                error -&gt; Toast.makeText(this, &quot;Failed to save artist&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="nc" id="L885">        requestQueue.add(req);</span>
+<span class="nc" id="L886">    }</span>
+
+    private void deleteArtist(Artist artist) {
+<span class="nc" id="L889">        String url = BASE_URL + &quot;/music/artists/delete/&quot; + artist.getId();</span>
+<span class="nc" id="L890">        StringRequest req = new StringRequest(Request.Method.DELETE, url,</span>
+<span class="nc" id="L891">                response -&gt; { Toast.makeText(this, &quot;Artist deleted&quot;, Toast.LENGTH_SHORT).show(); loadArtists(); },</span>
+<span class="nc" id="L892">                error -&gt; Toast.makeText(this, &quot;Failed to delete artist&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="nc" id="L894">        requestQueue.add(req);</span>
+<span class="nc" id="L895">    }</span>
+
+    private boolean validateArtistIds(String csv) {
+<span class="nc bnc" id="L898" title="All 4 branches missed.">        if (csv == null || csv.trim().isEmpty()) return false;</span>
+
+<span class="nc" id="L900">        String[] ids = csv.split(&quot;,&quot;);</span>
+<span class="nc bnc" id="L901" title="All 2 branches missed.">        for (String idStr : ids) {</span>
+            try {
+<span class="nc" id="L903">                int id = Integer.parseInt(idStr.trim());</span>
+<span class="nc bnc" id="L904" title="All 2 branches missed.">                if (!backendArtistIds.contains(id)) {</span>
+<span class="nc" id="L905">                    Toast.makeText(this, &quot;Artist ID &quot; + id + &quot; does not exist&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L906">                    return false;</span>
+                }
+<span class="nc" id="L908">            } catch (NumberFormatException e) {</span>
+<span class="nc" id="L909">                Toast.makeText(this, &quot;Invalid artist ID: &quot; + idStr, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L910">                return false;</span>
+<span class="nc" id="L911">            }</span>
+        }
+<span class="nc" id="L913">        return true;</span>
+    }
+
+    private String listToCSV(List&lt;Integer&gt; list) {
+<span class="nc bnc" id="L917" title="All 4 branches missed.">        if (list == null || list.isEmpty()) return &quot;&quot;;</span>
+<span class="nc" id="L918">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L919" title="All 2 branches missed.">        for (int i : list) sb.append(i).append(&quot;,&quot;);</span>
+<span class="nc" id="L920">        return sb.substring(0, sb.length() - 1);</span>
+    }
+
+    private JSONArray csvToJSONArray(String csv) throws JSONException {
+<span class="nc" id="L924">        JSONArray arr = new JSONArray();</span>
+<span class="nc bnc" id="L925" title="All 4 branches missed.">        if (csv == null || csv.trim().isEmpty()) return arr;</span>
+
+<span class="nc" id="L927">        String[] split = csv.split(&quot;,&quot;);</span>
+<span class="nc bnc" id="L928" title="All 2 branches missed.">        for (String s : split) {</span>
+<span class="nc" id="L929">            s = s.trim();</span>
+<span class="nc bnc" id="L930" title="All 2 branches missed.">            if (!s.isEmpty()) {</span>
+<span class="nc" id="L931">                try { arr.put(Integer.parseInt(s)); } catch (NumberFormatException ignored) {}</span>
+            }
+        }
+<span class="nc" id="L934">        return arr;</span>
+    }
+
+    private String setToCSV(Set&lt;Integer&gt; set) {
+<span class="nc bnc" id="L938" title="All 4 branches missed.">        if (set == null || set.isEmpty()) return &quot;&quot;;</span>
+<span class="nc" id="L939">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L940" title="All 2 branches missed.">        for (int i : set) sb.append(i).append(&quot;,&quot;);</span>
+<span class="nc" id="L941">        return sb.substring(0, sb.length() - 1);</span>
+    }
+
+    private Album jsonToAlbum(JSONObject obj) {
+<span class="nc" id="L945">        Album a = new Album();</span>
+<span class="nc" id="L946">        a.setId(obj.optInt(&quot;id&quot;));</span>
+<span class="nc" id="L947">        a.setName(obj.optString(&quot;name&quot;));</span>
+<span class="nc" id="L948">        a.setArtistIds(jsonArrayToSet(obj.optJSONArray(&quot;artistIds&quot;)));</span>
+<span class="nc" id="L949">        a.setTrackIds(jsonArrayToSet(obj.optJSONArray(&quot;trackIds&quot;)));</span>
+<span class="nc bnc" id="L950" title="All 2 branches missed.">        a.setDuration(obj.has(&quot;duration&quot;) ? obj.optInt(&quot;duration&quot;) : null);</span>
+<span class="nc bnc" id="L951" title="All 2 branches missed.">        a.setReleaseDate(obj.has(&quot;releaseDate&quot;) ? obj.optInt(&quot;releaseDate&quot;) : null);</span>
+<span class="nc" id="L952">        return a;</span>
+    }
+
+    private Track jsonToTrack(JSONObject obj) {
+<span class="nc" id="L956">        Track t = new Track();</span>
+<span class="nc" id="L957">        t.setId(obj.optInt(&quot;id&quot;));</span>
+<span class="nc" id="L958">        t.setName(obj.optString(&quot;name&quot;));</span>
+<span class="nc" id="L959">        t.setMood(obj.optString(&quot;mood&quot;));</span>
+<span class="nc" id="L960">        t.setGenre(obj.optString(&quot;genre&quot;));</span>
+<span class="nc bnc" id="L961" title="All 2 branches missed.">        t.setDuration(obj.has(&quot;duration&quot;) ? obj.optInt(&quot;duration&quot;) : null);</span>
+<span class="nc bnc" id="L962" title="All 2 branches missed.">        t.setTrackNumber(obj.has(&quot;trackNumber&quot;) ? obj.optInt(&quot;trackNumber&quot;) : null);</span>
+<span class="nc bnc" id="L963" title="All 2 branches missed.">        t.setBpm(obj.has(&quot;bpm&quot;) ? obj.optInt(&quot;bpm&quot;) : null);</span>
+<span class="nc" id="L964">        t.setArtistIds(jsonArrayToSet(obj.optJSONArray(&quot;artistIds&quot;)));</span>
+<span class="nc" id="L965">        t.setAlbumIds(jsonArrayToSet(obj.optJSONArray(&quot;albumIds&quot;)));</span>
+<span class="nc" id="L966">        return t;</span>
+    }
+
+    private Artist jsonToArtist(JSONObject obj) {
+<span class="nc" id="L970">        Artist a = new Artist();</span>
+<span class="nc" id="L971">        a.setId(obj.optInt(&quot;id&quot;));</span>
+<span class="nc" id="L972">        a.setName(obj.optString(&quot;name&quot;));</span>
+<span class="nc" id="L973">        a.setBio(obj.optString(&quot;bio&quot;));</span>
+<span class="nc" id="L974">        a.setYears(jsonArrayToList(obj.optJSONArray(&quot;years&quot;)));</span>
+<span class="nc" id="L975">        a.setAlbumIds(jsonArrayToSet(obj.optJSONArray(&quot;albumIds&quot;)));</span>
+<span class="nc" id="L976">        a.setTrackIds(jsonArrayToSet(obj.optJSONArray(&quot;trackIds&quot;)));</span>
+        // picture can be handled separately
+<span class="nc" id="L978">        return a;</span>
+    }
+
+    private List&lt;Integer&gt; jsonArrayToList(JSONArray arr) {
+<span class="nc" id="L982">        List&lt;Integer&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L983" title="All 2 branches missed.">        if (arr == null) return list;</span>
+<span class="nc bnc" id="L984" title="All 2 branches missed.">        for (int i = 0; i &lt; arr.length(); i++) list.add(arr.optInt(i));</span>
+<span class="nc" id="L985">        return list;</span>
+    }
+
+    private Set&lt;Integer&gt; jsonArrayToSet(JSONArray arr) {
+<span class="nc" id="L989">        Set&lt;Integer&gt; set = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L990" title="All 2 branches missed.">        if (arr == null) return set;</span>
+<span class="nc bnc" id="L991" title="All 2 branches missed.">        for (int i = 0; i &lt; arr.length(); i++) set.add(arr.optInt(i));</span>
+<span class="nc" id="L992">        return set;</span>
+    }
+
+    private void clearAlbumForm() {
+<span class="nc" id="L996">        etAlbumName.setText(&quot;&quot;);</span>
+<span class="nc" id="L997">        etAlbumArtistIds.setText(&quot;&quot;);</span>
+<span class="nc" id="L998">        etAlbumTrackIds.setText(&quot;&quot;);</span>
+<span class="nc" id="L999">        etAlbumDuration.setText(&quot;&quot;);</span>
+<span class="nc" id="L1000">        etAlbumReleaseDate.setText(&quot;&quot;);</span>
+<span class="nc" id="L1001">        albumImageBase64 = null;</span>
+<span class="nc" id="L1002">    }</span>
+
+    private void clearTrackForm() {
+<span class="nc" id="L1005">        etTrackName.setText(&quot;&quot;);</span>
+<span class="nc" id="L1006">        etTrackMood.setText(&quot;&quot;);</span>
+<span class="nc" id="L1007">        etTrackGenre.setText(&quot;&quot;);</span>
+<span class="nc" id="L1008">        etTrackDuration.setText(&quot;&quot;);</span>
+<span class="nc" id="L1009">        etTrackTrackNumber.setText(&quot;&quot;);</span>
+<span class="nc" id="L1010">        etTrackBPM.setText(&quot;&quot;);</span>
+<span class="nc" id="L1011">        etTrackArtistIds.setText(&quot;&quot;);</span>
+<span class="nc" id="L1012">        etTrackAlbumIds.setText(&quot;&quot;);</span>
+<span class="nc" id="L1013">        etTrackSearch.setText(&quot;&quot;);</span>
+<span class="nc" id="L1014">        selectedSpotifyId = null;</span>
+<span class="nc" id="L1015">    }</span>
+
+    private void clearArtistForm() {
+<span class="nc" id="L1018">        etArtistName.setText(&quot;&quot;);</span>
+<span class="nc" id="L1019">        etArtistBio.setText(&quot;&quot;);</span>
+<span class="nc" id="L1020">        etArtistAlbumIds.setText(&quot;&quot;);</span>
+<span class="nc" id="L1021">        etArtistTrackIds.setText(&quot;&quot;);</span>
+<span class="nc" id="L1022">        etArtistYears.setText(&quot;&quot;);</span>
+<span class="nc" id="L1023">        artistImageBase64 = null;</span>
+<span class="nc" id="L1024">    }</span>
+
+    private Integer parseIntSafe(String str) {
+<span class="nc" id="L1027">        try { return Integer.parseInt(str.trim()); } catch (Exception e) { return null; }</span>
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+<span class="nc" id="L1032">        super.onActivityResult(requestCode, resultCode, data);</span>
+
+<span class="nc bnc" id="L1034" title="All 8 branches missed.">        if (requestCode == PICK_IMAGE_REQUEST &amp;&amp; resultCode == Activity.RESULT_OK &amp;&amp; data != null &amp;&amp; data.getData() != null) {</span>
+            try {
+<span class="nc" id="L1036">                InputStream inputStream = getContentResolver().openInputStream(data.getData());</span>
+<span class="nc" id="L1037">                Bitmap bitmap = BitmapFactory.decodeStream(inputStream);</span>
+
+<span class="nc" id="L1039">                Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, 300, 300, true);</span>
+
+<span class="nc" id="L1041">                ByteArrayOutputStream baos = new ByteArrayOutputStream();</span>
+<span class="nc" id="L1042">                scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);</span>
+<span class="nc" id="L1043">                byte[] bytes = baos.toByteArray();</span>
+<span class="nc bnc" id="L1044" title="All 2 branches missed.">                if (currentForm == ALBUM_FORM) albumImageBase64 = Base64.encodeToString(bytes, Base64.DEFAULT);</span>
+<span class="nc bnc" id="L1045" title="All 2 branches missed.">                else if (currentForm == ARTIST_FORM) artistImageBase64 = Base64.encodeToString(bytes, Base64.DEFAULT);</span>
+
+<span class="nc" id="L1047">                Toast.makeText(this, &quot;Image selected&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L1048">            } catch (Exception e) {</span>
+<span class="nc" id="L1049">                Toast.makeText(this, &quot;Failed to load image&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L1050">            }</span>
+        }
+<span class="nc" id="L1052">    }</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

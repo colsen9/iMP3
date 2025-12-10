@@ -1,0 +1,373 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SpotifyImportService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.common</a>
+</div>
+
+<h1>Coverage Summary for Class: SpotifyImportService (com.imp3.Backend.common)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SpotifyImportService</td>
+<td class="coverageStat">
+  <span class="percent">
+    18.2%
+  </span>
+  <span class="absValue">
+    (2/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/34)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    2.2%
+  </span>
+  <span class="absValue">
+    (2/89)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">SpotifyImportService$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    18.2%
+  </span>
+  <span class="absValue">
+    (2/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/34)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    2.2%
+  </span>
+  <span class="absValue">
+    (2/89)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.common;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.fasterxml.jackson.databind.ObjectMapper;
+&nbsp;import com.imp3.Backend.music.*;
+&nbsp;import com.imp3.Backend.tag.Tag;
+&nbsp;import com.imp3.Backend.tag.TagRepository;
+&nbsp;import com.imp3.Backend.tag.TagService;
+&nbsp;import jakarta.transaction.Transactional;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import lombok.extern.slf4j.Slf4j;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;
+<b class="fc">&nbsp;@Slf4j</b>
+&nbsp;@Service
+<b class="fc">&nbsp;@RequiredArgsConstructor</b>
+&nbsp;public class SpotifyImportService {
+&nbsp;
+&nbsp;    private final ArtistRepository artistrepository;
+&nbsp;    private final AlbumRepository albumrepository;
+&nbsp;    private final TrackRepository trackrepository;
+&nbsp;    private final TagRepository tagrepository;
+&nbsp;    private final GeminiService geminiservice;
+&nbsp;    private final TagService tagservice;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Gets or creates an artist from Spotify data
+&nbsp;     * @param spotifyId of the artist
+&nbsp;     * @param name of artist
+&nbsp;     * @return artist
+&nbsp;     */
+&nbsp;    @Transactional
+&nbsp;    public Artist getOrCreateArtist(String spotifyId, String name) {
+&nbsp;
+&nbsp;        //check if already exists
+<b class="nc">&nbsp;        return artistrepository.findBySpotifyId(spotifyId)</b>
+<b class="nc">&nbsp;                .orElseGet(() -&gt; {</b>
+<b class="nc">&nbsp;                    Artist artist = new Artist();</b>
+<b class="nc">&nbsp;                    artist.setSpotifyId(spotifyId);</b>
+<b class="nc">&nbsp;                    artist.setName(name);</b>
+<b class="nc">&nbsp;                    return artistrepository.save(artist);</b>
+&nbsp;                });
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  Gets or creates an album from Spotify data
+&nbsp;     * @param spotifyAlbum to create or get
+&nbsp;     * @return album
+&nbsp;     */
+&nbsp;    @Transactional
+&nbsp;    public Album getOrCreateAlbum(JsonNode spotifyAlbum ){
+<b class="nc">&nbsp;        String spotifyId = spotifyAlbum.get(&quot;id&quot;).asText();</b>
+&nbsp;
+<b class="nc">&nbsp;        return albumrepository.findBySpotifyId(spotifyId)</b>
+<b class="nc">&nbsp;                .orElseGet(() -&gt; {</b>
+<b class="nc">&nbsp;                    Album album = new Album();</b>
+<b class="nc">&nbsp;                    album.setSpotifyId(spotifyId);</b>
+<b class="nc">&nbsp;                    album.setName(spotifyAlbum.get(&quot;name&quot;).asText());</b>
+<b class="nc">&nbsp;                    String releaseDateString = spotifyAlbum.path(&quot;release_date&quot;).asText(&quot;&quot;);</b>
+<b class="nc">&nbsp;                    if(!releaseDateString.isEmpty()){</b>
+<b class="nc">&nbsp;                        album.setReleaseDate(Integer.valueOf(releaseDateString.substring(0, 4)));</b>
+&nbsp;                    }
+&nbsp;
+&nbsp;                    // Get album art URL (Spotify gives URLs, not bytes)
+<b class="nc">&nbsp;                    JsonNode images = spotifyAlbum.get(&quot;images&quot;);</b>
+<b class="nc">&nbsp;                    if (images != null &amp;&amp; images.isArray() &amp;&amp; !images.isEmpty()) {</b>
+<b class="nc">&nbsp;                        String url = images.get(0).get(&quot;url&quot;).asText();</b>
+&nbsp;
+<b class="nc">&nbsp;                        album.setAlbumArtUrl(url);</b>
+<b class="nc">&nbsp;                        album.setAlbumArt(fetchImageBytes(url));</b>
+&nbsp;                    }
+&nbsp;
+&nbsp;                    // Create/link artists
+<b class="nc">&nbsp;                    JsonNode artists = spotifyAlbum.get(&quot;artists&quot;);</b>
+<b class="nc">&nbsp;                    if (artists != null) {</b>
+<b class="nc">&nbsp;                        for (JsonNode a : artists) {</b>
+<b class="nc">&nbsp;                            Artist artist = getOrCreateArtist(</b>
+<b class="nc">&nbsp;                                    a.get(&quot;id&quot;).asText(),</b>
+<b class="nc">&nbsp;                                    a.get(&quot;name&quot;).asText()</b>
+&nbsp;                            );
+<b class="nc">&nbsp;                            album.addArtist(artist);</b>
+&nbsp;                        }
+&nbsp;                    }
+&nbsp;
+<b class="nc">&nbsp;                    Album saved =  albumrepository.save(album);</b>
+<b class="nc">&nbsp;                    autoTagAlbum(saved, spotifyAlbum);</b>
+<b class="nc">&nbsp;                    return albumrepository.save(saved);</b>
+&nbsp;                });
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Gets or creates a new track from Spotify data
+&nbsp;     * @param spotifyTrack to add to music catalogue or to get
+&nbsp;     * @return track
+&nbsp;     */
+&nbsp;    @Transactional
+&nbsp;    public Track getOrCreateTrack(JsonNode spotifyTrack ){
+<b class="nc">&nbsp;        String spotifyId = spotifyTrack.get(&quot;id&quot;).asText();</b>
+&nbsp;
+<b class="nc">&nbsp;        return (Track) trackrepository.findBySpotifyId(spotifyId)</b>
+<b class="nc">&nbsp;                .orElseGet(() -&gt; {</b>
+<b class="nc">&nbsp;                    Track track = new Track();</b>
+<b class="nc">&nbsp;                    track.setSpotifyId(spotifyId);</b>
+<b class="nc">&nbsp;                    track.setName(spotifyTrack.get(&quot;name&quot;).asText());</b>
+<b class="nc">&nbsp;                    track.setDuration(spotifyTrack.path(&quot;duration_ms&quot;).asInt(0));</b>
+&nbsp;
+&nbsp;
+&nbsp;                    //link to album (creates if needed)
+<b class="nc">&nbsp;                    JsonNode albumNode = spotifyTrack.get(&quot;album&quot;);</b>
+<b class="nc">&nbsp;                    if(albumNode != null){</b>
+<b class="nc">&nbsp;                        Album album = getOrCreateAlbum(albumNode);</b>
+<b class="nc">&nbsp;                        track.addAlbum(album);</b>
+&nbsp;                    }
+&nbsp;
+&nbsp;                    //create/link artists
+<b class="nc">&nbsp;                    JsonNode artists = spotifyTrack.get(&quot;artists&quot;);</b>
+<b class="nc">&nbsp;                    if(artists != null) {</b>
+<b class="nc">&nbsp;                        for(JsonNode a : artists){</b>
+<b class="nc">&nbsp;                            Artist artist = getOrCreateArtist(</b>
+<b class="nc">&nbsp;                                    a.get(&quot;id&quot;).asText(),</b>
+<b class="nc">&nbsp;                                    a.get(&quot;name&quot;).asText()</b>
+&nbsp;                            );
+<b class="nc">&nbsp;                            track.addArtist(artist);</b>
+&nbsp;                        }
+&nbsp;                    }
+<b class="nc">&nbsp;                    Track saved = trackrepository.save(track);</b>
+<b class="nc">&nbsp;                    autoTagTrack(saved, spotifyTrack);</b>
+<b class="nc">&nbsp;                    return trackrepository.save(saved);</b>
+&nbsp;                });
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Auto-generate tags for a track using Gemini
+&nbsp;     * @param track to add
+&nbsp;     * @param spotifyTrack data
+&nbsp;     */
+&nbsp;    private void autoTagTrack(Track track, JsonNode spotifyTrack){
+&nbsp;        try {
+<b class="nc">&nbsp;            String trackName = spotifyTrack.get(&quot;name&quot;).asText();</b>
+&nbsp;
+&nbsp;            //get artist names
+<b class="nc">&nbsp;            List&lt;String&gt; artistNames = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;            JsonNode artists = spotifyTrack.get(&quot;artists&quot;);</b>
+<b class="nc">&nbsp;            if(artists != null) {</b>
+<b class="nc">&nbsp;                for(JsonNode a : artists){</b>
+<b class="nc">&nbsp;                    artistNames.add(a.get(&quot;name&quot;).asText());</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            String prompt = &quot;&quot;&quot;</b>
+&nbsp;            For the song &quot;%s&quot; by %s, generate 3-5 short tags describing the vibe/mood.
+&nbsp;            Tags should be 1-3 words, lowercase.
+&nbsp;            Examples: &quot;chill&quot;, &quot;upbeat&quot;, &quot;late night&quot;, &quot;workout&quot;, &quot;sad&quot;, &quot;romantic&quot;
+&nbsp;            Return ONLY a JSON array of strings, nothing else.
+<b class="nc">&nbsp;            &quot;&quot;&quot;.formatted(trackName, String.join(&quot;, &quot;, artistNames));</b>
+&nbsp;
+<b class="nc">&nbsp;            String response = geminiservice.generate(prompt);</b>
+<b class="nc">&nbsp;            List&lt;String&gt; tagNames = tagservice.parseTagsFromResponse(response);</b>
+&nbsp;
+<b class="nc">&nbsp;            for (String tagName : tagNames) {</b>
+<b class="nc">&nbsp;                Tag tag = tagrepository.findByName(tagName)</b>
+<b class="nc">&nbsp;                        .orElseGet(() -&gt; tagrepository.save(new Tag(tagName, Tag.TagCategory.MOOD)));</b>
+<b class="nc">&nbsp;                track.addTag(tag);</b>
+&nbsp;            }
+&nbsp;
+&nbsp;
+&nbsp;        } catch (Exception e){
+&nbsp;            //don&#39;t fail the import if tagging fails
+<b class="nc">&nbsp;            log.warn(&quot;Auto-tagging failed for track : {}&quot;, e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  Auto-generate tags for an album using Gemini
+&nbsp;     * @param album to add
+&nbsp;     * @param spotifyAlbum data
+&nbsp;     */
+&nbsp;    private void autoTagAlbum(Album album, JsonNode spotifyAlbum){
+&nbsp;        try {
+<b class="nc">&nbsp;            String albumName = spotifyAlbum.get(&quot;name&quot;).asText();</b>
+&nbsp;
+<b class="nc">&nbsp;            List&lt;String&gt; artistNames = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;            JsonNode artists = spotifyAlbum.get(&quot;artists&quot;);</b>
+<b class="nc">&nbsp;            if (artists != null) {</b>
+<b class="nc">&nbsp;                for (JsonNode a : artists) {</b>
+<b class="nc">&nbsp;                    artistNames.add(a.get(&quot;name&quot;).asText());</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            String prompt = &quot;&quot;&quot;</b>
+&nbsp;            For the album &quot;%s&quot; by %s, generate 3-5 short tags describing the vibe/mood.
+&nbsp;            Tags should be 1-3 words, lowercase.
+&nbsp;            Examples: &quot;chill&quot;, &quot;upbeat&quot;, &quot;late night&quot;, &quot;workout&quot;, &quot;sad&quot;, &quot;romantic&quot;
+&nbsp;            Return ONLY a JSON array of strings, nothing else.
+<b class="nc">&nbsp;            &quot;&quot;&quot;.formatted(albumName, String.join(&quot;, &quot;, artistNames));</b>
+&nbsp;
+<b class="nc">&nbsp;            String response = geminiservice.generate(prompt);</b>
+<b class="nc">&nbsp;            List&lt;String&gt; tagNames = tagservice.parseTagsFromResponse(response);</b>
+&nbsp;
+<b class="nc">&nbsp;            for (String tagName : tagNames) {</b>
+<b class="nc">&nbsp;                Tag tag = tagrepository.findByName(tagName)</b>
+<b class="nc">&nbsp;                        .orElseGet(() -&gt; tagrepository.save(new Tag(tagName, Tag.TagCategory.MOOD)));</b>
+<b class="nc">&nbsp;                album.addTag(tag);</b>
+&nbsp;            }
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            log.warn(&quot;Auto-tagging failed for album: {}&quot;, e.getMessage());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  fetch image bytes from Spotify url
+&nbsp;     * @param url to fetch bytes from
+&nbsp;     * @return bytes if fetched
+&nbsp;     */
+&nbsp;    private byte[] fetchImageBytes(String url){
+<b class="nc">&nbsp;        if(url == null || url.isBlank()){</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            return new org.springframework.web.client.RestTemplate()</b>
+<b class="nc">&nbsp;                    .getForObject(url, byte[].class);</b>
+&nbsp;        } catch (Exception e){
+<b class="nc">&nbsp;            log.warn(&quot;Failed to fetch image bytes from URL {}: {}&quot;, url, e.getMessage());</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-07 14:28</div>
+</div>
+</body>
+</html>

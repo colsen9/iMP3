@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/main_msg_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="100dp"
+        android:layout_marginBottom="50dp"
+        android:text="Home Page"
+        android:textColor="#fc0303"
+        android:textSize="30dp"></TextView>
+
+    <TextView
+        android:id="@+id/main_username_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="100dp"
+        android:text="{{username}}"
+        android:textColor="#FFFFFF"
+        android:textSize="30dp"></TextView>
+
+
+    <Button
+        android:id="@+id/main_login_btn"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Login"
+        android:textColor="#ffffff"
+        android:textSize="20sp"></Button>
+
+    <Button
+        android:id="@+id/main_signup_btn"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Signup"
+        android:textColor="#ffffff"
+        android:textSize="20sp"></Button>
+
+    <SeekBar
+        android:id="@+id/redBar"
+        android:layout_width="250dp"
+        android:layout_height="wrap_content"
+        android:max="255"
+        android:progress="255"
+        android:progressTint="#FF0000"
+        android:translationY="230dp" />
+
+    <SeekBar
+        android:id="@+id/blueBar"
+        android:layout_width="250dp"
+        android:layout_height="wrap_content"
+        android:max="255"
+        android:progress="255"
+        android:progressTint="#0000FF"
+        android:translationY="235dp" />
+
+    <SeekBar
+        android:id="@+id/greenBar"
+        android:layout_width="250dp"
+        android:layout_height="wrap_content"
+        android:max="255"
+        android:progress="255"
+        android:progressTint="#00FF00"
+        android:translationY="240dp" />
+
+    <Button
+        android:id="@+id/play_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Reset"
+        android:translationX="250dp"
+        android:translationY="180dp" />
+
+
+</androidx.appcompat.widget.LinearLayoutCompat>

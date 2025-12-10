@@ -1,0 +1,305 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > RecService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.recommendation</a>
+</div>
+
+<h1>Coverage Summary for Class: RecService (com.imp3.Backend.recommendation)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">RecService</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    33.3%
+  </span>
+  <span class="absValue">
+    (2/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/72)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    2.6%
+  </span>
+  <span class="absValue">
+    (2/78)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.recommendation;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.imp3.Backend.common.GeminiService;
+&nbsp;import com.imp3.Backend.common.SpotifyService;
+&nbsp;import com.imp3.Backend.user.User;
+&nbsp;import lombok.AllArgsConstructor;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.HashSet;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Set;
+&nbsp;
+&nbsp;@Service
+<b class="fc">&nbsp;@AllArgsConstructor</b>
+&nbsp;public class RecService {
+&nbsp;    private final SpotifyService spotifyservice;
+&nbsp;    private final GeminiService geminiservice;
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger log = LoggerFactory.getLogger(RecService.class);</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Generate personalized discovery recommendations for a user
+&nbsp;     * @param user to discover recs for
+&nbsp;     * @return list of tracks
+&nbsp;     */
+&nbsp;    public List&lt;SuggestedTrackResponse&gt; discoverRecommendations(User user){
+&nbsp;        //get user&#39;s Spotify data
+<b class="nc">&nbsp;        JsonNode topTracks = spotifyservice.getUserTopTracks(user);</b>
+<b class="nc">&nbsp;        JsonNode topArtists = spotifyservice.getUserTopArtists(user);</b>
+&nbsp;
+<b class="nc">&nbsp;        if(topArtists == null || !topArtists.isArray() || topArtists.isEmpty()){</b>
+<b class="nc">&nbsp;            return List.of(); // no recs available</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //Prepare data for Gemini (simplified summaries)
+<b class="nc">&nbsp;        String trackSummary = buildTrackSummary(topTracks);</b>
+<b class="nc">&nbsp;        String artistSummary = buildArtistSummary(topArtists);</b>
+&nbsp;
+&nbsp;        //ask Gemini to generate search queries based on user taste
+<b class="nc">&nbsp;        log.info(&quot;Asking Gemini to analyze user taste and generate search queries...&quot;);</b>
+<b class="nc">&nbsp;        List&lt;String&gt; searchQueries = geminiservice.generateSearchQueries(</b>
+&nbsp;                trackSummary,
+&nbsp;                artistSummary
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Gemini generated {} search queries: {}&quot;, searchQueries.size(), searchQueries);</b>
+&nbsp;
+&nbsp;        //execute searches and collect candidate tracks
+<b class="nc">&nbsp;        Set&lt;String&gt; seenTrackIds = new HashSet&lt;&gt;();</b>
+<b class="nc">&nbsp;        List&lt;SuggestedTrackResponse&gt; candidates = new ArrayList&lt;&gt;();</b>
+&nbsp;
+<b class="nc">&nbsp;        for(String query : searchQueries){</b>
+<b class="nc">&nbsp;            if(candidates.size() &gt;= 50) break; //get enough candidates</b>
+&nbsp;
+&nbsp;            try{
+<b class="nc">&nbsp;                JsonNode results = spotifyservice.searchTracksWithClientCredentials(query);</b>
+&nbsp;
+<b class="nc">&nbsp;                if(results != null &amp;&amp; results.isArray()){</b>
+<b class="nc">&nbsp;                    for(JsonNode trackNode : results) {</b>
+<b class="nc">&nbsp;                        String trackId = trackNode.path(&quot;id&quot;).asText(null);</b>
+<b class="nc">&nbsp;                        String trackType = trackNode.path(&quot;type&quot;).asText(&quot;&quot;);</b>
+&nbsp;
+&nbsp;                        //skip of not track type
+<b class="nc">&nbsp;                        if (!trackType.equals(&quot;track&quot;)) {</b>
+&nbsp;                            continue;
+&nbsp;                        }
+<b class="nc">&nbsp;                        if (trackId != null &amp;&amp; !seenTrackIds.contains(trackId)) {</b>
+<b class="nc">&nbsp;                            seenTrackIds.add(trackId);</b>
+&nbsp;
+<b class="nc">&nbsp;                            String name = trackNode.path(&quot;name&quot;).asText(null);</b>
+&nbsp;
+&nbsp;                            //skip non-music recs
+<b class="nc">&nbsp;                            if (name != null &amp;&amp; (name.toLowerCase().contains(&quot;chapter&quot;) || name.toLowerCase().contains(&quot;episode&quot;))) {</b>
+&nbsp;                                continue;
+&nbsp;                            }
+&nbsp;
+<b class="nc">&nbsp;                            String artistName = &quot;&quot;;</b>
+<b class="nc">&nbsp;                            if(trackNode.has(&quot;artists&quot;) &amp;&amp; trackNode.path(&quot;artists&quot;).isArray()</b>
+<b class="nc">&nbsp;                                    &amp;&amp; trackNode.path(&quot;artists&quot;).size() &gt; 0 ){</b>
+<b class="nc">&nbsp;                                artistName = trackNode.path(&quot;artists&quot;).get(0).path(&quot;name&quot;).asText();</b>
+&nbsp;                            }
+&nbsp;
+<b class="nc">&nbsp;                            int duration = trackNode.path(&quot;duration_ms&quot;).asInt(0);</b>
+&nbsp;
+&nbsp;                            //extract preview URL
+<b class="nc">&nbsp;                            String previewUrl = trackNode.path(&quot;preview_url&quot;).asText(null);</b>
+&nbsp;
+<b class="nc">&nbsp;                            log.info(&quot;  -&gt; ADDING to candidates: {} by {}&quot;, name, artistName);</b>
+&nbsp;                            //map to DTO
+<b class="nc">&nbsp;                            candidates.add(new SuggestedTrackResponse(</b>
+&nbsp;                                    trackId,
+&nbsp;                                    name,
+&nbsp;                                    artistName,
+<b class="nc">&nbsp;                                    duration,</b>
+&nbsp;                                    previewUrl
+&nbsp;                            ));
+&nbsp;                        } else {
+<b class="nc">&nbsp;                            log.info(&quot;  -&gt; SKIPPING (duplicate or null ID)&quot;);</b>
+&nbsp;                        }
+&nbsp;                    }
+&nbsp;                }
+&nbsp;            } catch (Exception e){
+<b class="nc">&nbsp;                log.warn(&quot;Failed to search query: {}&quot;, query, e);</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Total candidates collected: {}&quot;, candidates.size());</b>
+&nbsp;
+&nbsp;        //filter out tracks user already knows
+<b class="nc">&nbsp;        Set&lt;String&gt; knownTrackNames = new HashSet&lt;&gt;();</b>
+<b class="nc">&nbsp;        if(topTracks != null &amp;&amp; topTracks.isArray()){</b>
+<b class="nc">&nbsp;            for(JsonNode track : topTracks){</b>
+<b class="nc">&nbsp;                String name = track.path(&quot;name&quot;).asText(&quot;&quot;);</b>
+<b class="nc">&nbsp;                if(!name.isEmpty()) {</b>
+<b class="nc">&nbsp;                    knownTrackNames.add(name.toLowerCase());</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Known tracks to filter: {}&quot;, knownTrackNames.size());</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;SuggestedTrackResponse&gt; filtered = candidates.stream()</b>
+<b class="nc">&nbsp;                .filter(track -&gt; track.name() != null &amp;&amp;</b>
+<b class="nc">&nbsp;                        !knownTrackNames.contains(track.name().toLowerCase()))</b>
+<b class="nc">&nbsp;                .limit(15)</b>
+<b class="nc">&nbsp;                .toList();</b>
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Returning {} fresh recommendations&quot;, filtered.size());</b>
+<b class="nc">&nbsp;        return filtered;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Build a concise summary of user&#39;s top tracks for Gemini
+&nbsp;     * @param topTracks of user
+&nbsp;     * @return String of summary for user&#39;s top tracks
+&nbsp;     */
+&nbsp;    private String buildTrackSummary(JsonNode topTracks){
+<b class="nc">&nbsp;        if (topTracks == null || !topTracks.isArray()) return &quot;No top tracks&quot;;</b>
+&nbsp;
+<b class="nc">&nbsp;        StringBuilder sb = new StringBuilder();</b>
+<b class="nc">&nbsp;        int count = 0;</b>
+<b class="nc">&nbsp;        for (JsonNode track : topTracks) {</b>
+<b class="nc">&nbsp;            String name = track.path(&quot;name&quot;).asText(&quot;&quot;);</b>
+<b class="nc">&nbsp;            String artist = track.path(&quot;artists&quot;).isArray() &amp;&amp; track.path(&quot;artists&quot;).size() &gt; 0</b>
+<b class="nc">&nbsp;                    ? track.path(&quot;artists&quot;).get(0).path(&quot;name&quot;).asText(&quot;&quot;)</b>
+<b class="nc">&nbsp;                    : &quot;&quot;;</b>
+&nbsp;
+<b class="nc">&nbsp;            if (!name.isEmpty()) {</b>
+<b class="nc">&nbsp;                sb.append(String.format(&quot;%s by %s, &quot;, name, artist));</b>
+<b class="nc">&nbsp;                count++;</b>
+<b class="nc">&nbsp;                if (count &gt;= 10) break; // Limit to top 10 for token efficiency</b>
+&nbsp;            }
+&nbsp;        }
+<b class="nc">&nbsp;        return sb.toString();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Build a concise summary of user&#39;s top artists for Gemini
+&nbsp;     * @param topArtists of user
+&nbsp;     * @return String of summary of user&#39;s top artists
+&nbsp;     */
+&nbsp;    private String buildArtistSummary(JsonNode topArtists){
+<b class="nc">&nbsp;        if (topArtists == null || !topArtists.isArray()) return &quot;No top artists&quot;;</b>
+&nbsp;
+<b class="nc">&nbsp;        StringBuilder sb = new StringBuilder();</b>
+<b class="nc">&nbsp;        int count = 0;</b>
+<b class="nc">&nbsp;        for (JsonNode artist : topArtists) {</b>
+<b class="nc">&nbsp;            String name = artist.path(&quot;name&quot;).asText(&quot;&quot;);</b>
+<b class="nc">&nbsp;            JsonNode genres = artist.path(&quot;genres&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;            String genreStr = &quot;&quot;;</b>
+<b class="nc">&nbsp;            if (genres.isArray() &amp;&amp; genres.size() &gt; 0) {</b>
+<b class="nc">&nbsp;                genreStr = &quot; (&quot; + genres.get(0).asText(&quot;&quot;) + &quot;)&quot;;</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            if (!name.isEmpty()) {</b>
+<b class="nc">&nbsp;                sb.append(name).append(genreStr).append(&quot;, &quot;);</b>
+<b class="nc">&nbsp;                count++;</b>
+<b class="nc">&nbsp;                if (count &gt;= 10) break;</b>
+&nbsp;            }
+&nbsp;        }
+<b class="nc">&nbsp;        return sb.toString();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-09 15:12</div>
+</div>
+</body>
+</html>

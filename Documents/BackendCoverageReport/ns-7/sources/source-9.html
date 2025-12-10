@@ -1,0 +1,361 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TrackController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.music</a>
+</div>
+
+<h1>Coverage Summary for Class: TrackController (com.imp3.Backend.music)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TrackController</td>
+<td class="coverageStat">
+  <span class="percent">
+    60%
+  </span>
+  <span class="absValue">
+    (6/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/30)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    11.3%
+  </span>
+  <span class="absValue">
+    (8/71)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TrackController$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    60%
+  </span>
+  <span class="absValue">
+    (6/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/30)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    11.3%
+  </span>
+  <span class="absValue">
+    (8/71)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.music;
+&nbsp;
+&nbsp;import com.imp3.Backend.music.TrackDTO;
+&nbsp;import static com.imp3.Backend.music.MusicMapper.toTrackDTO;
+&nbsp;
+&nbsp;import jakarta.servlet.http.HttpSession;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.transaction.annotation.Transactional;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;import org.springframework.web.server.ResponseStatusException;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;music/&quot;)
+<b class="fc">&nbsp;public class TrackController {</b>
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Repos and DTOs
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    ArtistRepository artistrepository;
+&nbsp;    @Autowired
+&nbsp;    AlbumRepository albumrepository;
+&nbsp;    @Autowired
+&nbsp;    TrackRepository trackrepository;
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // GET Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // get a huge list of all tracks
+&nbsp;    @GetMapping(&quot;tracks&quot;)
+&nbsp;    public List&lt;TrackDTO&gt; getAll() {
+<b class="fc">&nbsp;        return trackrepository.findAll().stream().map(MusicMapper::toTrackDTO).toList();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // get all singles by one artist
+&nbsp;    @GetMapping(&quot;artists/{artistId}/tracks&quot;)
+&nbsp;    public List&lt;TrackDTO&gt; getSingles(@PathVariable Integer artistId) {
+<b class="fc">&nbsp;        return trackrepository.findDistinctByArtists_Id(artistId).stream().map(MusicMapper::toTrackDTO).toList();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // get all tracks in one album
+&nbsp;    @GetMapping(&quot;albums/{albumId}/tracks&quot;)
+&nbsp;    public List&lt;TrackDTO&gt; getTracks(@PathVariable Integer albumId) {
+<b class="fc">&nbsp;        return trackrepository.findDistinctByAlbums_Id(albumId).stream().map(MusicMapper::toTrackDTO).toList();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // get a specific track
+&nbsp;    @GetMapping(&quot;tracks/{trackId}&quot;)
+&nbsp;    public TrackDTO getSingle(@PathVariable Integer trackId) {
+<b class="fc">&nbsp;        TrackDTO dto = trackrepository.findById(trackId).map(MusicMapper::toTrackDTO)</b>
+<b class="fc">&nbsp;            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Track not found: &quot; + trackId));</b>
+<b class="fc">&nbsp;        return dto;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // search for a track
+&nbsp;    @GetMapping(&quot;search/tracks/{term}&quot;)
+&nbsp;    public List&lt;TrackDTO&gt; searchTracks(@PathVariable String term) {
+<b class="fc">&nbsp;        return trackrepository.findByNameStartingWith(term).stream().map(MusicMapper::toTrackDTO).toList();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // POST Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // create a new track, must attach to album
+&nbsp;    @PostMapping(&quot;tracks/new&quot;)
+&nbsp;    @Transactional
+&nbsp;    public Map&lt;String, Integer&gt; postTrack(@RequestBody TrackDTO dto) {
+&nbsp;
+&nbsp;        // build a new track
+<b class="nc">&nbsp;        Track track = new Track();</b>
+&nbsp;
+&nbsp;        // pull artists out of the DTO (required)
+<b class="nc">&nbsp;        Set&lt;Artist&gt; trackArtist = new java.util.HashSet&lt;&gt;();</b>
+<b class="nc">&nbsp;        for (Integer id : Optional.ofNullable(dto.artistIds()).orElse(Set.of())) {</b>
+<b class="nc">&nbsp;            if (id == null) continue;</b>
+<b class="nc">&nbsp;            Artist a = artistrepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Artist Not Found&quot;));</b>
+<b class="nc">&nbsp;            trackArtist.add(a);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // i said required!!
+<b class="nc">&nbsp;        if (trackArtist.isEmpty()) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;At least one artist is required&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // pull albums out of the DTO (optional, if null: is a single)
+<b class="nc">&nbsp;        Set&lt;Album&gt; trackAlbum = new java.util.HashSet&lt;&gt;();</b>
+<b class="nc">&nbsp;        for (Integer id : Optional.ofNullable(dto.albumIds()).orElse(Set.of())) {</b>
+<b class="nc">&nbsp;            if (id == null) continue;</b>
+<b class="nc">&nbsp;            Album a = albumrepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Album Not Found&quot;));</b>
+<b class="nc">&nbsp;            trackAlbum.add(a);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // attach artist to the new track
+<b class="nc">&nbsp;        track.setArtists(trackArtist);</b>
+&nbsp;
+&nbsp;        // attach albums to the new track, if there are any
+<b class="nc">&nbsp;        if (!trackAlbum.isEmpty()) {</b>
+<b class="nc">&nbsp;            track.setAlbums(trackAlbum);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // set the track number
+<b class="nc">&nbsp;        track.setName(dto.name());</b>
+<b class="nc">&nbsp;        track.setTrackNumber(dto.trackNumber());</b>
+<b class="nc">&nbsp;        track.setDuration(dto.duration());</b>
+<b class="nc">&nbsp;        track.setGenre(dto.genre());</b>
+<b class="nc">&nbsp;        track.setMood(dto.mood());</b>
+<b class="nc">&nbsp;        track.setBpm(dto.bpm());</b>
+&nbsp;
+&nbsp;        // save the track
+<b class="nc">&nbsp;        trackrepository.save(track);</b>
+&nbsp;
+&nbsp;        // if we made it here, we succeeded
+<b class="nc">&nbsp;        return Map.of(&quot;status&quot;, 200, &quot;trackId&quot;, track.getId());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // PUT Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    @PutMapping(&quot;tracks/edit&quot;)
+&nbsp;    @Transactional
+&nbsp;    public Map&lt;String, Integer&gt; editTrack(@RequestBody TrackDTO dto) {
+&nbsp;
+&nbsp;        // make sure the track exists
+<b class="nc">&nbsp;        Track track = trackrepository.findById(dto.id()).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Track &quot; + dto.id() + &quot; not found&quot;));</b>
+&nbsp;
+&nbsp;        // pull artists out of the DTO (required)
+<b class="nc">&nbsp;        Set&lt;Artist&gt; trackArtist = new java.util.HashSet&lt;&gt;();</b>
+<b class="nc">&nbsp;        for (Integer id : Optional.ofNullable(dto.artistIds()).orElse(Set.of())) {</b>
+<b class="nc">&nbsp;            if (id == null) continue;</b>
+<b class="nc">&nbsp;            Artist a = artistrepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Artist Not Found&quot;));</b>
+<b class="nc">&nbsp;            trackArtist.add(a);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // i said required!!
+<b class="nc">&nbsp;        if (trackArtist.isEmpty()) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;At least one artist is required&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // pull albums out of the DTO (optional, if null: is a single)
+<b class="nc">&nbsp;        Set&lt;Album&gt; trackAlbum = new java.util.HashSet&lt;&gt;();</b>
+<b class="nc">&nbsp;        for (Integer id : Optional.ofNullable(dto.albumIds()).orElse(Set.of())) {</b>
+<b class="nc">&nbsp;            if (id == null) continue;</b>
+<b class="nc">&nbsp;            Album a = albumrepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Album Not Found&quot;));</b>
+<b class="nc">&nbsp;            trackAlbum.add(a);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // attach artist to the new track
+<b class="nc">&nbsp;        track.setArtists(trackArtist);</b>
+&nbsp;
+&nbsp;        // attach albums to the new track, if there are any
+<b class="nc">&nbsp;        if (!trackAlbum.isEmpty()) {</b>
+<b class="nc">&nbsp;            track.setAlbums(trackAlbum);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // assign the rest of the values values
+<b class="nc">&nbsp;        track.setId(dto.id());</b>
+<b class="nc">&nbsp;        track.setName(dto.name());</b>
+<b class="nc">&nbsp;        track.setTrackNumber(dto.trackNumber());</b>
+<b class="nc">&nbsp;        track.setDuration(dto.duration());</b>
+<b class="nc">&nbsp;        track.setGenre(dto.genre());</b>
+<b class="nc">&nbsp;        track.setMood(dto.mood());</b>
+<b class="nc">&nbsp;        track.setBpm(dto.bpm());</b>
+&nbsp;
+&nbsp;        // if we made it here, return success
+<b class="nc">&nbsp;        return Map.of(&quot;status&quot;, 200, &quot;trackId&quot;, track.getId());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // DELETE Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // delete a track, removing it from the artists and albums it once belonged to
+&nbsp;    @DeleteMapping(&quot;tracks/delete/{id}&quot;)
+&nbsp;    @Transactional
+&nbsp;    public Map&lt;String, Integer&gt; deleteTrack(@PathVariable Integer id, HttpSession session) {
+&nbsp;
+&nbsp;        // make sure the track exists
+<b class="nc">&nbsp;        Track track = trackrepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Track not found&quot;));</b>
+&nbsp;
+&nbsp;        // only admins can remove music from the catalog
+<b class="nc">&nbsp;        String privilege = (String)session.getAttribute(&quot;type&quot;);</b>
+<b class="nc">&nbsp;        if (!privilege.equals(&quot;admin&quot;)) { throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;UNAUTHORIZED&quot;); }</b>
+&nbsp;
+&nbsp;        // remove track from its albums
+<b class="nc">&nbsp;        for (Album album : new HashSet&lt;&gt;(track.getAlbums())) {</b>
+<b class="nc">&nbsp;            album.getTracks().remove(track);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // remove the track from its artists
+<b class="nc">&nbsp;        for (Artist artist : new HashSet&lt;&gt;(track.getArtists())) {</b>
+<b class="nc">&nbsp;            artist.getTracks().remove(track);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // springboot things
+<b class="nc">&nbsp;        track.getAlbums().clear();</b>
+<b class="nc">&nbsp;        track.getArtists().clear();</b>
+&nbsp;
+&nbsp;        // delete the track
+<b class="nc">&nbsp;        trackrepository.delete(track);</b>
+&nbsp;
+&nbsp;        // if we made it here, we succeeded
+<b class="nc">&nbsp;        return Map.of(&quot;status&quot;, 200);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * GET - Search tracks, albums, and artists by tag
+&nbsp;     * @param tagName to search for
+&nbsp;     * @return map containing all results
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/search/tag/{tagName}&quot;)
+&nbsp;    public Map&lt;String, Object&gt; searchByTag(@PathVariable String tagName) {
+<b class="nc">&nbsp;        return Map.of(</b>
+<b class="nc">&nbsp;                &quot;tracks&quot;, trackrepository.findByTags_NameIgnoreCase(tagName).stream().map(t -&gt; MusicMapper.toTrackDTO((Track) t)).toList(),</b>
+<b class="nc">&nbsp;                &quot;albums&quot;, albumrepository.findByTags_NameIgnoreCase(tagName).stream().map(a -&gt; MusicMapper.toAlbumDTO((Album) a)).toList(),</b>
+<b class="nc">&nbsp;                &quot;artists&quot;, artistrepository.findByTags_NameIgnoreCase(tagName).stream().map(a -&gt; MusicMapper.toArtistDTO((Artist) a)).toList()</b>
+&nbsp;
+&nbsp;        );
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-07 14:28</div>
+</div>
+</body>
+</html>

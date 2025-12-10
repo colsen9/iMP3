@@ -1,0 +1,302 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > AlbumController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.music</a>
+</div>
+
+<h1>Coverage Summary for Class: AlbumController (com.imp3.Backend.music)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">AlbumController</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (5/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    15.6%
+  </span>
+  <span class="absValue">
+    (7/45)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">AlbumController$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (5/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    15.6%
+  </span>
+  <span class="absValue">
+    (7/45)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.music;
+&nbsp;
+&nbsp;import com.imp3.Backend.music.AlbumDTO;
+&nbsp;import static com.imp3.Backend.music.MusicMapper.toAlbumDTO;
+&nbsp;
+&nbsp;import com.imp3.Backend.reviews.Review;
+&nbsp;import jakarta.servlet.http.HttpSession;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.transaction.annotation.Transactional;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;import org.springframework.web.server.ResponseStatusException;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;music/&quot;)
+<b class="fc">&nbsp;public class AlbumController {</b>
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Repos and DTOs
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    ArtistRepository artistrepository;
+&nbsp;    @Autowired
+&nbsp;    AlbumRepository albumrepository;
+&nbsp;    @Autowired
+&nbsp;    TrackRepository trackrepository;
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // GET Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // get all albums
+&nbsp;    @GetMapping(&quot;albums&quot;)
+&nbsp;    public List&lt;AlbumDTO&gt; getAllAlbums() {
+<b class="fc">&nbsp;        return albumrepository.findAll().stream().map(MusicMapper::toAlbumDTO).toList();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // get all albums by an artist
+&nbsp;    @GetMapping(&quot;artists/{artistId}/albums&quot;)
+&nbsp;    public List&lt;AlbumDTO&gt; getAllByArtist(@PathVariable Integer artistId) {
+<b class="fc">&nbsp;        return albumrepository.findDistinctByArtists_Id(artistId).stream().map(MusicMapper::toAlbumDTO).toList();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // get specific album information
+&nbsp;    @GetMapping(&quot;albums/{albumId}&quot;)
+&nbsp;    public AlbumDTO getAlbumByArtist(@PathVariable Integer albumId) {
+<b class="fc">&nbsp;        AlbumDTO dto = albumrepository.findById(albumId).map(MusicMapper::toAlbumDTO)</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Album not found: &quot; + albumId));</b>
+<b class="fc">&nbsp;        return dto;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // search for an album
+&nbsp;    @GetMapping(&quot;search/albums/{term}&quot;)
+&nbsp;    public List&lt;AlbumDTO&gt; searchAlbums(@PathVariable String term) {
+<b class="fc">&nbsp;        return albumrepository.findByNameStartingWith(term).stream().map(MusicMapper::toAlbumDTO).toList();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // POST Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // create a new album, must attach to artist
+&nbsp;    @PostMapping(&quot;albums/new&quot;)
+&nbsp;    @Transactional
+&nbsp;    public Map&lt;String, Integer&gt; postAlbum(@RequestBody AlbumDTO dto) {
+&nbsp;
+&nbsp;        // build a new album
+<b class="nc">&nbsp;        Album album = new Album();</b>
+<b class="nc">&nbsp;        album.setName(dto.name());</b>
+<b class="nc">&nbsp;        album.setAlbumArt(dto.albumArt());</b>
+<b class="nc">&nbsp;        album.setDuration(dto.duration());</b>
+<b class="nc">&nbsp;        album.setReleaseDate(dto.releaseDate());</b>
+&nbsp;
+&nbsp;        // add artists from the dto
+<b class="nc">&nbsp;        for (Integer id : Optional.ofNullable(dto.artistIds()).orElse(Set.of())) {</b>
+<b class="nc">&nbsp;            if (id == null) continue;</b>
+<b class="nc">&nbsp;            Artist artist = artistrepository.findById(id)</b>
+<b class="nc">&nbsp;                    .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Artist not found: &quot; + id));</b>
+<b class="nc">&nbsp;            album.addArtist(artist);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // tracks will be added when they are created, not now
+&nbsp;
+&nbsp;        // save the album
+<b class="nc">&nbsp;        albumrepository.save(album);</b>
+&nbsp;
+&nbsp;        // if we made it here, we succeeded
+<b class="nc">&nbsp;        return Map.of(&quot;status&quot;, 200, &quot;albumId&quot;, album.getId());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // PUT Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // create a new album, must attach to artist
+&nbsp;    @PutMapping(&quot;albums/edit&quot;)
+&nbsp;    @Transactional
+&nbsp;    public Map&lt;String, Integer&gt; editAlbum(@RequestBody AlbumDTO dto) {
+&nbsp;
+&nbsp;        // check if the album already exists
+<b class="nc">&nbsp;        Album album = albumrepository.findById(dto.id()).orElseThrow(() -&gt;</b>
+<b class="nc">&nbsp;                new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Album not found&quot;));</b>
+&nbsp;
+&nbsp;        // build a new album
+<b class="nc">&nbsp;        album.setId(dto.id());</b>
+<b class="nc">&nbsp;        album.setName(dto.name());</b>
+<b class="nc">&nbsp;        album.setAlbumArt(dto.albumArt());</b>
+<b class="nc">&nbsp;        album.setDuration(dto.duration());</b>
+<b class="nc">&nbsp;        album.setReleaseDate(dto.releaseDate());</b>
+&nbsp;
+&nbsp;        // add artists from the dto
+<b class="nc">&nbsp;        for (Integer id : Optional.ofNullable(dto.artistIds()).orElse(Set.of())) {</b>
+<b class="nc">&nbsp;            if (id == null) continue;</b>
+<b class="nc">&nbsp;            Artist artist = artistrepository.findById(id)</b>
+<b class="nc">&nbsp;                    .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Artist not found: &quot; + id));</b>
+<b class="nc">&nbsp;            album.addArtist(artist);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // tracks will be added when they are created, not now
+&nbsp;
+&nbsp;        // save the album
+<b class="nc">&nbsp;        albumrepository.save(album);</b>
+&nbsp;
+&nbsp;        // if we made it here, we succeeded
+<b class="nc">&nbsp;        return Map.of(&quot;status&quot;, 200, &quot;albumId&quot;, album.getId());</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // DELETE Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // delete an album
+&nbsp;    @DeleteMapping(&quot;albums/delete/{id}&quot;)
+&nbsp;    public Map&lt;String, Integer&gt; deleteAlbum(@PathVariable Integer id, HttpSession session) {
+&nbsp;
+&nbsp;        // check if the album exists
+<b class="nc">&nbsp;        Album album = albumrepository.findById(id).orElseThrow(() -&gt;</b>
+<b class="nc">&nbsp;                new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Album not found&quot;));</b>
+&nbsp;
+&nbsp;        // only admins can remove music from the catalog
+<b class="nc">&nbsp;        String privilege = (String)session.getAttribute(&quot;type&quot;);</b>
+<b class="nc">&nbsp;        if (!privilege.equals(&quot;admin&quot;)) { throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;UNAUTHORIZED&quot;); }</b>
+&nbsp;
+&nbsp;        // remove the album from its artists
+<b class="nc">&nbsp;        for (Artist artist : new HashSet&lt;&gt;(album.getArtists())) {</b>
+<b class="nc">&nbsp;            artist.getAlbums().remove(album);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // remove album from its tracks
+<b class="nc">&nbsp;        for (Track track : new HashSet&lt;&gt;(album.getTracks())) {</b>
+<b class="nc">&nbsp;            track.getAlbums().remove(album);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // springboot things
+<b class="nc">&nbsp;        album.getArtists().clear();</b>
+<b class="nc">&nbsp;        album.getTracks().clear();</b>
+&nbsp;
+&nbsp;        // delete the album
+<b class="nc">&nbsp;        albumrepository.delete(album);</b>
+&nbsp;
+&nbsp;        // if we made it here, we succeeded, send the new album&#39;s ID too
+<b class="nc">&nbsp;        return Map.of(&quot;status&quot;, 200, &quot;albumId&quot;, album.getId());</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-09 15:12</div>
+</div>
+</body>
+</html>

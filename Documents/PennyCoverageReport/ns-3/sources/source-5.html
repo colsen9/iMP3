@@ -1,0 +1,722 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SpotifyService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.common</a>
+</div>
+
+<h1>Coverage Summary for Class: SpotifyService (com.imp3.Backend.common)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SpotifyService</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    13.3%
+  </span>
+  <span class="absValue">
+    (2/15)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    1.3%
+  </span>
+  <span class="absValue">
+    (2/152)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    2.6%
+  </span>
+  <span class="absValue">
+    (6/233)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.common;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.imp3.Backend.music.TrackDTO;
+&nbsp;import com.imp3.Backend.user.User;
+&nbsp;import com.imp3.Backend.user.UserRepository;
+&nbsp;import okhttp3.Response;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.http.*;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;import org.springframework.util.LinkedMultiValueMap;
+&nbsp;import org.springframework.util.MultiValueMap;
+&nbsp;import org.springframework.web.client.HttpClientErrorException;
+&nbsp;import org.springframework.web.client.HttpServerErrorException;
+&nbsp;import org.springframework.web.client.RestTemplate;
+&nbsp;
+&nbsp;import org.springframework.web.server.ResponseStatusException;
+&nbsp;import org.springframework.web.util.UriComponentsBuilder;
+&nbsp;
+&nbsp;import java.nio.charset.StandardCharsets;
+&nbsp;import java.time.Instant;
+&nbsp;import java.util.*;
+&nbsp;
+&nbsp;@Service
+&nbsp;public class SpotifyService {
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    UserRepository userrepository;
+&nbsp;
+&nbsp;    private final String clientId;
+&nbsp;    private final String clientSecret;
+<b class="fc">&nbsp;    private final RestTemplate restTemplate = new RestTemplate();</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SpotifyService.class);</b>
+&nbsp;
+&nbsp;    private String accessToken;
+&nbsp;    private Instant tokenExpiry;
+&nbsp;    private static final int MAX_SEEDS = 5;
+&nbsp;
+<b class="fc">&nbsp;    public SpotifyService(){</b>
+<b class="fc">&nbsp;        this.clientId = System.getenv(&quot;SPOTIFY_CLIENT_ID&quot;);</b>
+<b class="fc">&nbsp;        this.clientSecret = System.getenv(&quot;SPOTIFY_CLIENT_SECRET&quot;);</b>
+&nbsp;
+<b class="pc">&nbsp;        if(clientId == null || clientSecret == null){</b>
+<b class="nc">&nbsp;            throw new IllegalStateException(&quot;Spotify client ID/secret not set in environment variables&quot;);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  Get a valid access token, refreshing it if needed
+&nbsp;     * @return access token
+&nbsp;     */
+&nbsp;    private String getAccessToken(){
+<b class="nc">&nbsp;        if(accessToken == null || tokenExpiry == null || Instant.now().isAfter(tokenExpiry)){</b>
+<b class="nc">&nbsp;            requestAccessToken();</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return accessToken;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Request a new access token from Spotify using client credentials flow
+&nbsp;     */
+&nbsp;    private void requestAccessToken(){
+<b class="nc">&nbsp;        String auth = clientId + &quot;:&quot; + clientSecret;</b>
+<b class="nc">&nbsp;        String basicAuth = Base64.getEncoder()</b>
+<b class="nc">&nbsp;                .encodeToString(auth.getBytes(StandardCharsets.UTF_8));</b>
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);</b>
+<b class="nc">&nbsp;        headers.set(&quot;Authorization&quot;, &quot;Basic &quot; + basicAuth);</b>
+&nbsp;
+<b class="nc">&nbsp;        MultiValueMap&lt;String, String&gt; body = new LinkedMultiValueMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        body.add(&quot;grant_type&quot;, &quot;client_credentials&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        HttpEntity&lt;MultiValueMap&lt;String, String&gt;&gt; request = new HttpEntity&lt;&gt;(body, headers);</b>
+&nbsp;
+<b class="nc">&nbsp;        ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(</b>
+&nbsp;                &quot;https://accounts.spotify.com/api/token&quot;,
+&nbsp;                HttpMethod.POST,
+&nbsp;                request,
+&nbsp;                JsonNode.class
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        if(!response.getStatusCode().is2xxSuccessful() || response.getBody() == null){</b>
+<b class="nc">&nbsp;            throw new IllegalStateException(&quot;Failed to get Spotify access token&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        JsonNode json = response.getBody();</b>
+<b class="nc">&nbsp;        this.accessToken = json.get(&quot;access_token&quot;).asText();</b>
+<b class="nc">&nbsp;        int expiresIn = json.get(&quot;expires_in&quot;).asInt();</b>
+<b class="nc">&nbsp;        this.tokenExpiry = Instant.now().plusSeconds(expiresIn - 60);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Maps Spotify track JSON payload into TrackDTO objects
+&nbsp;     * @param payload raw JsonNode containing an array of tracks
+&nbsp;     * @return list of TrackDTO representing the returned tracks
+&nbsp;     */
+&nbsp;    public List&lt;TrackDTO&gt; mapSpotifyTracksToDTO(JsonNode payload){
+<b class="nc">&nbsp;        List&lt;TrackDTO&gt; result = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        if (payload == null || !payload.isArray()) return result;</b>
+&nbsp;
+<b class="nc">&nbsp;        for (JsonNode t : payload){</b>
+<b class="nc">&nbsp;            String id = t.path(&quot;id&quot;).asText(null);</b>
+<b class="nc">&nbsp;            String name = t.path(&quot;name&quot;).asText(null);</b>
+<b class="nc">&nbsp;            int duration = t.path(&quot;duration_ms&quot;).asInt(0);</b>
+<b class="nc">&nbsp;            int trackNum = t.path(&quot;track_number&quot;).asInt(0);</b>
+&nbsp;
+&nbsp;            // we aren&#39;t storing artists or albums yet, so these stay empty
+<b class="nc">&nbsp;            Set&lt;Integer&gt; artistIds = new HashSet&lt;&gt;();</b>
+<b class="nc">&nbsp;            Set&lt;Integer&gt; albumIds = new HashSet&lt;&gt;();</b>
+&nbsp;
+<b class="nc">&nbsp;            result.add(new TrackDTO(</b>
+&nbsp;                    null,
+&nbsp;                    id,
+&nbsp;                    name,
+&nbsp;                    null,        // albumTitle (null until expanded later)
+<b class="nc">&nbsp;                    duration,</b>
+<b class="nc">&nbsp;                    trackNum,</b>
+&nbsp;                    null,
+&nbsp;                    null,
+&nbsp;                    artistIds,
+&nbsp;                    albumIds,
+&nbsp;                    new HashSet&lt;&gt;()
+&nbsp;            ));
+&nbsp;        }
+<b class="nc">&nbsp;        return result;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Fetches full metadata for a specific Spotify track using its spotify track id
+&nbsp;     * @param trackId of item to grab data for
+&nbsp;     * @return a JSON object containing details such as track name, artists,
+&nbsp;     * album information, and duration/popularity
+&nbsp;     */
+&nbsp;    public JsonNode getTrack(String trackId){
+<b class="nc">&nbsp;        if(trackId == null || trackId.isBlank() || trackId.equalsIgnoreCase(&quot;null&quot;) || trackId.equalsIgnoreCase(&quot;undefined&quot;)){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Invalid Spotify item id&quot;);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        String token = getAccessToken();</b>
+<b class="nc">&nbsp;        HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;        headers.setBearerAuth(token);</b>
+<b class="nc">&nbsp;        HttpEntity&lt;Void&gt; request = new HttpEntity&lt;&gt;(headers);</b>
+<b class="nc">&nbsp;        String url =&quot;https://api.spotify.com/v1/tracks/&quot; + trackId + &quot;?market=US&quot;;</b>
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(</b>
+&nbsp;                    url,
+&nbsp;                    HttpMethod.GET,
+&nbsp;                    request,
+&nbsp;                    JsonNode.class
+&nbsp;            );
+<b class="nc">&nbsp;            JsonNode body = response.getBody();</b>
+<b class="nc">&nbsp;            if(body == null){</b>
+<b class="nc">&nbsp;                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Spotify returned empty response for track: &quot; + trackId);</b>
+&nbsp;            }
+<b class="nc">&nbsp;            return body;</b>
+&nbsp;        } catch(HttpClientErrorException.NotFound e){
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Track exists, but not available in Spotify API via client credentials. Track ID: &quot; + trackId);</b>
+&nbsp;        } catch(HttpClientErrorException e){
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Error from spotify when fetching track: &quot; + e.getStatusCode());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  Gets top user tracks using their OAuth access token
+&nbsp;     * @param userAccessToken Spotify OAuth access token for this user
+&nbsp;     * @return JsonNode array of track objects
+&nbsp;     */
+&nbsp;    public JsonNode getUserTopTracks(String userAccessToken){
+<b class="nc">&nbsp;        if(userAccessToken == null || userAccessToken.isBlank()){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Spotify account not linked for user&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //limit is always 20
+<b class="nc">&nbsp;        int limit = 20;</b>
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;        headers.setBearerAuth(userAccessToken);</b>
+<b class="nc">&nbsp;        HttpEntity&lt;Void&gt; request = new HttpEntity&lt;&gt;(headers);</b>
+&nbsp;
+<b class="nc">&nbsp;        String url = &quot;https://api.spotify.com/v1/me/top/tracks?limit=&quot; + limit;</b>
+&nbsp;
+&nbsp;        ResponseEntity&lt;JsonNode&gt; response;
+&nbsp;        try {
+<b class="nc">&nbsp;            response = restTemplate.exchange(</b>
+&nbsp;                    url,
+&nbsp;                    HttpMethod.GET,
+&nbsp;                    request,
+&nbsp;                    JsonNode.class
+&nbsp;            );
+&nbsp;        } catch (HttpClientErrorException e) {
+<b class="nc">&nbsp;            throw new ResponseStatusException(</b>
+&nbsp;                    HttpStatus.BAD_GATEWAY,
+<b class="nc">&nbsp;                    &quot;Spotify error when fetching user top tracks: &quot; + e.getStatusCode()</b>
+&nbsp;            );
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        JsonNode body = response.getBody();</b>
+<b class="nc">&nbsp;        if (body == null || !body.has(&quot;items&quot;) || !body.get(&quot;items&quot;).isArray()) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(</b>
+&nbsp;                    HttpStatus.BAD_GATEWAY,
+&nbsp;                    &quot;Spotify returned invalid top tracks payload&quot;
+&nbsp;            );
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        JsonNode items = body.get(&quot;items&quot;);</b>
+<b class="nc">&nbsp;        if (!items.elements().hasNext()) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(</b>
+&nbsp;                    HttpStatus.UNPROCESSABLE_ENTITY,
+&nbsp;                    &quot;User has no top tracks&quot;
+&nbsp;            );
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return items;</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  Gets top user tracks by user
+&nbsp;     * @param user to grab top tracks from
+&nbsp;     * @return JsonNode array of track objects
+&nbsp;     */
+&nbsp;    public JsonNode getUserTopTracks(User user){
+<b class="nc">&nbsp;        String token = user.getSpotifyAccessToken();</b>
+&nbsp;
+<b class="nc">&nbsp;        if(user.getSpotifyAccessTokenExpiry() == null || Instant.now().isAfter(user.getSpotifyAccessTokenExpiry())){</b>
+<b class="nc">&nbsp;            token = refreshUserAccessToken(user);</b>
+<b class="nc">&nbsp;            userrepository.save(user);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        try{
+<b class="nc">&nbsp;            return getUserTopTracks(token);</b>
+&nbsp;        } catch (ResponseStatusException e){
+<b class="nc">&nbsp;            if(e.getMessage().contains(&quot;401&quot;) &amp;&amp; user.getSpotifyRefreshToken() != null){</b>
+<b class="nc">&nbsp;                token = refreshUserAccessToken(user);</b>
+<b class="nc">&nbsp;                userrepository.save(user);</b>
+<b class="nc">&nbsp;                return getUserTopTracks(token);</b>
+&nbsp;            }
+&nbsp;            throw e;
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  Refreshes the user&#39;s access token for Spotify
+&nbsp;     * @param user to refresh
+&nbsp;     * @return the refreshed token
+&nbsp;     */
+&nbsp;    public String refreshUserAccessToken(User user){
+<b class="nc">&nbsp;        if(user.getSpotifyRefreshToken() == null || user.getSpotifyRefreshToken().isBlank()){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;No Spotify refresh token available.&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);</b>
+<b class="nc">&nbsp;        headers.setBasicAuth(clientId, clientSecret);</b>
+&nbsp;
+<b class="nc">&nbsp;        MultiValueMap&lt;String, String&gt; form = new LinkedMultiValueMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        form.add(&quot;grant_type&quot;, &quot;refresh_token&quot;);</b>
+<b class="nc">&nbsp;        form.add(&quot;refresh_token&quot;, user.getSpotifyRefreshToken());</b>
+&nbsp;
+<b class="nc">&nbsp;        HttpEntity&lt;MultiValueMap&lt;String, String&gt;&gt; request = new HttpEntity&lt;&gt;(form, headers);</b>
+&nbsp;
+&nbsp;        ResponseEntity&lt;JsonNode&gt; response;
+&nbsp;        try {
+<b class="nc">&nbsp;            response = restTemplate.exchange(</b>
+&nbsp;                    &quot;https://accounts.spotify.com/api/token&quot;,
+&nbsp;                    HttpMethod.POST,
+&nbsp;                    request,
+&nbsp;                    JsonNode.class
+&nbsp;            );
+&nbsp;        } catch (Exception e ){
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Failed to refresh Spotify token&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        JsonNode body = response.getBody();</b>
+<b class="nc">&nbsp;        if(body == null || !body.hasNonNull(&quot;access_token&quot;)){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Invalid token refresh response from Spotify&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        String newToken = body.get(&quot;access_token&quot;).asText();</b>
+<b class="nc">&nbsp;        int expiresIn = body.get(&quot;expires_in&quot;).asInt(3600);</b>
+&nbsp;
+&nbsp;        //only update refresh if Spotify sends a new one
+<b class="nc">&nbsp;        if(body.hasNonNull(&quot;refresh_token&quot;)){</b>
+<b class="nc">&nbsp;            user.setSpotifyRefreshToken(body.get(&quot;refresh_token&quot;).asText());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        user.setSpotifyAccessToken(newToken);</b>
+<b class="nc">&nbsp;        user.setSpotifyAccessTokenExpiry(Instant.now().plusSeconds(expiresIn));</b>
+&nbsp;
+<b class="nc">&nbsp;        return newToken;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  Gets users top Spotify Artists
+&nbsp;     * @param user to grab top artists for
+&nbsp;     * @return JsonNode of top artists
+&nbsp;     */
+&nbsp;    public JsonNode getUserTopArtists(User user){
+<b class="nc">&nbsp;        String token = user.getSpotifyAccessToken();</b>
+&nbsp;
+<b class="nc">&nbsp;        if (user.getSpotifyAccessTokenExpiry() == null || Instant.now().isAfter(user.getSpotifyAccessTokenExpiry())) {</b>
+<b class="nc">&nbsp;            token = refreshUserAccessToken(user);</b>
+<b class="nc">&nbsp;            userrepository.save(user);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;        headers.setBearerAuth(token);</b>
+<b class="nc">&nbsp;        HttpEntity&lt;Void&gt; request = new HttpEntity&lt;&gt;(headers);</b>
+&nbsp;
+<b class="nc">&nbsp;        String url = &quot;https://api.spotify.com/v1/me/top/artists?limit=20&amp;time_range=medium_term&quot;;</b>
+&nbsp;
+&nbsp;        try{
+<b class="nc">&nbsp;            ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(url, HttpMethod.GET, request, JsonNode.class);</b>
+<b class="nc">&nbsp;            JsonNode body = response.getBody();</b>
+<b class="nc">&nbsp;            if(body == null || !body.has(&quot;items&quot;) || !body.get(&quot;items&quot;).isArray()){</b>
+<b class="nc">&nbsp;                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Invalid Spotify top artists payload&quot;);</b>
+&nbsp;            }
+<b class="nc">&nbsp;            return body.get(&quot;items&quot;);</b>
+&nbsp;        } catch(HttpClientErrorException e){
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Error when fetching top artists: &quot; + e.getStatusCode());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  Gets related artists for a given artist
+&nbsp;     * @param artistId of the artist to find related artists for
+&nbsp;     * @param user the rec is for
+&nbsp;     * @return JsonNode of related artists
+&nbsp;     */
+&nbsp;    public JsonNode getRelatedArtists(String artistId, User user) {
+<b class="nc">&nbsp;        if (artistId == null || artistId.isBlank())</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Invalid artist id&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        String token = user.getSpotifyAccessToken();</b>
+<b class="nc">&nbsp;        if (token == null || token.isBlank()) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,</b>
+&nbsp;                    &quot;User has no valid Spotify OAuth token&quot;);
+&nbsp;        }
+&nbsp;
+&nbsp;        // force refresh if expired
+<b class="nc">&nbsp;        if (user.getSpotifyAccessTokenExpiry() == null || Instant.now().isAfter(user.getSpotifyAccessTokenExpiry())) {</b>
+<b class="nc">&nbsp;            token = refreshUserAccessToken(user);</b>
+<b class="nc">&nbsp;            userrepository.save(user);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;        headers.setBearerAuth(token);</b>
+<b class="nc">&nbsp;        HttpEntity&lt;Void&gt; request = new HttpEntity&lt;&gt;(null, headers);</b>
+&nbsp;
+&nbsp;
+<b class="nc">&nbsp;        String url = &quot;https://api.spotify.com/v1/artists/&quot; + artistId + &quot;/related-artists&quot;;</b>
+&nbsp;
+&nbsp;        try {
+&nbsp;
+<b class="nc">&nbsp;            ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(url, HttpMethod.GET, request, JsonNode.class);</b>
+<b class="nc">&nbsp;            JsonNode body = response.getBody();</b>
+&nbsp;            //DEBUG
+&nbsp;            //System.out.println(&quot;RAW RELATED RESPONSE = &quot; + response.getBody());
+<b class="nc">&nbsp;            if (body == null || !body.has(&quot;artists&quot;) || !body.get(&quot;artists&quot;).isArray())</b>
+<b class="nc">&nbsp;                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Invalid related artists payload&quot;);</b>
+<b class="nc">&nbsp;            return body.get(&quot;artists&quot;);</b>
+&nbsp;        } catch (HttpClientErrorException.NotFound e){
+&nbsp;            //artist exists in user&#39;s history but has no related-artist data --&gt; just skip
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        } catch(HttpClientErrorException e){
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Error fetching related artists: &quot; + e.getStatusCode());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Gets an artist&#39;s top tracks
+&nbsp;     * @param artistId for artist
+&nbsp;     * @param user the rec is for
+&nbsp;     * @return JsonNode of Artist&#39;s top tracks
+&nbsp;     */
+&nbsp;    public JsonNode getArtistTopTracks(String artistId, User user) {
+<b class="nc">&nbsp;        if (artistId == null || artistId.isBlank()) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Invalid artist id&quot;);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        String token = user.getSpotifyAccessToken();</b>
+&nbsp;
+<b class="nc">&nbsp;        if (user.getSpotifyAccessTokenExpiry() == null || Instant.now().isAfter(user.getSpotifyAccessTokenExpiry())) {</b>
+<b class="nc">&nbsp;            token = refreshUserAccessToken(user);</b>
+<b class="nc">&nbsp;            userrepository.save(user);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;        headers.setBearerAuth(token);</b>
+<b class="nc">&nbsp;        HttpEntity&lt;Void&gt; request = new HttpEntity&lt;&gt;(null, headers);</b>
+&nbsp;
+<b class="nc">&nbsp;        String url = &quot;https://api.spotify.com/v1/artists/&quot; + artistId + &quot;/top-tracks?market=US&quot;;</b>
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(url, HttpMethod.GET, request, JsonNode.class);</b>
+<b class="nc">&nbsp;            JsonNode body = response.getBody();</b>
+<b class="nc">&nbsp;            if (body == null || !body.has(&quot;tracks&quot;) || !body.get(&quot;tracks&quot;).isArray())</b>
+<b class="nc">&nbsp;                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Invalid top tracks payload&quot;);</b>
+<b class="nc">&nbsp;            return body.get(&quot;tracks&quot;);</b>
+&nbsp;        } catch(HttpClientErrorException.NotFound e){
+&nbsp;            //artist exists in user&#39;s history but has no related-artist data --&gt; just skip
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        } catch (HttpClientErrorException e){
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Error fetching artist top tracks: &quot; + e.getStatusCode());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Get User&#39;s recommended tracks
+&nbsp;     * @param user to get recommended tracks for
+&nbsp;     * @return list of tracks
+&nbsp;     */
+&nbsp;    public List&lt;TrackDTO&gt; getRecommendedTracks(User user){
+&nbsp;
+&nbsp;        // Step 1 — get user&#39;s top artists
+<b class="nc">&nbsp;        JsonNode topArtists = getUserTopArtists(user);</b>
+<b class="nc">&nbsp;        if(topArtists == null || !topArtists.isArray() || topArtists.size() == 0){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,</b>
+&nbsp;                    &quot;User has no top artists — cannot generate recommendations&quot;);
+&nbsp;        }
+&nbsp;
+&nbsp;        // Step 2 — extract max 5 unique artist IDs
+<b class="nc">&nbsp;        List&lt;String&gt; artistIds = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        for(JsonNode a : topArtists){</b>
+<b class="nc">&nbsp;            if(a.has(&quot;id&quot;)){</b>
+<b class="nc">&nbsp;                artistIds.add(a.get(&quot;id&quot;).asText());</b>
+<b class="nc">&nbsp;                if(artistIds.size() &gt;= 5) break;</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(artistIds.isEmpty()){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,</b>
+&nbsp;                    &quot;Failed to extract artist IDs from top artists payload&quot;);
+&nbsp;        }
+&nbsp;
+&nbsp;        // Step 3 — pull top tracks for each artist
+<b class="nc">&nbsp;        Set&lt;String&gt; seen = new HashSet&lt;&gt;();          // dedupe by track ID</b>
+<b class="nc">&nbsp;        List&lt;TrackDTO&gt; recommendations = new ArrayList&lt;&gt;();</b>
+&nbsp;
+<b class="nc">&nbsp;        for(String id : artistIds){</b>
+<b class="nc">&nbsp;            JsonNode tracks = getArtistTopTracks(id, user);</b>
+<b class="nc">&nbsp;            if(tracks == null || !tracks.isArray()) continue;</b>
+&nbsp;
+<b class="nc">&nbsp;            for(JsonNode t : tracks){</b>
+<b class="nc">&nbsp;                String trackId = t.path(&quot;id&quot;).asText(null);</b>
+<b class="nc">&nbsp;                if(trackId == null || seen.contains(trackId)) continue;</b>
+<b class="nc">&nbsp;                seen.add(trackId);</b>
+&nbsp;
+&nbsp;                // Build DTO
+<b class="nc">&nbsp;                String name = t.path(&quot;name&quot;).asText(null);</b>
+<b class="nc">&nbsp;                int duration = t.path(&quot;duration_ms&quot;).asInt(0);</b>
+<b class="nc">&nbsp;                int trackNum = t.path(&quot;track_number&quot;).asInt(0);</b>
+&nbsp;
+<b class="nc">&nbsp;                recommendations.add(new TrackDTO(</b>
+&nbsp;                        null,
+&nbsp;                        trackId,
+&nbsp;                        name,
+&nbsp;                        null,
+<b class="nc">&nbsp;                        duration,</b>
+<b class="nc">&nbsp;                        trackNum,</b>
+&nbsp;                        null,
+&nbsp;                        null,
+&nbsp;                        new HashSet&lt;&gt;(),
+&nbsp;                        new HashSet&lt;&gt;(),
+&nbsp;                        new HashSet&lt;&gt;()
+&nbsp;                ));
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(recommendations.isEmpty()){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,</b>
+&nbsp;                    &quot;Spotify returned no track data for recommended artists&quot;);
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return recommendations;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Search Spotify for tracks matching a query
+&nbsp;     * @param query search query
+&nbsp;     * @param user the user making the request
+&nbsp;     * @return JsonNode containing search results
+&nbsp;     */
+&nbsp;    public JsonNode searchTracks(String query, User user){
+<b class="nc">&nbsp;        if(query == null || query.isBlank()){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Search query cannot be empty&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        String token = user.getSpotifyAccessToken();</b>
+&nbsp;
+<b class="nc">&nbsp;        if (user.getSpotifyAccessTokenExpiry() == null ||</b>
+<b class="nc">&nbsp;                Instant.now().isAfter(user.getSpotifyAccessTokenExpiry())) {</b>
+<b class="nc">&nbsp;            token = refreshUserAccessToken(user);</b>
+<b class="nc">&nbsp;            userrepository.save(user);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;        headers.setBearerAuth(token);</b>
+<b class="nc">&nbsp;        HttpEntity&lt;Void&gt; request = new HttpEntity&lt;&gt;(headers);</b>
+&nbsp;
+&nbsp;        //append NOT PODCAST NOT AUDIOBOOK to filter out non-music suggestions
+<b class="nc">&nbsp;        String enhancedQuery = query + &quot; NOT podcast NOT audiobook&quot;;</b>
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Searching Spotify with query: &#39;{}&#39;&quot;, enhancedQuery);</b>
+&nbsp;
+<b class="nc">&nbsp;        String url = UriComponentsBuilder</b>
+<b class="nc">&nbsp;                .fromHttpUrl(&quot;https://api.spotify.com/v1/search&quot;)</b>
+<b class="nc">&nbsp;                .queryParam(&quot;q&quot;, enhancedQuery)</b>
+<b class="nc">&nbsp;                .queryParam(&quot;type&quot;, &quot;track&quot;)</b>
+<b class="nc">&nbsp;                .queryParam(&quot;limit&quot;, &quot;10&quot;)</b>
+<b class="nc">&nbsp;                .queryParam(&quot;market&quot;, &quot;US&quot;)</b>
+<b class="nc">&nbsp;                .toUriString();</b>
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Full URL: {}&quot; , url);</b>
+&nbsp;
+&nbsp;        try{
+<b class="nc">&nbsp;            ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(</b>
+&nbsp;                 url,
+&nbsp;                 HttpMethod.GET,
+&nbsp;                 request,
+&nbsp;                 JsonNode.class
+&nbsp;            );
+&nbsp;
+<b class="nc">&nbsp;            JsonNode body = response.getBody();</b>
+<b class="nc">&nbsp;            log.info(&quot;Spotify response body: {}&quot;, body);</b>
+&nbsp;
+<b class="nc">&nbsp;            if(body == null || !body.has(&quot;tracks&quot;)){</b>
+<b class="nc">&nbsp;                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Invalid search response from Spotify&quot;);</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            JsonNode items = body.path(&quot;tracks&quot;).path(&quot;items&quot;);</b>
+<b class="nc">&nbsp;            log.info(&quot;Search returned {} items&quot;, items.size());</b>
+<b class="nc">&nbsp;            return items;</b>
+&nbsp;        } catch(HttpClientErrorException e){
+<b class="nc">&nbsp;            log.error(&quot;Spotify search error: {} - {}&quot;, e.getStatusCode(), e.getResponseBodyAsString());</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Error searching Spotify: &quot; + e.getStatusCode());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Search Spotify using CLIENT CREDENTIALS (not user token)
+&nbsp;     * This is needed because genre: queries don&#39;t work with user OAuth tokens
+&nbsp;     * @param query search query
+&nbsp;     * @return JsonNode containing search results
+&nbsp;     */
+&nbsp;    public JsonNode searchTracksWithClientCredentials(String query) {
+<b class="nc">&nbsp;        if (query == null || query.isBlank()) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Search query cannot be empty&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // Use app&#39;s client credentials token (not user&#39;s OAuth token)
+<b class="nc">&nbsp;        String token = getAccessToken();</b>
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;        headers.setBearerAuth(token);</b>
+<b class="nc">&nbsp;        HttpEntity&lt;Void&gt; request = new HttpEntity&lt;&gt;(headers);</b>
+&nbsp;
+<b class="nc">&nbsp;        String enhancedQuery = query;</b>
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Searching Spotify with client credentials, query: &#39;{}&#39;&quot;, enhancedQuery);</b>
+&nbsp;
+<b class="nc">&nbsp;        String url = UriComponentsBuilder</b>
+<b class="nc">&nbsp;                .fromHttpUrl(&quot;https://api.spotify.com/v1/search&quot;)</b>
+<b class="nc">&nbsp;                .queryParam(&quot;q&quot;, enhancedQuery)</b>
+<b class="nc">&nbsp;                .queryParam(&quot;type&quot;, &quot;track&quot;)</b>
+<b class="nc">&nbsp;                .queryParam(&quot;limit&quot;, &quot;20&quot;)</b>
+<b class="nc">&nbsp;                .queryParam(&quot;market&quot;, &quot;US&quot;)</b>
+<b class="nc">&nbsp;                .toUriString();</b>
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(</b>
+&nbsp;                    url,
+&nbsp;                    HttpMethod.GET,
+&nbsp;                    request,
+&nbsp;                    JsonNode.class
+&nbsp;            );
+&nbsp;
+<b class="nc">&nbsp;            JsonNode body = response.getBody();</b>
+&nbsp;
+<b class="nc">&nbsp;            if (body == null || !body.has(&quot;tracks&quot;) ||</b>
+<b class="nc">&nbsp;                    !body.path(&quot;tracks&quot;).has(&quot;items&quot;)) {</b>
+<b class="nc">&nbsp;                throw new ResponseStatusException(</b>
+&nbsp;                        HttpStatus.BAD_GATEWAY,
+&nbsp;                        &quot;Invalid search response from Spotify&quot;
+&nbsp;                );
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            JsonNode items = body.path(&quot;tracks&quot;).path(&quot;items&quot;);</b>
+<b class="nc">&nbsp;            log.info(&quot;Client credentials search returned {} items&quot;, items.size());</b>
+&nbsp;
+<b class="nc">&nbsp;            return items;</b>
+&nbsp;
+&nbsp;        } catch (HttpClientErrorException e) {
+<b class="nc">&nbsp;            log.error(&quot;Spotify search error: {} - {}&quot;, e.getStatusCode(), e.getResponseBodyAsString());</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Error searching Spotify: &quot; + e.getStatusCode());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-09 15:12</div>
+</div>
+</body>
+</html>

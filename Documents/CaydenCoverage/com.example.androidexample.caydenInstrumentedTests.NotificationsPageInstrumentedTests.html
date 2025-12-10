@@ -1,0 +1,220 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Test results - Class com.example.androidexample.caydenInstrumentedTests.NotificationsPageInstrumentedTests</title>
+<link href="css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="css/style.css" rel="stylesheet" type="text/css"/>
+<script src="js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>Class com.example.androidexample.caydenInstrumentedTests.NotificationsPageInstrumentedTests</h1>
+<div class="breadcrumbs">
+<a href="index.html">all</a> &gt; 
+<a href="com.example.androidexample.caydenInstrumentedTests.html">com.example.androidexample.caydenInstrumentedTests</a> &gt; NotificationsPageInstrumentedTests</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">5</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">3</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="skipped">
+<div class="counter">0</div>
+<p>skipped</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">9.801s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox failures" id="successRate">
+<div class="percent">40%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="tabs">
+<ul class="tabLinks">
+<li>
+<a href="#tab0">Failed tests</a>
+</li>
+<li>
+<a href="#tab1">Tests</a>
+</li>
+</ul>
+<div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="testClickNotificationMarksAsRead"></a>
+<h3 class="failures">testClickNotificationMarksAsRead</h3>
+<span class="code">
+<pre>androidx.test.espresso.PerformException: Error performing 'androidx.test.espresso.contrib.RecyclerViewActions$ActionOnItemAtPositionViewAction@f7b2e01' on view 'Animations or transitions are enabled on the target device.
+For more info check: https://developer.android.com/training/testing/espresso/setup#set-up-environment
+
+view.getId() is &lt;2131231289/com.example.androidexample:id/rvNotifications&gt;'.
+at androidx.test.espresso.PerformException$Builder.build(PerformException.java:1)
+at androidx.test.espresso.base.PerformExceptionHandler.handleSafely(PerformExceptionHandler.java:8)
+at androidx.test.espresso.base.PerformExceptionHandler.handleSafely(PerformExceptionHandler.java:9)
+at androidx.test.espresso.base.DefaultFailureHandler$TypedFailureHandler.handle(DefaultFailureHandler.java:4)
+at androidx.test.espresso.base.DefaultFailureHandler.handle(DefaultFailureHandler.java:5)
+at androidx.test.espresso.ViewInteraction.waitForAndHandleInteractionResults(ViewInteraction.java:8)
+at androidx.test.espresso.ViewInteraction.desugaredPerform(ViewInteraction.java:11)
+at androidx.test.espresso.ViewInteraction.perform(ViewInteraction.java:8)
+at com.example.androidexample.caydenInstrumentedTests.NotificationsPageInstrumentedTests.testClickNotificationMarksAsRead(NotificationsPageInstrumentedTests.java:75)
+... 33 trimmed
+Caused by: java.lang.IllegalStateException: No view holder at position: 0
+at androidx.test.espresso.contrib.RecyclerViewActions$ActionOnItemAtPositionViewAction.perform(RecyclerViewActions.java:292)
+at androidx.test.espresso.ViewInteraction$SingleExecutionViewAction.perform(ViewInteraction.java:2)
+at androidx.test.espresso.ViewInteraction.doPerform(ViewInteraction.java:25)
+at androidx.test.espresso.ViewInteraction.-$$Nest$mdoPerform(Unknown Source:0)
+at androidx.test.espresso.ViewInteraction$1.call(ViewInteraction.java:7)
+at androidx.test.espresso.ViewInteraction$1.call(ViewInteraction.java:1)
+at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+at android.os.Handler.handleCallback(Handler.java:995)
+at android.os.Handler.dispatchMessage(Handler.java:103)
+at android.os.Looper.loopOnce(Looper.java:248)
+at android.os.Looper.loop(Looper.java:338)
+at android.app.ActivityThread.main(ActivityThread.java:9067)
+at java.lang.reflect.Method.invoke(Native Method)
+at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:593)
+at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:932)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="testDeleteNotification"></a>
+<h3 class="failures">testDeleteNotification</h3>
+<span class="code">
+<pre>androidx.test.espresso.PerformException: Error performing 'androidx.test.espresso.contrib.RecyclerViewActions$ActionOnItemAtPositionViewAction@eb78035' on view 'Animations or transitions are enabled on the target device.
+For more info check: https://developer.android.com/training/testing/espresso/setup#set-up-environment
+
+view.getId() is &lt;2131231289/com.example.androidexample:id/rvNotifications&gt;'.
+at androidx.test.espresso.PerformException$Builder.build(PerformException.java:1)
+at androidx.test.espresso.base.PerformExceptionHandler.handleSafely(PerformExceptionHandler.java:8)
+at androidx.test.espresso.base.PerformExceptionHandler.handleSafely(PerformExceptionHandler.java:9)
+at androidx.test.espresso.base.DefaultFailureHandler$TypedFailureHandler.handle(DefaultFailureHandler.java:4)
+at androidx.test.espresso.base.DefaultFailureHandler.handle(DefaultFailureHandler.java:5)
+at androidx.test.espresso.ViewInteraction.waitForAndHandleInteractionResults(ViewInteraction.java:8)
+at androidx.test.espresso.ViewInteraction.desugaredPerform(ViewInteraction.java:11)
+at androidx.test.espresso.ViewInteraction.perform(ViewInteraction.java:8)
+at com.example.androidexample.caydenInstrumentedTests.NotificationsPageInstrumentedTests.testDeleteNotification(NotificationsPageInstrumentedTests.java:91)
+... 33 trimmed
+Caused by: java.lang.IllegalStateException: No view holder at position: 0
+at androidx.test.espresso.contrib.RecyclerViewActions$ActionOnItemAtPositionViewAction.perform(RecyclerViewActions.java:292)
+at androidx.test.espresso.ViewInteraction$SingleExecutionViewAction.perform(ViewInteraction.java:2)
+at androidx.test.espresso.ViewInteraction.doPerform(ViewInteraction.java:25)
+at androidx.test.espresso.ViewInteraction.-$$Nest$mdoPerform(Unknown Source:0)
+at androidx.test.espresso.ViewInteraction$1.call(ViewInteraction.java:7)
+at androidx.test.espresso.ViewInteraction$1.call(ViewInteraction.java:1)
+at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+at android.os.Handler.handleCallback(Handler.java:995)
+at android.os.Handler.dispatchMessage(Handler.java:103)
+at android.os.Looper.loopOnce(Looper.java:248)
+at android.os.Looper.loop(Looper.java:338)
+at android.app.ActivityThread.main(ActivityThread.java:9067)
+at java.lang.reflect.Method.invoke(Native Method)
+at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:593)
+at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:932)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="testReturnButton"></a>
+<h3 class="failures">testReturnButton</h3>
+<span class="code">
+<pre>androidx.test.espresso.PerformException: Error performing 'single click' on view 'Animations or transitions are enabled on the target device.
+For more info check: https://developer.android.com/training/testing/espresso/setup#set-up-environment
+
+view.getId() is &lt;2131230869/com.example.androidexample:id/btnReturn&gt;'.
+at androidx.test.espresso.PerformException$Builder.build(PerformException.java:1)
+at androidx.test.espresso.base.PerformExceptionHandler.handleSafely(PerformExceptionHandler.java:8)
+at androidx.test.espresso.base.PerformExceptionHandler.handleSafely(PerformExceptionHandler.java:9)
+at androidx.test.espresso.base.DefaultFailureHandler$TypedFailureHandler.handle(DefaultFailureHandler.java:4)
+at androidx.test.espresso.base.DefaultFailureHandler.handle(DefaultFailureHandler.java:5)
+at androidx.test.espresso.ViewInteraction.waitForAndHandleInteractionResults(ViewInteraction.java:8)
+at androidx.test.espresso.ViewInteraction.desugaredPerform(ViewInteraction.java:11)
+at androidx.test.espresso.ViewInteraction.perform(ViewInteraction.java:8)
+at com.example.androidexample.caydenInstrumentedTests.NotificationsPageInstrumentedTests.testReturnButton(NotificationsPageInstrumentedTests.java:119)
+... 33 trimmed
+Caused by: java.lang.RuntimeException: Action will not be performed because the target view does not match one or more of the following constraints:
+(view has effective visibility &lt;VISIBLE&gt; and view.getGlobalVisibleRect() covers at least &lt;90&gt; percent of the view's area)
+Target view: &quot;MaterialButton{id=2131230869, res-name=btnReturn, visibility=VISIBLE, width=238, height=105, has-focus=false, has-focusable=true, has-window-focus=true, is-clickable=true, is-enabled=true, is-focused=false, is-focusable=true, is-layout-requested=false, is-selected=false, layout-params=android.widget.LinearLayout$LayoutParams@YYYYYY, tag=null, root-is-layout-requested=false, has-input-connection=false, x=810.0, y=21.0, text=Return, input-type=0, ime-target=false, has-links=false, is-checked=false}&quot;
+at androidx.test.espresso.ViewInteraction.doPerform(ViewInteraction.java:20)
+at androidx.test.espresso.ViewInteraction.-$$Nest$mdoPerform(Unknown Source:0)
+at androidx.test.espresso.ViewInteraction$1.call(ViewInteraction.java:7)
+at androidx.test.espresso.ViewInteraction$1.call(ViewInteraction.java:1)
+at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+at android.os.Handler.handleCallback(Handler.java:995)
+at android.os.Handler.dispatchMessage(Handler.java:103)
+at android.os.Looper.loopOnce(Looper.java:248)
+at android.os.Looper.loop(Looper.java:338)
+at android.app.ActivityThread.main(ActivityThread.java:9067)
+at java.lang.reflect.Method.invoke(Native Method)
+at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:593)
+at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:932)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Medium_Phone(AVD) - 16</th>
+</tr>
+</thead>
+<tr>
+<td>testClickNotificationMarksAsRead</td>
+<td class="failures">failed (2.463s)</td>
+</tr>
+<tr>
+<td>testDeleteNotification</td>
+<td class="failures">failed (2.310s)</td>
+</tr>
+<tr>
+<td>testReadAllNotificationsButton</td>
+<td class="success">passed (3.537s)</td>
+</tr>
+<tr>
+<td>testRecyclerViewIsDisplayed</td>
+<td class="success">passed (0.659s)</td>
+</tr>
+<tr>
+<td>testReturnButton</td>
+<td class="failures">failed (0.832s)</td>
+</tr>
+</table>
+</div>
+</div>
+<div id="footer">
+<p>Generated by 
+<a href="http://www.gradle.org">Gradle 9.2.1</a> at Dec 10, 2025, 9:06:11 AM</p>
+</div>
+</div>
+</body>

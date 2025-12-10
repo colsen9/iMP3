@@ -1,0 +1,134 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- HEADER BAR -->
+    <LinearLayout
+        android:orientation="horizontal"
+        android:background="#1976D2"
+        android:padding="8dp"
+        android:gravity="center_vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Button
+            android:id="@+id/btnBack"
+            android:text="Back"
+            android:textColor="@android:color/white"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/admin_color_light"/>
+
+        <TextView
+            android:id="@+id/tvItemName"
+            android:text="[Item Name] Reviews"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:textSize="20sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <!-- REVIEWS LIST -->
+
+    <!-- WRITE REVIEW SECTION -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvReviews"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp" />
+
+    <!-- Post Review button / Edit & Delete Review Buttons -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical|center_horizontal"
+        android:orientation="horizontal"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
+
+        <Button
+            android:id="@+id/btnPostReview"
+            android:layout_width="140dp"
+            android:layout_height="50dp"
+            android:layout_marginEnd="10dp"
+            android:backgroundTint="@color/admin_color"
+            android:text="Post Review"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"/>
+
+        <ImageButton
+            android:id="@+id/btnTrashReview"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_margin="4dp"
+            android:background="@drawable/rounded_border"
+            android:backgroundTint="@color/downarrow_red"
+            android:contentDescription="Delete Review"
+            android:scaleType="centerInside"
+            android:src="@drawable/whitetrash"
+            android:padding="8dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#F2F2F2"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+
+            <EditText
+                android:id="@+id/etSummary"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="@android:color/white"
+                android:hint="Review title"
+                android:padding="6dp" />
+
+            <RatingBar
+                android:id="@+id/ratingBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:numStars="5"
+                android:progressTint="#ffe234"
+                android:secondaryProgressTint="#ccb429"
+                android:stepSize="0.5" />
+
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:orientation="vertical">
+
+            <EditText
+                android:id="@+id/etFullReview"
+                android:layout_width="match_parent"
+                android:layout_height="130dp"
+                android:layout_margin="4dp"
+                android:background="@android:color/white"
+                android:hint="Write your review here..."
+                android:inputType="textMultiLine"
+                android:gravity="top"
+                android:padding="10dp"
+                android:minLines="3" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

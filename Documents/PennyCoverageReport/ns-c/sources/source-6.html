@@ -1,0 +1,380 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > UserTagController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.tag</a>
+</div>
+
+<h1>Coverage Summary for Class: UserTagController (com.imp3.Backend.tag)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">UserTagController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    9.1%
+  </span>
+  <span class="absValue">
+    (1/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/44)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    1.3%
+  </span>
+  <span class="absValue">
+    (1/79)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.tag;
+&nbsp;
+&nbsp;import com.imp3.Backend.common.AbstractController;
+&nbsp;import com.imp3.Backend.follow.FollowRepository;
+&nbsp;import com.imp3.Backend.user.User;
+&nbsp;import com.imp3.Backend.user.UserRepository;
+&nbsp;import jakarta.servlet.http.HttpSession;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;import org.springframework.web.server.ResponseStatusException;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;/usertag&quot;)
+<b class="fc">&nbsp;public class UserTagController extends AbstractController {</b>
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    UserTagRepository usertagrepository;
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    TagRepository tagrepository;
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    UserRepository userrepository;
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    FollowRepository followrepository;
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    TagService tagservice;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * LIST (GET) - List all tags for the logged-in user
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     * @return list of user&#39;s tags
+&nbsp;     */
+&nbsp;    @GetMapping
+&nbsp;    public List&lt;UserTag&gt; getMyTags(HttpSession session){
+<b class="nc">&nbsp;        Integer uid = getSessionUid(session);</b>
+&nbsp;
+<b class="nc">&nbsp;        return usertagrepository.findByUser_Id(uid);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * READ (GET) - Get one specific tag for the user
+&nbsp;     * @param userTagId of the user tag
+&nbsp;     * @param session session containing &quot;uid&quot;
+&nbsp;     * @return the user tag
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{userTagId}&quot;)
+&nbsp;    public UserTag getMyTag(@PathVariable Integer userTagId, HttpSession session){
+<b class="nc">&nbsp;        Integer uid = getSessionUid(session);</b>
+&nbsp;
+<b class="nc">&nbsp;        UserTag userTag = usertagrepository.findById(userTagId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Tag not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        if(!userTag.getUser().getId().equals(uid)){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;Not your tag&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return userTag;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * LIST (GET) - List tags for a specific user (respects privacy)
+&nbsp;     * @param profileUid of the user whose tags to view
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     * @return list of viewable userTags
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/users/{profileUid}&quot;)
+&nbsp;    public List&lt;UserTag&gt; getUserTags(@PathVariable Integer profileUid, HttpSession session){
+<b class="nc">&nbsp;        Integer uid = getSessionUid(session);</b>
+&nbsp;
+&nbsp;        //verify user exists
+<b class="nc">&nbsp;        userrepository.findById(profileUid)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+&nbsp;        //if viewing own profile, view all
+<b class="nc">&nbsp;        if(uid.equals(profileUid)){</b>
+<b class="nc">&nbsp;            return usertagrepository.findByUser_Id(profileUid);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //check if mutuals
+<b class="nc">&nbsp;        boolean areMutuals = followrepository.existsByFollower_IdAndFollowed_Id(uid, profileUid)</b>
+<b class="nc">&nbsp;                &amp;&amp; followrepository.existsByFollower_IdAndFollowed_Id(profileUid, uid);</b>
+&nbsp;
+&nbsp;        //filter based on privacy
+<b class="nc">&nbsp;        return usertagrepository.findByUser_Id(profileUid).stream()</b>
+<b class="nc">&nbsp;                .filter(ut -&gt; {</b>
+<b class="nc">&nbsp;                    if(ut.getPrivacy() == UserTag.Privacy.PUBLIC){</b>
+<b class="nc">&nbsp;                        return true;</b>
+&nbsp;                    }
+<b class="nc">&nbsp;                    if(ut.getPrivacy() == UserTag.Privacy.MUTUALS &amp;&amp; areMutuals){</b>
+<b class="nc">&nbsp;                        return true;</b>
+&nbsp;                    }
+<b class="nc">&nbsp;                    return false;</b>
+&nbsp;
+<b class="nc">&nbsp;                }).collect(Collectors.toList());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * CREATE (POST) - Add a tag to the logged-in user
+&nbsp;     * @param request containing tag details
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     * @return the created user tag
+&nbsp;     */
+&nbsp;    @PostMapping
+&nbsp;    @ResponseStatus(HttpStatus.CREATED)
+&nbsp;    public UserTag addTagToUser(@RequestBody UserTagRequest request, HttpSession session){
+<b class="nc">&nbsp;        Integer uid = getSessionUid(session);</b>
+&nbsp;
+<b class="nc">&nbsp;        User user = userrepository.findById(uid)</b>
+<b class="nc">&nbsp;                .orElseThrow( () -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+&nbsp;        //validate tagId is provided
+<b class="nc">&nbsp;        if(request.getTagId() == null){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Tag ID is required&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        Tag tag = tagrepository.findById(request.getTagId())</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Tag not found&quot;));</b>
+&nbsp;
+&nbsp;        //check if user already has this tag
+<b class="nc">&nbsp;        if(usertagrepository.existsByUser_IdAndTag_TagId(uid, request.getTagId())){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;You already have this tag&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        UserTag u = new UserTag();</b>
+<b class="nc">&nbsp;        u.setUser(user);</b>
+<b class="nc">&nbsp;        u.setTag(tag);</b>
+<b class="nc">&nbsp;        u.setTagType(request.getTagType() != null ? request.getTagType() : UserTag.TagType.CUSTOM);</b>
+<b class="nc">&nbsp;        u.setPrivacy(request.getPrivacy() != null ? request.getPrivacy() : UserTag.Privacy.PUBLIC);</b>
+&nbsp;
+<b class="nc">&nbsp;        if(request.getConfidence() != null ){</b>
+<b class="nc">&nbsp;            u.setConfidence(request.getConfidence());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(request.getSource() != null){</b>
+<b class="nc">&nbsp;            u.setSource(request.getSource());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return usertagrepository.save(u);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  UPDATE (PUT) - Update a user&#39;s tag (privacy, confidence, etc.,
+&nbsp;     * @param userTagId of the user tag
+&nbsp;     * @param request containing the updated fields
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     * @return the updated user tag
+&nbsp;     */
+&nbsp;    @PutMapping(&quot;/{userTagId}&quot;)
+&nbsp;    public UserTag updateUserTag(@PathVariable Integer userTagId,
+&nbsp;                                 @RequestBody UserTagRequest request, HttpSession session ) {
+&nbsp;
+<b class="nc">&nbsp;        UserTag u = usertagrepository.findById(userTagId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User tag not found&quot;));</b>
+&nbsp;
+&nbsp;        // users can only edit their own tags, unless they are administrators
+<b class="nc">&nbsp;        Integer userId = (Integer)session.getAttribute(&quot;uid&quot;);</b>
+<b class="nc">&nbsp;        String userType = (String)session.getAttribute(&quot;type&quot;);</b>
+<b class="nc">&nbsp;        if (!u.getUser().getId().equals(userId) &amp;&amp; !userType.equals(&quot;admin&quot;)) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;Not your tag&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(request.getPrivacy() != null){</b>
+<b class="nc">&nbsp;            u.setPrivacy(request.getPrivacy());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(request.getConfidence() != null){</b>
+<b class="nc">&nbsp;            u.setConfidence(request.getConfidence());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(request.getSource() != null){</b>
+<b class="nc">&nbsp;            u.setSource(request.getSource());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(request.getTagType() != null){</b>
+<b class="nc">&nbsp;            u.setTagType(request.getTagType());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return usertagrepository.save(u);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * DELETE (DELETE) - Remove a tag from the logged-in user
+&nbsp;     * @param userTagId of the user
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     */
+&nbsp;    @DeleteMapping(&quot;/{userTagId}&quot;)
+&nbsp;    @ResponseStatus(HttpStatus.NO_CONTENT)
+&nbsp;    public void removeTagFromUser(@PathVariable Integer userTagId, HttpSession session){
+&nbsp;
+<b class="nc">&nbsp;        UserTag u = usertagrepository.findById(userTagId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Tag not found&quot;));</b>
+&nbsp;
+&nbsp;        // users can only delete their own tags, unless they are administrators
+<b class="nc">&nbsp;        Integer userId = (Integer)session.getAttribute(&quot;uid&quot;);</b>
+<b class="nc">&nbsp;        String userType = (String)session.getAttribute(&quot;type&quot;);</b>
+<b class="nc">&nbsp;        if (!u.getUser().getId().equals(userId) &amp;&amp; !userType.equals(&quot;admin&quot;)) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;Not your tag&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        usertagrepository.delete(u);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * LIST (POST) - Generate tags from Spotify listening history
+&nbsp;     * @param session containing &quot;iud&quot;
+&nbsp;     * @return list of generated tags
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/generate&quot;)
+&nbsp;    @ResponseStatus(HttpStatus.CREATED)
+&nbsp;    public List&lt;UserTag&gt; generateTags(HttpSession session){
+<b class="nc">&nbsp;        Integer uid = getSessionUid(session);</b>
+&nbsp;
+<b class="nc">&nbsp;        User user = userrepository.findById(uid)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        if(user.getSpotifyAccessToken() == null || user.getSpotifyAccessToken().isBlank()){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Spotify account not linked&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return tagservice.generateTagsFromSpotify(user);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * READ (GET) - Generate a profile summary based on user&#39;s tags
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     * @return summary string
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/summary&quot;)
+&nbsp;    public Map&lt;String, String&gt; getProfileSummary(HttpSession session){
+<b class="nc">&nbsp;        Integer uid = getSessionUid(session);</b>
+&nbsp;
+<b class="nc">&nbsp;        String summary = tagservice.generateProfileSummary(uid);</b>
+<b class="nc">&nbsp;        return Map.of(&quot;summary&quot;, summary);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * READ (GET) - Get another user&#39;s profile summary (public tags only)
+&nbsp;     * @param profileUid of the user
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     * @return summary string
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/summary/{profileUid}&quot;)
+&nbsp;    public Map&lt;String, String&gt; getUserProfileSummary(@PathVariable Integer profileUid, HttpSession session){
+<b class="nc">&nbsp;        getSessionUid(session);</b>
+&nbsp;
+<b class="nc">&nbsp;        userrepository.findById(profileUid)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        String summary = tagservice.generateProfileSummary(profileUid);</b>
+<b class="nc">&nbsp;        return Map.of(&quot;summary&quot;, summary);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-09 15:12</div>
+</div>
+</body>
+</html>

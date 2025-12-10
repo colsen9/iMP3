@@ -1,0 +1,85 @@
+stages:
+  - mavenbuild
+  - maventest
+  - mavendeploy
+  - androidbuild
+  - androidtest
+
+maven-build:
+  stage: mavenbuild
+  image: maven:3.9-eclipse-temurin-17
+  tags:
+    - springboot_tag
+  script:
+    - cd Backend
+    - mvn package
+  artifacts:
+    paths:
+      - Backend/target/*.jar
+  only:
+    refs:
+      - main
+    changes:
+      - Backend/**/*
+
+maven-test:
+  stage: maventest
+  tags:
+    - springboot_tag
+  script:
+    - cd Backend
+    - mvn test
+  only:
+    refs:
+      - main
+    changes:
+      - Backend/**/*
+
+auto-deploy:
+  stage: mavendeploy
+  tags:
+    - springboot_tag
+  script:
+    - cd Backend
+    - sudo mv target/*.jar /target/web-demo.jar
+    - sudo systemctl stop system-web-demo
+    - sudo systemctl start system-web-demo
+  only:
+    refs:
+      - main
+    changes:
+      - Backend/**/*
+
+android-build:
+  image: afirefly/android-ci:java17
+  stage: androidbuild
+  tags:
+   - android_tag
+  before_script:
+    - export GRADLE_USER_HOME=`pwd`/.gradle
+    - chmod +x ./Frontend/IMP3/gradlew
+  script:
+    - cd Frontend/IMP3
+    - ./gradlew build
+  only:
+    refs:
+      - main
+    changes:
+      - Frontend/**/*
+
+android-test:
+  image: afirefly/android-ci:java17
+  stage: androidtest
+  tags:
+    - android_tag
+  before_script:
+     - export GRADLE_USER_HOME=`pwd`/.gradle
+     - chmod +x ./Frontend/IMP3/gradlew
+  script:
+     - cd Frontend/IMP3
+     - ./gradlew test
+  only:
+    refs:
+      - main
+    changes:
+      - Frontend/**/*

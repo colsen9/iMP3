@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ChatPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">ChatPage.java</span></div><h1>ChatPage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Bundle;
+import android.text.format.DateUtils;
+import android.util.Base64;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+
+import org.java_websocket.handshake.ServerHandshake;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+<span class="fc" id="L38">public class ChatPage extends AppCompatActivity implements WebSocketListener {</span>
+<span class="fc" id="L39">    private final String serverBase = &quot;http://coms-3090-027.class.las.iastate.edu:8080&quot;;</span>
+<span class="fc" id="L40">    private final String websocketBase = &quot;ws://coms-3090-027.class.las.iastate.edu:8080&quot;;</span>
+    private RequestQueue requestQueue;
+    private RecyclerView rv;
+    private ChatAdapter adapter;
+<span class="fc" id="L44">    private List&lt;MessageModel&gt; messages = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L45">    private final String PAGE_TAG = &quot;ChatPage&quot;;</span>
+    private EditText etMessage;
+    private Button btnSend, btnBack;
+    private int userId;
+    private int friendId;
+<span class="fc" id="L50">    private String friendName = &quot;Username Not Found&quot;;</span>
+<span class="fc" id="L51">    private Map&lt;Integer, Bitmap&gt; userProfileMap = new HashMap&lt;&gt;();</span>
+
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="fc" id="L54">        super.onCreate(savedInstanceState);</span>
+<span class="fc" id="L55">        setContentView(R.layout.chat_page);</span>
+<span class="fc" id="L56">        Intent intent = getIntent();</span>
+
+<span class="fc" id="L58">        userId = intent.getIntExtra(&quot;userId&quot;, -1);</span>
+<span class="fc" id="L59">        friendId = intent.getIntExtra(&quot;friendId&quot;, -1);</span>
+<span class="fc" id="L60">        friendName = intent.getStringExtra(&quot;friendName&quot;);</span>
+
+<span class="fc" id="L62">        TextView chatName = findViewById(R.id.chatPage_label);</span>
+<span class="fc" id="L63">        chatName.setText(&quot;Chat with &quot; + friendName);</span>
+<span class="fc" id="L64">        requestQueue = QueueApplication.getQueue();</span>
+
+<span class="fc" id="L66">        rv = findViewById(R.id.rvChat);</span>
+<span class="fc" id="L67">        rv.setLayoutManager(new LinearLayoutManager(this));</span>
+<span class="fc" id="L68">        adapter = new ChatAdapter(messages, userId);</span>
+<span class="fc" id="L69">        rv.setAdapter(adapter);</span>
+
+<span class="fc" id="L71">        etMessage = findViewById(R.id.etMessage);</span>
+<span class="fc" id="L72">        btnSend = findViewById(R.id.btnSend);</span>
+<span class="fc" id="L73">        btnBack = findViewById(R.id.chatPage_back);</span>
+
+<span class="fc" id="L75">        loadUserProfileImage(userId, null);</span>
+
+<span class="fc" id="L77">        btnBack.setOnClickListener(new View.OnClickListener(){</span>
+            @Override
+            public void onClick(View v) {
+<span class="nc" id="L80">                Intent back = new Intent();</span>
+<span class="nc" id="L81">                back.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L82">                setResult(RESULT_OK, back);</span>
+<span class="nc" id="L83">                finish();</span>
+<span class="nc" id="L84">            }});</span>
+
+<span class="pc" id="L86">        btnSend.setOnClickListener(v -&gt; sendMessage());</span>
+
+        // fetchChatHistory();
+<span class="fc" id="L89">        startWebSocket();</span>
+<span class="fc" id="L90">    }</span>
+
+    @Override
+    protected void onDestroy() {
+<span class="fc" id="L94">        super.onDestroy();</span>
+<span class="fc" id="L95">        WebSocketManager.getInstance().disconnectWebSocket();</span>
+<span class="fc" id="L96">    }</span>
+
+    /** ---------------- REST: Fetch previous messages ---------------- **/
+    /* private void fetchChatHistory() {
+        String url = serverBase + &quot;/chat/&quot; + friendId + &quot;/messages&quot;;
+
+        JsonArrayRequest req = new JsonArrayRequest(
+                com.android.volley.Request.Method.GET,
+                url,
+                null,
+                response -&gt; {
+                    messages.clear();
+                    for (int i = 0; i &lt; response.length(); i++) {
+                        try {
+                            JSONObject obj = response.getJSONObject(i);
+                            messages.add(MessageModel.fromJson(obj));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    // Sort messages chronologically (oldest first)
+                    messages.sort(Comparator.comparingLong(m -&gt; m.timestamp));
+                    adapter.notifyDataSetChanged();
+                    rv.scrollToPosition(messages.size() - 1);
+                },
+                error -&gt; Log.e(PAGE_TAG, &quot;fetchChatHistory error: &quot; + error.toString())
+        );
+        requestQueue.add(req);
+    } */
+
+    /** ---------------- WEBSOCKET ---------------- **/
+    private void startWebSocket() {
+<span class="fc" id="L128">        Log.i(PAGE_TAG,&quot;Started websocket&quot;);</span>
+<span class="fc" id="L129">        String wsUrl = websocketBase + &quot;/chat/&quot; + userId;</span>
+
+<span class="fc" id="L131">        WebSocketManager wsManager = WebSocketManager.getInstance();</span>
+
+<span class="fc" id="L133">        wsManager.setWebSocketListener(new WebSocketListener() {</span>
+            @Override
+            public void onWebSocketOpen(ServerHandshake handshakedata) {
+<span class="fc" id="L136">                Log.i(PAGE_TAG, &quot;WebSocket connected to chat group &quot; + friendId);</span>
+<span class="fc" id="L137">            }</span>
+
+            @Override
+            public void onWebSocketMessage(String message) {
+<span class="nc" id="L141">                Log.i(PAGE_TAG,message);</span>
+<span class="nc" id="L142">                runOnUiThread(() -&gt; handleIncomingWebsocketMessage(message));</span>
+<span class="nc" id="L143">            }</span>
+
+            @Override
+            public void onWebSocketClose(int code, String reason, boolean remote) {
+<span class="fc" id="L147">                Log.i(PAGE_TAG, &quot;WebSocket closed: &quot; + reason);</span>
+<span class="fc" id="L148">            }</span>
+
+            @Override
+            public void onWebSocketError(Exception ex) {
+<span class="nc" id="L152">                Log.e(PAGE_TAG, &quot;WebSocket error: &quot;, ex);</span>
+<span class="nc" id="L153">            }</span>
+        });
+
+<span class="fc" id="L156">        wsManager.connectWebSocket(wsUrl);</span>
+<span class="fc" id="L157">    }</span>
+
+    private void loadUserProfileImage(int senderId, Runnable callback) {
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (userProfileMap.containsKey(senderId)) {</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">            if (callback != null) callback.run();</span>
+<span class="nc" id="L162">            return;</span>
+        }
+
+<span class="fc" id="L165">        String url = serverBase + &quot;/users/&quot; + senderId;</span>
+<span class="fc" id="L166">        JsonObjectRequest request = new JsonObjectRequest(</span>
+                Request.Method.GET, url, null,
+                response -&gt; {
+<span class="nc" id="L169">                    String base64 = response.optString(&quot;picture&quot;, &quot;&quot;);</span>
+<span class="nc" id="L170">                    Bitmap bmp = null;</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">                    if (!base64.isEmpty()) {</span>
+<span class="nc" id="L172">                        byte[] decoded = Base64.decode(base64, Base64.NO_WRAP);</span>
+<span class="nc" id="L173">                        bmp = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);</span>
+                    }
+<span class="nc" id="L175">                    userProfileMap.put(senderId, bmp);</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">                    if (callback != null) callback.run();</span>
+<span class="nc" id="L177">                },</span>
+                error -&gt; {
+<span class="fc" id="L179">                    userProfileMap.put(senderId, null);</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">                    if (callback != null) callback.run();</span>
+<span class="fc" id="L181">                }</span>
+        );
+<span class="fc" id="L183">        requestQueue.add(request);</span>
+<span class="fc" id="L184">    }</span>
+
+    private void handleIncomingWebsocketMessage(String wsText) {
+        try {
+            // Assume message format: &quot;senderId:messageContent&quot;
+<span class="nc" id="L189">            int colonIndex = wsText.indexOf(&quot;:&quot;);</span>
+<span class="nc" id="L190">            int senderId = -1;</span>
+<span class="nc" id="L191">            String message = wsText;</span>
+
+<span class="nc bnc" id="L193" title="All 2 branches missed.">            if (colonIndex != -1) {</span>
+                try {
+<span class="nc" id="L195">                    senderId = Integer.parseInt(wsText.substring(0, colonIndex).trim());</span>
+<span class="nc" id="L196">                    message = wsText.substring(colonIndex + 1).trim();</span>
+<span class="nc" id="L197">                } catch (NumberFormatException ignored) {}</span>
+            }
+
+<span class="nc bnc" id="L200" title="All 2 branches missed.">            if (senderId == userId) {</span>
+<span class="nc" id="L201">                return;</span>
+            }
+
+<span class="nc" id="L204">            final int finalSenderId = senderId;</span>
+<span class="nc" id="L205">            final String finalMessage = message;</span>
+
+            // Load profile image before adding to chat
+<span class="nc" id="L208">            loadUserProfileImage(finalSenderId, () -&gt; {</span>
+<span class="nc" id="L209">                Bitmap profile = userProfileMap.get(finalSenderId);</span>
+<span class="nc" id="L210">                String nameToShow = friendName;</span>
+<span class="nc" id="L211">                MessageModel msg = MessageModel.fromString(finalMessage, finalSenderId, nameToShow, profile);</span>
+
+<span class="nc" id="L213">                messages.add(msg);</span>
+<span class="nc" id="L214">                messages.sort(Comparator.comparingLong(m -&gt; m.timestamp));</span>
+<span class="nc" id="L215">                adapter.notifyDataSetChanged();</span>
+<span class="nc" id="L216">                rv.scrollToPosition(messages.size() - 1);</span>
+<span class="nc" id="L217">            });</span>
+
+<span class="nc" id="L219">        } catch (Exception e) {</span>
+<span class="nc" id="L220">            Log.e(PAGE_TAG, &quot;Error parsing message: &quot; + wsText, e);</span>
+<span class="nc" id="L221">        }</span>
+<span class="nc" id="L222">    }</span>
+
+
+    /** ---------------- SEND MESSAGE ---------------- **/
+    private void sendMessage() {
+<span class="nc" id="L227">        String content = etMessage.getText().toString().trim();</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (content.isEmpty()) return;</span>
+
+<span class="nc" id="L230">        Bitmap myProfile = userProfileMap.get(userId);</span>
+
+<span class="nc" id="L232">        MessageModel msg = MessageModel.fromString(content, userId, &quot;Me&quot;, myProfile); // &quot;Me&quot; for your own display</span>
+<span class="nc" id="L233">        messages.add(msg);</span>
+<span class="nc" id="L234">        messages.sort(Comparator.comparingLong(m -&gt; m.timestamp));</span>
+<span class="nc" id="L235">        adapter.notifyDataSetChanged();</span>
+<span class="nc" id="L236">        rv.scrollToPosition(messages.size() - 1);</span>
+
+<span class="nc" id="L238">        String msgToSend = friendId + &quot;, &quot; + content;</span>
+<span class="nc" id="L239">        WebSocketManager.getInstance().sendMessage(msgToSend);</span>
+
+<span class="nc" id="L241">        etMessage.setText(&quot;&quot;);</span>
+<span class="nc" id="L242">    }</span>
+
+    /** ---------------- MODEL ---------------- **/
+<span class="nc" id="L245">    static class MessageModel {</span>
+        int senderId;
+        String senderName;
+        String content;
+        long timestamp;
+        Bitmap senderProfile;
+
+        static MessageModel fromString(String raw, int senderId, String senderName, Bitmap profile) {
+<span class="nc" id="L253">            MessageModel m = new MessageModel();</span>
+<span class="nc" id="L254">            m.senderId = senderId;</span>
+<span class="nc" id="L255">            m.senderName = senderName;</span>
+<span class="nc" id="L256">            m.senderProfile = profile;</span>
+<span class="nc" id="L257">            m.content = raw;</span>
+<span class="nc" id="L258">            m.timestamp = System.currentTimeMillis();</span>
+<span class="nc" id="L259">            return m;</span>
+        }
+    }
+
+    /** ---------------- ADAPTER ---------------- **/
+    private static class ChatAdapter extends RecyclerView.Adapter&lt;RecyclerView.ViewHolder&gt; {
+        private final List&lt;MessageModel&gt; items;
+        private final int currentUserId;
+        private static final int VIEW_TYPE_SENT = 1;
+        private static final int VIEW_TYPE_RECEIVED = 2;
+
+<span class="fc" id="L270">        ChatAdapter(List&lt;MessageModel&gt; items, int userId) {</span>
+<span class="fc" id="L271">            this.items = items;</span>
+<span class="fc" id="L272">            this.currentUserId = userId;</span>
+<span class="fc" id="L273">        }</span>
+
+        @Override
+        public int getItemViewType(int position) {
+<span class="nc" id="L277">            MessageModel msg = items.get(position);</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">            return msg.senderId == currentUserId ? VIEW_TYPE_SENT : VIEW_TYPE_RECEIVED;</span>
+        }
+
+        @NonNull
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+<span class="nc bnc" id="L284" title="All 2 branches missed.">            if (viewType == VIEW_TYPE_SENT) {</span>
+<span class="nc" id="L285">                View v = LayoutInflater.from(parent.getContext())</span>
+<span class="nc" id="L286">                        .inflate(R.layout.item_message_sent, parent, false);</span>
+<span class="nc" id="L287">                return new SentMessageVH(v);</span>
+            } else {
+<span class="nc" id="L289">                View v = LayoutInflater.from(parent.getContext())</span>
+<span class="nc" id="L290">                        .inflate(R.layout.item_message_received, parent, false);</span>
+<span class="nc" id="L291">                return new ReceivedMessageVH(v);</span>
+            }
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+<span class="nc" id="L297">            MessageModel msg = items.get(position);</span>
+<span class="nc" id="L298">            CharSequence timeAgo = DateUtils.getRelativeTimeSpanString(</span>
+<span class="nc" id="L299">                    msg.timestamp, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS);</span>
+
+<span class="nc" id="L301">            Bitmap profileBitmap = msg.senderProfile;</span>
+
+<span class="nc bnc" id="L303" title="All 2 branches missed.">            if (holder instanceof SentMessageVH) {</span>
+<span class="nc" id="L304">                ((SentMessageVH) holder).tvContent.setText(msg.content);</span>
+<span class="nc" id="L305">                ((SentMessageVH) holder).tvTime.setText(timeAgo);</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">                if (profileBitmap != null) ((SentMessageVH) holder).ivProfile.setImageBitmap(profileBitmap);</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">            } else if (holder instanceof ReceivedMessageVH) {</span>
+<span class="nc" id="L308">                ((ReceivedMessageVH) holder).tvSender.setText(msg.senderName);</span>
+<span class="nc" id="L309">                ((ReceivedMessageVH) holder).tvContent.setText(msg.content);</span>
+<span class="nc" id="L310">                ((ReceivedMessageVH) holder).tvTime.setText(timeAgo);</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">                if (profileBitmap != null) ((ReceivedMessageVH) holder).ivProfile.setImageBitmap(profileBitmap);</span>
+            }
+<span class="nc" id="L313">        }</span>
+
+        @Override
+        public int getItemCount() {
+<span class="fc" id="L317">            return items.size();</span>
+        }
+
+        static class SentMessageVH extends RecyclerView.ViewHolder {
+            TextView tvContent, tvTime;
+            ImageView ivProfile;
+
+            SentMessageVH(@NonNull View itemView) {
+<span class="nc" id="L325">                super(itemView);</span>
+<span class="nc" id="L326">                tvContent = itemView.findViewById(R.id.tvMessageContent);</span>
+<span class="nc" id="L327">                tvTime = itemView.findViewById(R.id.tvMessageTime);</span>
+<span class="nc" id="L328">                ivProfile = itemView.findViewById(R.id.ivSenderProfile);</span>
+<span class="nc" id="L329">                ivProfile.setBackgroundResource(R.drawable.circle);</span>
+<span class="nc" id="L330">                ivProfile.setClipToOutline(true);</span>
+<span class="nc" id="L331">                ivProfile.setScaleType(ImageView.ScaleType.CENTER_CROP);</span>
+<span class="nc" id="L332">            }</span>
+        }
+
+        static class ReceivedMessageVH extends RecyclerView.ViewHolder {
+            TextView tvSender, tvContent, tvTime;
+            ImageView ivProfile;
+
+            ReceivedMessageVH(@NonNull View itemView) {
+<span class="nc" id="L340">                super(itemView);</span>
+<span class="nc" id="L341">                tvSender = itemView.findViewById(R.id.tvSenderName);</span>
+<span class="nc" id="L342">                tvContent = itemView.findViewById(R.id.tvMessageContent);</span>
+<span class="nc" id="L343">                tvTime = itemView.findViewById(R.id.tvMessageTime);</span>
+<span class="nc" id="L344">                ivProfile = itemView.findViewById(R.id.ivSenderProfile);</span>
+<span class="nc" id="L345">                ivProfile.setBackgroundResource(R.drawable.circle);</span>
+<span class="nc" id="L346">                ivProfile.setClipToOutline(true);</span>
+<span class="nc" id="L347">                ivProfile.setScaleType(ImageView.ScaleType.CENTER_CROP);</span>
+<span class="nc" id="L348">            }</span>
+        }
+    }
+
+<span class="nc" id="L352">    private void updateChatList(){}</span>
+    @Override
+    public void onWebSocketMessage(String message) {
+<span class="nc" id="L355">        Log.i(&quot;ChatApp Websocket Message&quot;, &quot;Websocket Message received&quot;);</span>
+        /**
+         * In Android, all UI-related operations must be performed on the main UI thread
+         * to ensure smooth and responsive user interfaces. The 'runOnUiThread' method
+         * is used to post a runnable to the UI thread's message queue, allowing UI updates
+         * to occur safely from a background or non-UI thread.
+         */
+<span class="nc" id="L362">        runOnUiThread(() -&gt; {</span>
+
+<span class="nc" id="L364">        });</span>
+<span class="nc" id="L365">    }</span>
+    @Override
+    public void onWebSocketClose(int code, String reason, boolean remote) {
+<span class="nc" id="L368">        Log.i(&quot;ChatPage WebsocketClose&quot;, &quot;Websocket Closed&quot;);</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">        String closedBy = remote ? &quot;server&quot; : &quot;local&quot;;</span>
+<span class="nc" id="L370">        runOnUiThread(() -&gt; {</span>
+<span class="nc" id="L371">        });</span>
+<span class="nc" id="L372">    }</span>
+    @Override
+    public void onWebSocketOpen(ServerHandshake handshakedata) {
+<span class="nc" id="L375">        Log.i(&quot;ChatPage WebsocketOpen&quot;, &quot;Websocket Opened&quot;);</span>
+<span class="nc" id="L376">    }</span>
+    @Override
+<span class="nc" id="L378">    public void onWebSocketError(Exception ex) {Log.e(&quot;ChatPage Websocket Error: &quot;, ex.toString());}</span>
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

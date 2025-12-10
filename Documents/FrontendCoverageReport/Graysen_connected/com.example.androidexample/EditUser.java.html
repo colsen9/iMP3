@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EditUser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">EditUser.java</span></div><h1>EditUser.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.ImageDecoder;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.MediaStore;
+import android.text.InputType;
+import android.util.Base64;
+import android.util.Log;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+<span class="nc" id="L35">public class EditUser extends AppCompatActivity {</span>
+
+    private EditText firstName, lastName, email, bio, username;
+    private TextView usernameView;
+    private Button saveBtn, cancelBtn, deleteBtn, signoutBtn, changePasswordBtn;
+    private ImageButton profilePictureBtn;
+    private RequestQueue requestQueue;
+    private static final String BASE_URL = &quot;http://coms-3090-027.class.las.iastate.edu:8080&quot;;
+    private int userId;
+<span class="nc" id="L44">    private String selectedProfilePictureBase64 = &quot;&quot;;</span>
+    private String userType;
+    private ActivityResultLauncher&lt;Intent&gt; pickImageLauncher;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="nc" id="L50">        super.onCreate(savedInstanceState);</span>
+<span class="nc" id="L51">        setContentView(R.layout.edit_user);</span>
+
+<span class="nc" id="L53">        requestQueue = QueueApplication.getQueue();</span>
+
+        // Initialize UI components
+<span class="nc" id="L56">        firstName = findViewById(R.id.first_name);</span>
+<span class="nc" id="L57">        lastName = findViewById(R.id.last_name);</span>
+<span class="nc" id="L58">        email = findViewById(R.id.email);</span>
+<span class="nc" id="L59">        bio = findViewById(R.id.bio);</span>
+<span class="nc" id="L60">        signoutBtn = findViewById(R.id.signout_btn);</span>
+<span class="nc" id="L61">        saveBtn = findViewById(R.id.save_btn);</span>
+<span class="nc" id="L62">        cancelBtn = findViewById(R.id.cancel_btn);</span>
+<span class="nc" id="L63">        deleteBtn = findViewById(R.id.delete_user_btn);</span>
+<span class="nc" id="L64">        changePasswordBtn = findViewById(R.id.change_password_btn);</span>
+<span class="nc" id="L65">        profilePictureBtn = findViewById(R.id.profile_picture_btn);</span>
+<span class="nc" id="L66">        usernameView = findViewById(R.id.username);</span>
+<span class="nc" id="L67">        username = findViewById(R.id.user_name);</span>
+
+        /* Get userId from previous activity */
+<span class="nc" id="L70">        Intent intent = getIntent();</span>
+<span class="nc" id="L71">        userId = intent.getIntExtra(&quot;userId&quot;, -1);</span>
+
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        if (userId == -1) {</span>
+<span class="nc" id="L74">            Toast.makeText(this, &quot;No user ID provided!&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L75">            finish();</span>
+<span class="nc" id="L76">            return;</span>
+        }
+
+<span class="nc" id="L79">        registerPickImageLauncher();</span>
+
+        /* Load user data from backend */
+<span class="nc" id="L82">        loadUser(userId);</span>
+
+        /* Set onClickListeners for save, cancel, and delete buttons */
+<span class="nc" id="L85">        saveBtn.setOnClickListener(v -&gt; updateUser(userId));</span>
+<span class="nc" id="L86">        cancelBtn.setOnClickListener(v -&gt; finish());</span>
+<span class="nc" id="L87">        deleteBtn.setOnClickListener(v -&gt; confirmDelete(userId));</span>
+<span class="nc" id="L88">        changePasswordBtn.setOnClickListener(v -&gt; confirmChangePassword(userId));</span>
+
+<span class="nc" id="L90">        signoutBtn.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L91">            Intent editUser = new Intent(EditUser.this, ProfilePage.class);</span>
+<span class="nc" id="L92">            userId = -1;</span>
+<span class="nc" id="L93">            editUser.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L94">            startActivity(editUser);</span>
+<span class="nc" id="L95">            finish();</span>
+<span class="nc" id="L96">        });</span>
+
+<span class="nc" id="L98">        profilePictureBtn.setOnClickListener(v -&gt; pickImageFromGallery());</span>
+<span class="nc" id="L99">    }</span>
+
+    /* Fetch user data from backend */
+    private void loadUser(int id) {
+<span class="nc" id="L103">        String url = BASE_URL + &quot;/users/&quot; + id;</span>
+
+<span class="nc" id="L105">        JsonObjectRequest request = new JsonObjectRequest(</span>
+                Request.Method.GET, url, null,
+                response -&gt; {
+                    try {
+<span class="nc" id="L109">                        userType = response.optString(&quot;type&quot;, &quot;&quot;);</span>
+<span class="nc" id="L110">                        usernameView.setText(response.optString(&quot;username&quot;, &quot;&quot;));</span>
+<span class="nc" id="L111">                        username.setText(response.optString(&quot;username&quot;, &quot;&quot;));</span>
+<span class="nc" id="L112">                        firstName.setText(response.optString(&quot;firstname&quot;, &quot;&quot;));</span>
+<span class="nc" id="L113">                        lastName.setText(response.optString(&quot;lastname&quot;, &quot;&quot;));</span>
+<span class="nc" id="L114">                        email.setText(response.optString(&quot;email&quot;, &quot;&quot;));</span>
+<span class="nc" id="L115">                        bio.setText(response.optString(&quot;bio&quot;, &quot;&quot;));</span>
+
+<span class="nc" id="L117">                        String profilePicBase64 = response.optString(&quot;picture&quot;, &quot;&quot;);</span>
+<span class="nc" id="L118">                        selectedProfilePictureBase64 = profilePicBase64;</span>
+
+<span class="nc bnc" id="L120" title="All 2 branches missed.">                        if (!profilePicBase64.isEmpty()) {</span>
+<span class="nc" id="L121">                            byte[] decodedString = Base64.decode(profilePicBase64, Base64.NO_WRAP);</span>
+<span class="nc" id="L122">                            Bitmap decodedBitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);</span>
+<span class="nc" id="L123">                            profilePictureBtn.setScaleType(ImageButton.ScaleType.CENTER_CROP);</span>
+<span class="nc" id="L124">                            profilePictureBtn.setImageBitmap(decodedBitmap);</span>
+                        }
+
+<span class="nc" id="L127">                    } catch (Exception e) {</span>
+<span class="nc" id="L128">                        e.printStackTrace();</span>
+<span class="nc" id="L129">                        Toast.makeText(EditUser.this, &quot;Error parsing user data&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L130">                    }</span>
+<span class="nc" id="L131">                },</span>
+<span class="nc" id="L132">                error -&gt; Toast.makeText(EditUser.this, &quot;Failed to load user data&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+
+<span class="nc" id="L135">        requestQueue.add(request);</span>
+<span class="nc" id="L136">    }</span>
+
+    /* Update user info via PUT */
+    private void updateUser(int id) {
+<span class="nc" id="L140">        String url = BASE_URL + &quot;/users/&quot; + id;</span>
+
+<span class="nc" id="L142">        String usernameStr = username.getText().toString().trim();</span>
+<span class="nc" id="L143">        String emailStr = email.getText().toString().trim();</span>
+
+<span class="nc" id="L145">        boolean hasError = false;</span>
+
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (!isValidUsername(usernameStr)) {</span>
+<span class="nc" id="L148">            username.setError(&quot;Username cannot be empty or contain spaces&quot;);</span>
+<span class="nc" id="L149">            hasError = true;</span>
+        }
+
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        if (!isValidEmail(emailStr)) {</span>
+<span class="nc" id="L153">            email.setError(&quot;Enter a valid email&quot;);</span>
+<span class="nc" id="L154">            hasError = true;</span>
+        }
+
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (hasError) {</span>
+<span class="nc" id="L158">            return; // stop update</span>
+        }
+
+<span class="nc bnc" id="L161" title="All 4 branches missed.">        if (userType == null || userType.isEmpty()) {</span>
+<span class="nc" id="L162">            userType = &quot;user&quot;;</span>
+        }
+
+<span class="nc" id="L165">        JSONObject userJson = new JSONObject();</span>
+        try {
+<span class="nc" id="L167">            userJson.put(&quot;firstname&quot;, firstName.getText().toString());</span>
+<span class="nc" id="L168">            userJson.put(&quot;lastname&quot;, lastName.getText().toString());</span>
+<span class="nc" id="L169">            userJson.put(&quot;username&quot;, usernameStr);</span>
+<span class="nc" id="L170">            userJson.put(&quot;email&quot;, emailStr);</span>
+<span class="nc" id="L171">            userJson.put(&quot;bio&quot;, bio.getText().toString());</span>
+<span class="nc" id="L172">            userJson.put(&quot;type&quot;, userType);</span>
+
+<span class="nc bnc" id="L174" title="All 4 branches missed.">            if (selectedProfilePictureBase64 != null &amp;&amp; !selectedProfilePictureBase64.isEmpty()) {</span>
+<span class="nc" id="L175">                userJson.put(&quot;picture&quot;, selectedProfilePictureBase64);</span>
+<span class="nc" id="L176">                Log.d(&quot;EDIT_USER&quot;, &quot;Profile picture Base64 length: &quot; + selectedProfilePictureBase64.length());</span>
+            }
+
+<span class="nc" id="L179">            Log.d(&quot;EDIT_USER&quot;, &quot;Profile picture Base64 length: &quot; + selectedProfilePictureBase64.length());</span>
+
+<span class="nc" id="L181">        } catch (JSONException e) {</span>
+<span class="nc" id="L182">            e.printStackTrace();</span>
+<span class="nc" id="L183">            Toast.makeText(this, &quot;Error creating JSON&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L184">            return;</span>
+<span class="nc" id="L185">        }</span>
+
+<span class="nc" id="L187">        JsonObjectRequest request = new JsonObjectRequest(</span>
+                Request.Method.PUT, url, userJson,
+                response -&gt; {
+<span class="nc" id="L190">                    Toast.makeText(EditUser.this, &quot;User updated successfully!&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L191">                    Intent intent = new Intent(EditUser.this, ProfilePage.class);</span>
+<span class="nc" id="L192">                    intent.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L193">                    startActivity(intent);</span>
+<span class="nc" id="L194">                    finish();</span>
+<span class="nc" id="L195">                },</span>
+                error -&gt; {
+<span class="nc bnc" id="L197" title="All 2 branches missed.">                    int code = (error.networkResponse != null) ? error.networkResponse.statusCode : -1;</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">                    if (code == 409) {</span>
+<span class="nc" id="L199">                        username.setError(&quot;Username or email already exists&quot;);</span>
+<span class="nc" id="L200">                        email.setError(&quot;Username or email already exists&quot;);</span>
+                    }
+<span class="nc" id="L202">                    Toast.makeText(EditUser.this, &quot;Failed to update user&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L203">                }</span>
+        );
+<span class="nc" id="L205">        requestQueue.add(request);</span>
+<span class="nc" id="L206">    }</span>
+
+    private void pickImageFromGallery() {
+<span class="nc" id="L209">        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);</span>
+<span class="nc" id="L210">        intent.addCategory(Intent.CATEGORY_OPENABLE);</span>
+<span class="nc" id="L211">        intent.setType(&quot;image/*&quot;);</span>
+<span class="nc" id="L212">        pickImageLauncher.launch(intent);</span>
+<span class="nc" id="L213">    }</span>
+
+    private void registerPickImageLauncher() {
+<span class="nc" id="L216">        pickImageLauncher = registerForActivityResult(</span>
+                new ActivityResultContracts.StartActivityForResult(),
+                result -&gt; {
+<span class="nc bnc" id="L219" title="All 4 branches missed.">                    if (result.getResultCode() == RESULT_OK &amp;&amp; result.getData() != null) {</span>
+<span class="nc" id="L220">                        Uri imageUri = result.getData().getData();</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">                        if (imageUri != null) {</span>
+                            try {
+                                // Persist permissions
+<span class="nc" id="L224">                                final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION</span>
+                                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+<span class="nc" id="L226">                                getContentResolver().takePersistableUriPermission(imageUri, takeFlags);</span>
+
+                                // Load bitmap safely
+                                Bitmap bitmap;
+<span class="nc bnc" id="L230" title="All 2 branches missed.">                                if (Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.P) {</span>
+<span class="nc" id="L231">                                    bitmap = ImageDecoder.decodeBitmap(</span>
+<span class="nc" id="L232">                                            ImageDecoder.createSource(getContentResolver(), imageUri)</span>
+                                    );
+                                } else {
+<span class="nc" id="L235">                                    bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);</span>
+                                }
+
+<span class="nc" id="L238">                                bitmap = resizeBitmap(bitmap, 400);</span>
+
+                                // Update ImageButton
+<span class="nc" id="L241">                                profilePictureBtn.setScaleType(ImageButton.ScaleType.CENTER_CROP);</span>
+<span class="nc" id="L242">                                profilePictureBtn.setImageBitmap(bitmap);</span>
+
+                                // Convert bitmap to Base64 (NO_WRAP!)
+<span class="nc" id="L245">                                ByteArrayOutputStream baos = new ByteArrayOutputStream();</span>
+<span class="nc" id="L246">                                bitmap.compress(Bitmap.CompressFormat.JPEG, 50, baos);</span>
+<span class="nc" id="L247">                                selectedProfilePictureBase64 = Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);</span>
+
+<span class="nc" id="L249">                                Log.d(&quot;EDIT_USER&quot;, &quot;Selected picture Base64 length: &quot; + selectedProfilePictureBase64.length());</span>
+
+<span class="nc" id="L251">                            } catch (IOException e) {</span>
+<span class="nc" id="L252">                                e.printStackTrace();</span>
+<span class="nc" id="L253">                                Toast.makeText(EditUser.this, &quot;Image error&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L254">                            }</span>
+                        }
+<span class="nc" id="L256">                    } else {</span>
+<span class="nc" id="L257">                        Toast.makeText(EditUser.this, &quot;No image selected&quot;, Toast.LENGTH_SHORT).show();</span>
+                    }
+<span class="nc" id="L259">                }</span>
+        );
+<span class="nc" id="L261">    }</span>
+
+    private Bitmap resizeBitmap(Bitmap bitmap, int maxSize) {
+<span class="nc" id="L264">        int width = bitmap.getWidth();</span>
+<span class="nc" id="L265">        int height = bitmap.getHeight();</span>
+<span class="nc" id="L266">        float scale = Math.min((float) maxSize / width, (float) maxSize / height);</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">        if (scale &gt;= 1.0f) return bitmap;</span>
+<span class="nc" id="L268">        int newWidth = Math.round(width * scale);</span>
+<span class="nc" id="L269">        int newHeight = Math.round(height * scale);</span>
+<span class="nc" id="L270">        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);</span>
+    }
+
+    /* Ask for confirmation before deleting user */
+    private void confirmDelete(int id) {
+<span class="nc" id="L275">        new AlertDialog.Builder(this)</span>
+<span class="nc" id="L276">                .setTitle(&quot;Delete Account&quot;)</span>
+<span class="nc" id="L277">                .setMessage(&quot;Are you sure you want to permanently delete this account?&quot;)</span>
+<span class="nc" id="L278">                .setPositiveButton(&quot;Yes&quot;, (dialog, which) -&gt; deleteUser(id))</span>
+<span class="nc" id="L279">                .setNegativeButton(&quot;Cancel&quot;, null)</span>
+<span class="nc" id="L280">                .show();</span>
+<span class="nc" id="L281">    }</span>
+
+    /* Delete user from backend */
+    private void deleteUser(int id) {
+<span class="nc" id="L285">        String url = BASE_URL + &quot;/users/&quot; + id;</span>
+
+<span class="nc" id="L287">        StringRequest request = new StringRequest(</span>
+                Request.Method.DELETE, url,
+                response -&gt; {
+<span class="nc" id="L290">                    Intent intent = new Intent(EditUser.this, ProfilePage.class);</span>
+<span class="nc" id="L291">                    startActivity(intent);</span>
+<span class="nc" id="L292">                    finish();</span>
+<span class="nc" id="L293">                },</span>
+<span class="nc" id="L294">                error -&gt; Toast.makeText(EditUser.this, &quot;Failed to delete user&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="nc" id="L296">        requestQueue.add(request);</span>
+<span class="nc" id="L297">    }</span>
+
+    /* Check if email is valid */
+    private boolean isValidEmail(String email) {
+<span class="nc bnc" id="L301" title="All 4 branches missed.">        return email != null &amp;&amp; android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();</span>
+    }
+
+    /* Check if username is valid */
+    private boolean isValidUsername(String username) {
+<span class="nc bnc" id="L306" title="All 6 branches missed.">        return username != null &amp;&amp; !username.trim().isEmpty() &amp;&amp; !username.contains(&quot; &quot;);</span>
+    }
+
+    /* Show dialog for old/new password input */
+    private void confirmChangePassword(int id) {
+<span class="nc" id="L311">        AlertDialog.Builder builder = new AlertDialog.Builder(this);</span>
+<span class="nc" id="L312">        builder.setTitle(&quot;Change Password&quot;);</span>
+
+<span class="nc" id="L314">        final EditText oldPassInput = new EditText(this);</span>
+<span class="nc" id="L315">        oldPassInput.setHint(&quot;Old Password&quot;);</span>
+<span class="nc" id="L316">        oldPassInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);</span>
+
+<span class="nc" id="L318">        final EditText newPassInput = new EditText(this);</span>
+<span class="nc" id="L319">        newPassInput.setHint(&quot;New Password&quot;);</span>
+<span class="nc" id="L320">        newPassInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);</span>
+
+<span class="nc" id="L322">        LinearLayout layout = new LinearLayout(this);</span>
+<span class="nc" id="L323">        layout.setOrientation(LinearLayout.VERTICAL);</span>
+<span class="nc" id="L324">        layout.addView(oldPassInput);</span>
+<span class="nc" id="L325">        layout.addView(newPassInput);</span>
+<span class="nc" id="L326">        layout.setPadding(50, 40, 50, 10);</span>
+<span class="nc" id="L327">        builder.setView(layout);</span>
+
+<span class="nc" id="L329">        builder.setPositiveButton(&quot;Change&quot;, (dialog, which) -&gt; {</span>
+<span class="nc" id="L330">            String oldPass = oldPassInput.getText().toString().trim();</span>
+<span class="nc" id="L331">            String newPass = newPassInput.getText().toString().trim();</span>
+
+<span class="nc bnc" id="L333" title="All 4 branches missed.">            if (oldPass.isEmpty() || newPass.isEmpty()) {</span>
+<span class="nc" id="L334">                Toast.makeText(EditUser.this, &quot;Please fill both fields&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L335">                return;</span>
+            }
+
+<span class="nc bnc" id="L338" title="All 2 branches missed.">            if (!isValidPassword(newPass)) {</span>
+<span class="nc" id="L339">                Toast.makeText(</span>
+                        EditUser.this,
+                        &quot;New password must be 8+ chars, include upper, lower, number, and special character.&quot;,
+                        Toast.LENGTH_LONG
+<span class="nc" id="L343">                ).show();</span>
+<span class="nc" id="L344">                return;</span>
+            }
+
+<span class="nc" id="L347">            changePassword(id, oldPass, newPass);</span>
+<span class="nc" id="L348">        });</span>
+
+<span class="nc" id="L350">        builder.setNegativeButton(&quot;Cancel&quot;, null);</span>
+<span class="nc" id="L351">        builder.show();</span>
+<span class="nc" id="L352">    }</span>
+
+    /* Send PUT request to change password */
+    private void changePassword(int id, String oldPassword, String newPassword) {
+<span class="nc" id="L356">        String url = BASE_URL + &quot;/users/&quot; + id + &quot;/password&quot;;</span>
+
+<span class="nc" id="L358">        JSONObject passwordJson = new JSONObject();</span>
+        try {
+<span class="nc" id="L360">            passwordJson.put(&quot;password_old&quot;, oldPassword);</span>
+<span class="nc" id="L361">            passwordJson.put(&quot;password_new&quot;, newPassword);</span>
+<span class="nc" id="L362">        } catch (JSONException e) {</span>
+<span class="nc" id="L363">            e.printStackTrace();</span>
+<span class="nc" id="L364">            Toast.makeText(this, &quot;Error creating password JSON&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L365">            return;</span>
+<span class="nc" id="L366">        }</span>
+
+<span class="nc" id="L368">        JsonObjectRequest request = new JsonObjectRequest(</span>
+                Request.Method.PUT,
+                url,
+                passwordJson,
+<span class="nc" id="L372">                response -&gt; Toast.makeText(EditUser.this,</span>
+                        &quot;Password changed successfully!&quot;,
+<span class="nc" id="L374">                        Toast.LENGTH_SHORT).show(),</span>
+
+                error -&gt; {
+<span class="nc bnc" id="L377" title="All 2 branches missed.">                    int statusCode = (error.networkResponse != null)</span>
+<span class="nc" id="L378">                            ? error.networkResponse.statusCode</span>
+<span class="nc" id="L379">                            : -1;</span>
+
+<span class="nc bnc" id="L381" title="All 2 branches missed.">                    if (statusCode == 401) {</span>
+<span class="nc" id="L382">                        Toast.makeText(EditUser.this,</span>
+                                &quot;Old password incorrect&quot;,
+<span class="nc" id="L384">                                Toast.LENGTH_SHORT).show();</span>
+                    } else {
+<span class="nc" id="L386">                        Toast.makeText(EditUser.this,</span>
+                                &quot;Failed to change password&quot;,
+<span class="nc" id="L388">                                Toast.LENGTH_SHORT).show();</span>
+                    }
+<span class="nc" id="L390">                }</span>
+        );
+
+<span class="nc" id="L393">        requestQueue.add(request);</span>
+<span class="nc" id="L394">    }</span>
+
+    /* Check if password is valid — same rules as Signup page */
+    private boolean isValidPassword(String password) {
+        // Must contain at least: 1 uppercase, 1 lowercase, 1 number, 1 special char, 8+ chars
+<span class="nc" id="L399">        String passwordRegex = &quot;^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&amp;+=!]).{8,}$&quot;;</span>
+<span class="nc" id="L400">        return password.matches(passwordRegex);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

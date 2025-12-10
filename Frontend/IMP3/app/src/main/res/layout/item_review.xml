@@ -1,0 +1,84 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:background="@android:color/white"
+    android:padding="10dp"
+    android:layout_marginBottom="8dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <!-- PROFILE PICTURE -->
+    <ImageView
+        android:id="@+id/ivProfilePic"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:scaleType="centerCrop"
+        android:clipToOutline="true"
+        android:background="@drawable/circle"
+        android:contentDescription="Profile Picture" />
+
+    <!-- RIGHT CONTENT -->
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_marginStart="10dp"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content">
+
+        <!-- SUMMARY -->
+        <TextView
+            android:id="@+id/tvSummary"
+            android:text="Review Summary"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <!-- RATING -->
+        <RatingBar
+            android:id="@+id/reviewRating"
+            android:numStars="5"
+            android:stepSize="1"
+            android:isIndicator="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:progressTint="#ffe234"
+            android:secondaryProgressTint="#ccb429"
+            android:layout_marginTop="2dp"/>
+
+        <!-- USER INFO -->
+        <TextView
+            android:id="@+id/tvName"
+            android:text="First Name"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"/>
+
+        <TextView
+            android:id="@+id/tvUserType"
+            android:text="Usertype"
+            android:textSize="12sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/tvUsername"
+            android:text="/@username"
+            android:textSize="12sp"
+            android:textColor="#888"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <!-- REVIEW BODY -->
+        <TextView
+            android:id="@+id/tvReview"
+            android:text="User Review"
+            android:textSize="13sp"
+            android:layout_marginTop="6dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+</LinearLayout>

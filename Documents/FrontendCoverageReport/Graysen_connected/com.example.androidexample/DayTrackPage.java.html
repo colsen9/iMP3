@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DayTrackPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">DayTrackPage.java</span></div><h1>DayTrackPage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import static android.view.View.INVISIBLE;
+import static android.view.View.VISIBLE;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.app.DatePickerDialog;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Build;
+import android.os.Bundle;
+import android.util.Base64;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+<span class="fc" id="L39">public class DayTrackPage extends AppCompatActivity {</span>
+
+    private RequestQueue requestQueue;
+<span class="fc" id="L42">    private final String serverUrl = &quot;http://coms-3090-027.class.las.iastate.edu:8080&quot;;</span>
+
+    private int userId;
+<span class="fc" id="L45">    private boolean userAdmin = false;</span>
+    private LocalDate lastSelectedDate;
+
+<span class="fc" id="L48">    private int sotdId = -1;</span>
+<span class="fc" id="L49">    private int sotdTrackId = -1;</span>
+<span class="fc" id="L50">    private int sotdScore = 0;</span>
+<span class="fc" id="L51">    private List&lt;Integer&gt; sotdVoters = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L53">    private Bitmap sotdTrackArt = null;</span>
+<span class="fc" id="L54">    private String sotdTitle = &quot;No Song of the Day&quot;;</span>
+<span class="fc" id="L55">    private String sotdArtist = &quot;Please check again tomorrow!&quot;;</span>
+
+<span class="fc" id="L57">    private Integer[] artistIds = new Integer[]{};</span>
+<span class="fc" id="L58">    private Integer[] albumId = new Integer[]{};</span>
+
+<span class="fc" id="L60">    private boolean userVoted = false;</span>
+
+    // UI
+    private ImageView SOTD_Art;
+    private TextView SOTD_Title;
+    private TextView SOTD_Artist;
+    private Button SOTD_VotesRefresh;
+    private ImageButton SOTD_Upvote;
+    private ImageButton SOTD_Downvote;
+    private Button SOTD_AdminDate;
+    private EditText SOTD_AdminTrackID;
+    private Button SOTD_AdminDelete;
+    private Button SOTD_Admin_SetSong;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="fc" id="L76">        super.onCreate(savedInstanceState);</span>
+
+<span class="fc" id="L78">        Intent intent = getIntent();</span>
+<span class="fc" id="L79">        userId = intent.getIntExtra(&quot;userId&quot;, -1);</span>
+
+<span class="fc" id="L81">        requestQueue = QueueApplication.getQueue();</span>
+
+<span class="fc" id="L83">        setContentView(R.layout.daytrack_page);</span>
+
+<span class="fc" id="L85">        initUI();</span>
+<span class="fc" id="L86">        getUserInfo(this::startup);</span>
+<span class="fc" id="L87">    }</span>
+
+    private void initUI() {
+<span class="fc" id="L90">        SOTD_Art = findViewById(R.id.SOTD_AlbumArt);</span>
+<span class="fc" id="L91">        SOTD_Title = findViewById(R.id.SOTD_SongTitle);</span>
+<span class="fc" id="L92">        SOTD_Artist = findViewById(R.id.SOTD_ArtistName);</span>
+<span class="fc" id="L93">        SOTD_VotesRefresh = findViewById(R.id.SOTD_VotesRefresh);</span>
+<span class="fc" id="L94">        SOTD_Upvote = findViewById(R.id.SOTD_Upvote);</span>
+<span class="fc" id="L95">        SOTD_Downvote = findViewById(R.id.SOTD_Downvote);</span>
+<span class="fc" id="L96">        SOTD_AdminDate = findViewById(R.id.SOTD_AdminDate);</span>
+<span class="fc" id="L97">        SOTD_AdminTrackID = findViewById(R.id.SOTD_AdminTrackID);</span>
+<span class="fc" id="L98">        SOTD_AdminDelete = findViewById(R.id.SOTD_AdminDelete);</span>
+<span class="fc" id="L99">        SOTD_Admin_SetSong = findViewById(R.id.SOTD_AdminSetSong);</span>
+
+<span class="fc" id="L101">        findViewById(R.id.SOTD_BackButton).setOnClickListener(view -&gt; {</span>
+<span class="nc" id="L102">            Intent back = new Intent();</span>
+<span class="nc" id="L103">            back.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L104">            setResult(RESULT_OK, back);</span>
+<span class="nc" id="L105">            finish();</span>
+<span class="nc" id="L106">        });</span>
+
+<span class="fc" id="L108">        SOTD_VotesRefresh.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L109">            updateSOTDInformation(() -&gt; renderScore());</span>
+<span class="nc" id="L110">        });</span>
+
+<span class="pc" id="L112">        SOTD_Upvote.setOnClickListener(v -&gt; vote(true));</span>
+<span class="pc" id="L113">        SOTD_Downvote.setOnClickListener(v -&gt; vote(false));</span>
+
+<span class="fc" id="L115">        SOTD_AdminDate.setText(&quot;Date Unselected&quot;);</span>
+<span class="fc" id="L116">        SOTD_AdminDate.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L117">            LocalDate today = null;</span>
+<span class="nc" id="L118">            int year = 0;</span>
+<span class="nc" id="L119">            int month = 0; // DatePicker months are 0-based</span>
+<span class="nc" id="L120">            int day = 0;</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">            if (Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.O) {</span>
+<span class="nc" id="L122">                today = LocalDate.now();</span>
+<span class="nc" id="L123">                year = today.getYear();</span>
+<span class="nc" id="L124">                month = today.getMonthValue() - 1;</span>
+<span class="nc" id="L125">                day = today.getDayOfMonth();</span>
+            }
+<span class="nc" id="L127">            Log.i(&quot;Current Date:&quot;, today.toString());</span>
+<span class="nc" id="L128">            DatePickerDialog dialog = new DatePickerDialog(</span>
+<span class="nc" id="L129">                    v.getContext(),</span>
+                    (view, selectedYear, selectedMonth, selectedDay) -&gt; {
+<span class="nc" id="L131">                        LocalDate selectedDate = null;</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">                        if (Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.O) {</span>
+<span class="nc" id="L133">                            selectedDate = LocalDate.of(</span>
+                                    selectedYear,
+                                    selectedMonth + 1,  // convert back to 1-based
+                                    selectedDay
+                            );
+                        }
+<span class="nc" id="L139">                        Log.i(&quot;Selected Date: &quot;, selectedDate.toString());</span>
+<span class="nc" id="L140">                        lastSelectedDate = selectedDate;</span>
+<span class="nc" id="L141">                        SOTD_AdminDate.setText(lastSelectedDate.toString());</span>
+<span class="nc" id="L142">                    },</span>
+                    year, month, day
+            );
+<span class="nc" id="L145">            dialog.show();</span>
+<span class="nc" id="L146">        });</span>
+<span class="pc" id="L147">        SOTD_AdminDelete.setOnClickListener(v -&gt; adminDelete());</span>
+<span class="pc" id="L148">        SOTD_Admin_SetSong.setOnClickListener(v -&gt; adminCreate());</span>
+<span class="fc" id="L149">    }</span>
+
+    // -----------------------------------------------------------
+    // STARTUP FLOW
+    // -----------------------------------------------------------
+
+    private void startup() {
+<span class="fc" id="L156">        updateSOTDInformation(() -&gt;</span>
+<span class="fc" id="L157">                getTrackInfo(() -&gt;</span>
+<span class="fc" id="L158">                        getArtistInfoAll(() -&gt;</span>
+<span class="fc" id="L159">                                getAlbumArt(() -&gt; {</span>
+<span class="fc" id="L160">                                    renderSong();</span>
+<span class="fc" id="L161">                                    renderArtist();</span>
+<span class="fc" id="L162">                                    renderScore();</span>
+<span class="fc" id="L163">                                    adminCheck();</span>
+<span class="fc" id="L164">                                })</span>
+                        )
+                )
+        );
+<span class="fc" id="L168">    }</span>
+
+    // -----------------------------------------------------------
+    // NETWORK CALLS
+    // -----------------------------------------------------------
+
+    private void updateSOTDInformation(Runnable onDone) {
+<span class="fc" id="L175">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                Request.Method.GET,
+                serverUrl + &quot;/sotd/today&quot;,
+                null,
+                response -&gt; {
+<span class="fc" id="L180">                    Log.i(&quot;SOTD Information&quot;, response.toString());</span>
+                    try {
+<span class="fc" id="L182">                        sotdId = response.getInt(&quot;id&quot;);</span>
+<span class="fc" id="L183">                        sotdTrackId = response.getInt(&quot;trackId&quot;);</span>
+<span class="fc" id="L184">                        sotdScore = response.getInt(&quot;score&quot;);</span>
+
+<span class="fc" id="L186">                        JSONArray votedArray = response.getJSONArray(&quot;voted&quot;);</span>
+<span class="fc" id="L187">                        sotdVoters.clear();</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">                        for (int i = 0; i &lt; votedArray.length(); i++) {</span>
+<span class="nc" id="L189">                            Log.i(&quot;votedArray JSONObject?&quot;, votedArray.toString());</span>
+<span class="nc" id="L190">                            sotdVoters.add(votedArray.getInt(i));</span>
+                        }
+<span class="fc" id="L192">                        Log.i(&quot;SOTD Voter information&quot;, sotdVoters.toString());</span>
+<span class="pc" id="L193">                    } catch (Exception ignored) {Log.e(&quot;Update SOTD Info error&quot;, ignored.toString());}</span>
+
+<span class="fc" id="L195">                    onDone.run();</span>
+<span class="fc" id="L196">                },</span>
+<span class="nc" id="L197">                error -&gt; onDone.run()</span>
+        );
+
+<span class="fc" id="L200">        requestQueue.add(req);</span>
+<span class="fc" id="L201">    }</span>
+
+    private void getTrackInfo(Runnable onDone) {
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">        if (sotdTrackId &lt; 0) {</span>
+<span class="nc" id="L205">            onDone.run();</span>
+<span class="nc" id="L206">            return;</span>
+        }
+
+<span class="fc" id="L209">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                Request.Method.GET,
+                serverUrl + &quot;/music/tracks/&quot; + sotdTrackId,
+                null,
+                response -&gt; {
+<span class="fc" id="L214">                    Log.i(&quot;GetTrackInfo JSON&quot;, response.toString());</span>
+                    try {
+<span class="fc" id="L216">                        sotdTitle = response.getString(&quot;name&quot;);</span>
+
+<span class="fc" id="L218">                        JSONArray artistArray = response.getJSONArray(&quot;artistIds&quot;);</span>
+<span class="fc" id="L219">                        artistIds = new Integer[artistArray.length()];</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">                        for (int i = 0; i &lt; artistArray.length(); i++) {</span>
+<span class="fc" id="L221">                            artistIds[i] = artistArray.getInt(i);</span>
+                        }
+
+<span class="fc" id="L224">                        JSONArray albumArray = response.getJSONArray(&quot;albumIds&quot;);</span>
+<span class="fc" id="L225">                        albumId = new Integer[albumArray.length()];</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">                        for (int i = 0; i &lt; albumArray.length(); i++) {</span>
+<span class="fc" id="L227">                            albumId[i] = albumArray.getInt(i);</span>
+                        }
+
+<span class="pc" id="L230">                    } catch (Exception ignored) {}</span>
+
+<span class="fc" id="L232">                    onDone.run();</span>
+<span class="fc" id="L233">                },</span>
+<span class="nc" id="L234">                error -&gt; onDone.run()</span>
+        );
+
+<span class="fc" id="L237">        requestQueue.add(req);</span>
+<span class="fc" id="L238">    }</span>
+
+    private void getArtistInfoAll(Runnable onDone) {
+<span class="pc bpc" id="L241" title="2 of 4 branches missed.">        if (artistIds == null || artistIds.length == 0) {</span>
+<span class="nc" id="L242">            onDone.run();</span>
+<span class="nc" id="L243">            return;</span>
+        }
+
+<span class="fc" id="L246">        sotdArtist = &quot;&quot;;</span>
+<span class="fc" id="L247">        final int total = artistIds.length;</span>
+<span class="fc" id="L248">        final int[] doneCount = {0};</span>
+
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        for (int id : artistIds) {</span>
+<span class="fc" id="L251">            JsonObjectRequest req = new JsonObjectRequest(</span>
+                    Request.Method.GET,
+                    serverUrl + &quot;/music/artists/&quot; + id,
+                    null,
+                    response -&gt; {
+                        try {
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">                            if (!sotdArtist.isEmpty()) sotdArtist += &quot;, &quot;;</span>
+<span class="fc" id="L258">                            sotdArtist += response.getString(&quot;name&quot;);</span>
+<span class="pc" id="L259">                        } catch (Exception ignored) {}</span>
+
+<span class="fc" id="L261">                        doneCount[0]++;</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">                        if (doneCount[0] == total) onDone.run();</span>
+<span class="fc" id="L263">                    },</span>
+                    error -&gt; {
+<span class="nc" id="L265">                        doneCount[0]++;</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">                        if (doneCount[0] == total) onDone.run();</span>
+<span class="nc" id="L267">                    }</span>
+            );
+
+<span class="fc" id="L270">            requestQueue.add(req);</span>
+        }
+<span class="fc" id="L272">    }</span>
+
+    private void getAlbumArt(Runnable onDone) {
+<span class="pc bpc" id="L275" title="2 of 4 branches missed.">        if (albumId == null || albumId.length == 0) {</span>
+<span class="nc" id="L276">            onDone.run();</span>
+<span class="nc" id="L277">            return;</span>
+        }
+
+<span class="fc" id="L280">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                Request.Method.GET,
+                serverUrl + &quot;/music/albums/&quot; + albumId[0],
+                null,
+                response -&gt; {
+                    try {
+<span class="fc" id="L286">                        String base64 = response.getString(&quot;albumArt&quot;);</span>
+<span class="fc" id="L287">                        byte[] data = Base64.decode(base64, Base64.DEFAULT);</span>
+<span class="fc" id="L288">                        sotdTrackArt = BitmapFactory.decodeByteArray(data, 0, data.length);</span>
+<span class="pc" id="L289">                    } catch (Exception ignored) {}</span>
+
+<span class="fc" id="L291">                    onDone.run();</span>
+<span class="fc" id="L292">                },</span>
+<span class="nc" id="L293">                error -&gt; onDone.run()</span>
+        );
+
+<span class="fc" id="L296">        requestQueue.add(req);</span>
+<span class="fc" id="L297">    }</span>
+
+    private void getUserInfo(Runnable onDone) {
+<span class="fc" id="L300">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                Request.Method.GET,
+                serverUrl + &quot;/users/&quot; + userId,
+                null,
+                response -&gt; {
+                    try {
+<span class="nc" id="L306">                        userAdmin = response.getString(&quot;type&quot;).equals(&quot;admin&quot;);</span>
+<span class="nc" id="L307">                    } catch (Exception ignored) {}</span>
+
+<span class="nc" id="L309">                    onDone.run();</span>
+<span class="nc" id="L310">                },</span>
+<span class="fc" id="L311">                error -&gt; onDone.run()</span>
+        );
+
+<span class="fc" id="L314">        requestQueue.add(req);</span>
+<span class="fc" id="L315">    }</span>
+
+    private void vote(boolean upVote) {
+<span class="nc bnc" id="L318" title="All 2 branches missed.">        String voteType = upVote ? &quot;upvote&quot; : &quot;downvote&quot;;</span>
+
+<span class="nc" id="L320">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                Request.Method.PUT,
+                serverUrl + &quot;/sotd/&quot; + voteType,
+                null,
+                response -&gt; {
+<span class="nc" id="L325">                    userVoted = true;</span>
+<span class="nc bnc" id="L326" title="All 2 branches missed.">                    sotdScore += (upVote ? 1 : -1);</span>
+<span class="nc" id="L327">                    renderScore();</span>
+<span class="nc" id="L328">                },</span>
+<span class="nc" id="L329">                error -&gt; {}</span>
+        );
+
+<span class="nc" id="L332">        requestQueue.add(req);</span>
+<span class="nc" id="L333">        renderScore();</span>
+<span class="nc" id="L334">    }</span>
+
+    private void adminCreate() {
+<span class="nc" id="L337">        String url = serverUrl + &quot;/sotd/&quot; + lastSelectedDate.toString() + &quot;/&quot; + SOTD_AdminTrackID.getText();</span>
+<span class="nc" id="L338">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                Request.Method.POST,
+                url,
+                null,
+                response -&gt; {
+<span class="nc" id="L343">                    Log.i(&quot;Created SOTD&quot;, response.toString());</span>
+<span class="nc" id="L344">                },</span>
+<span class="nc" id="L345">                error -&gt; {}</span>
+        );
+
+<span class="nc" id="L348">        requestQueue.add(req);</span>
+<span class="nc" id="L349">    }</span>
+
+    private void adminDelete() {
+<span class="nc" id="L352">        String url = serverUrl + &quot;/sotd/&quot; + lastSelectedDate.toString();</span>
+<span class="nc" id="L353">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                Request.Method.DELETE,
+                url,
+                null,
+                response -&gt; {
+<span class="nc" id="L358">                    Log.i(&quot;Deleted SOTD&quot;, response.toString());</span>
+<span class="nc" id="L359">                },</span>
+<span class="nc" id="L360">                error -&gt; {}</span>
+        );
+
+<span class="nc" id="L363">        requestQueue.add(req);</span>
+<span class="nc" id="L364">        renderScore();</span>
+<span class="nc" id="L365">    }</span>
+
+    // -----------------------------------------------------------
+    // UI RENDERING
+    // -----------------------------------------------------------
+
+    private void renderSong() {
+<span class="fc" id="L372">        SOTD_Title.setText(sotdTitle);</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">        if (sotdTrackArt != null) {</span>
+<span class="fc" id="L374">            SOTD_Art.setImageBitmap(sotdTrackArt);</span>
+        }
+<span class="fc" id="L376">    }</span>
+
+    private void renderArtist() {
+<span class="fc" id="L379">        SOTD_Artist.setText(sotdArtist);</span>
+<span class="fc" id="L380">    }</span>
+
+    private void renderScore() {
+<span class="fc" id="L383">        SOTD_VotesRefresh.setText(String.valueOf(sotdScore));</span>
+
+<span class="pc bpc" id="L385" title="3 of 6 branches missed.">        userVoted = sotdVoters.contains(userId) || userId &lt; 0 || userVoted;</span>
+
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">        if (userVoted) {</span>
+<span class="nc" id="L388">            SOTD_Upvote.setVisibility(INVISIBLE);</span>
+<span class="nc" id="L389">            SOTD_Downvote.setVisibility(INVISIBLE);</span>
+        } else {
+<span class="fc" id="L391">            SOTD_Upvote.setVisibility(VISIBLE);</span>
+<span class="fc" id="L392">            SOTD_Downvote.setVisibility(VISIBLE);</span>
+        }
+<span class="fc" id="L394">    }</span>
+
+    private void adminCheck() {
+<span class="pc bpc" id="L397" title="1 of 2 branches missed.">        int vis = userAdmin ? VISIBLE : INVISIBLE;</span>
+
+<span class="fc" id="L399">        SOTD_Admin_SetSong.setVisibility(vis);</span>
+<span class="fc" id="L400">        SOTD_AdminDate.setVisibility(vis);</span>
+<span class="fc" id="L401">        SOTD_AdminTrackID.setVisibility(vis);</span>
+<span class="fc" id="L402">        SOTD_AdminDelete.setVisibility(vis);</span>
+<span class="fc" id="L403">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

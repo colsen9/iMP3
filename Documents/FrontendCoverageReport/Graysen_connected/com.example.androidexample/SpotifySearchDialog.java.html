@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SpotifySearchDialog.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">SpotifySearchDialog.java</span></div><h1>SpotifySearchDialog.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.app.AlertDialog;
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.*;
+import androidx.annotation.NonNull;
+
+import com.android.volley.Request;
+import com.android.volley.toolbox.JsonObjectRequest;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class SpotifySearchDialog {
+
+    public interface OnTrackSelectedListener {
+        void onTrackSelected(String trackId, String trackName);
+    }
+
+    private final Context context;
+    private final String spotifyToken;
+    private final OnTrackSelectedListener listener;
+
+<span class="nc" id="L31">    public SpotifySearchDialog(@NonNull Context context, String spotifyToken, OnTrackSelectedListener listener) {</span>
+<span class="nc" id="L32">        this.context = context;</span>
+<span class="nc" id="L33">        this.spotifyToken = spotifyToken;</span>
+<span class="nc" id="L34">        this.listener = listener;</span>
+<span class="nc" id="L35">    }</span>
+
+    public void show() {
+<span class="nc" id="L38">        AlertDialog.Builder builder = new AlertDialog.Builder(context);</span>
+<span class="nc" id="L39">        builder.setTitle(&quot;Search Spotify&quot;);</span>
+
+<span class="nc" id="L41">        View layout = LayoutInflater.from(context).inflate(R.layout.dialog_spotify_search, null);</span>
+<span class="nc" id="L42">        builder.setView(layout);</span>
+
+<span class="nc" id="L44">        EditText inputSearch = layout.findViewById(R.id.input_search);</span>
+<span class="nc" id="L45">        ListView listView = layout.findViewById(R.id.list_tracks);</span>
+<span class="nc" id="L46">        ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;&gt;(context, android.R.layout.simple_list_item_1);</span>
+<span class="nc" id="L47">        listView.setAdapter(adapter);</span>
+
+<span class="nc" id="L49">        List&lt;String&gt; trackIds = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L51">        Button btnSearch = layout.findViewById(R.id.btn_search);</span>
+<span class="nc" id="L52">        btnSearch.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L53">            String query = inputSearch.getText().toString().trim();</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            if (!query.isEmpty()) {</span>
+<span class="nc" id="L55">                searchSpotify(query, adapter, trackIds);</span>
+            }
+<span class="nc" id="L57">        });</span>
+
+<span class="nc" id="L59">        listView.setOnItemClickListener((parent, view, position, id) -&gt; {</span>
+<span class="nc" id="L60">            String trackId = trackIds.get(position);</span>
+<span class="nc" id="L61">            String trackName = adapter.getItem(position);</span>
+<span class="nc" id="L62">            listener.onTrackSelected(trackId, trackName);</span>
+<span class="nc" id="L63">        });</span>
+
+<span class="nc" id="L65">        builder.setNegativeButton(&quot;Cancel&quot;, (dialog, which) -&gt; dialog.dismiss());</span>
+<span class="nc" id="L66">        builder.show();</span>
+<span class="nc" id="L67">    }</span>
+
+    private void searchSpotify(String query, ArrayAdapter&lt;String&gt; adapter, List&lt;String&gt; trackIds) {
+<span class="nc" id="L70">        adapter.clear();</span>
+<span class="nc" id="L71">        trackIds.clear();</span>
+
+<span class="nc" id="L73">        String url = &quot;https://api.spotify.com/v1/search?q=&quot; + query.replace(&quot; &quot;, &quot;%20&quot;) + &quot;&amp;type=track&amp;limit=10&quot;;</span>
+
+<span class="nc" id="L75">        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+                    try {
+<span class="nc" id="L78">                        JSONArray tracks = response.getJSONObject(&quot;tracks&quot;).getJSONArray(&quot;items&quot;);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">                        for (int i = 0; i &lt; tracks.length(); i++) {</span>
+<span class="nc" id="L80">                            JSONObject track = tracks.getJSONObject(i);</span>
+<span class="nc" id="L81">                            String name = track.getString(&quot;name&quot;);</span>
+<span class="nc" id="L82">                            String id = track.getString(&quot;id&quot;);</span>
+<span class="nc" id="L83">                            JSONArray artists = track.getJSONArray(&quot;artists&quot;);</span>
+<span class="nc" id="L84">                            String artistName = artists.getJSONObject(0).getString(&quot;name&quot;);</span>
+
+<span class="nc" id="L86">                            adapter.add(name + &quot; - &quot; + artistName);</span>
+<span class="nc" id="L87">                            trackIds.add(id);</span>
+                        }
+<span class="nc" id="L89">                        adapter.notifyDataSetChanged();</span>
+<span class="nc" id="L90">                    } catch (Exception e) {</span>
+<span class="nc" id="L91">                        e.printStackTrace();</span>
+<span class="nc" id="L92">                        Toast.makeText(context, &quot;Failed to parse Spotify response&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L93">                    }</span>
+<span class="nc" id="L94">                },</span>
+<span class="nc" id="L95">                error -&gt; Toast.makeText(context, &quot;Failed to search Spotify&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L96">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L99">                Map&lt;String, String&gt; headers = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L100">                headers.put(&quot;Authorization&quot;, &quot;Bearer &quot; + spotifyToken);</span>
+<span class="nc" id="L101">                return headers;</span>
+            }
+        };
+
+<span class="nc" id="L105">        QueueApplication.getQueue().add(request);</span>
+<span class="nc" id="L106">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

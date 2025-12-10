@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="uparrow_green">#00B20B</color>
+    <color name="downarrow_red">#C00B00</color>
+    <color name="unselected_purple">#624aa1</color>
+    <color name="admin_color">#3372e3</color>
+    <color name="admin_color_light">#719DEA</color>
+    <color name="spotify_green">#1DB954</color>
+    <color name="music_catalogue">#4f65c5</color>
+    <color name="notifications">#00c3cc</color>
+    <color name="recs">#FA70C4</color>
+    <color name="recs_light">#FB8ED1</color>
+    <color name="reviews">#4f65c5</color>
+    <color name="lists">#9665e4</color>
+</resources>

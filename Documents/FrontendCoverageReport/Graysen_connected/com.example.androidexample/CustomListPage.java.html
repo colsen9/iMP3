@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CustomListPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">CustomListPage.java</span></div><h1>CustomListPage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.*;
+import androidx.appcompat.app.AppCompatActivity;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import android.util.Base64;
+import android.graphics.Bitmap;
+import android.provider.MediaStore;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+
+<span class="fc" id="L23">public class CustomListPage extends AppCompatActivity {</span>
+
+    private EditText titleInput, descInput;
+    private Button saveButton, deleteButton;
+    private ListView songListView;
+    private ImageButton coverImageButton;
+<span class="fc" id="L29">    private String coverImageBase64 = null;</span>
+    private RequestQueue queue;
+
+<span class="fc" id="L32">    private ArrayList&lt;Integer&gt; selectedSongIds = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L33">    private ArrayList&lt;JSONObject&gt; allSongs = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L34">    private ArrayList&lt;Integer&gt; existingTrackIds = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L36">    private boolean songsLoaded = false;</span>
+<span class="fc" id="L37">    private boolean existingTracksLoaded = false;</span>
+
+    private int listId, userId;
+
+    private static final String BASE_URL = &quot;http://coms-3090-027.class.las.iastate.edu:8080&quot;;
+    private static final String LISTS_ENDPOINT = BASE_URL + &quot;/lists&quot;;
+    private static final String SONGS_ENDPOINT = BASE_URL + &quot;/music/tracks&quot;;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="fc" id="L47">        super.onCreate(savedInstanceState);</span>
+<span class="fc" id="L48">        setContentView(R.layout.custom_list_page);</span>
+
+<span class="fc" id="L50">        titleInput = findViewById(R.id.titleInput);</span>
+<span class="fc" id="L51">        descInput = findViewById(R.id.descInput);</span>
+<span class="fc" id="L52">        coverImageButton = findViewById(R.id.coverImageButton);</span>
+
+<span class="fc" id="L54">        coverImageButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L55">            Intent pickImage = new Intent(Intent.ACTION_PICK);</span>
+<span class="nc" id="L56">            pickImage.setType(&quot;image/*&quot;);</span>
+<span class="nc" id="L57">            startActivityForResult(pickImage, 1001);</span>
+<span class="nc" id="L58">        });</span>
+
+<span class="fc" id="L60">        songListView = findViewById(R.id.songListView);</span>
+<span class="fc" id="L61">        saveButton = findViewById(R.id.saveButton);</span>
+<span class="fc" id="L62">        deleteButton = findViewById(R.id.deleteButton);</span>
+
+<span class="fc" id="L64">        queue = QueueApplication.getQueue();</span>
+<span class="fc" id="L65">        listId = getIntent().getIntExtra(&quot;listId&quot;, -1);</span>
+<span class="fc" id="L66">        userId = getIntent().getIntExtra(&quot;userId&quot;,-1);</span>
+
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (listId != -1) {</span>
+<span class="fc" id="L69">            fetchListDetails(listId);</span>
+        } else {
+<span class="nc" id="L71">            deleteButton.setVisibility(Button.GONE);</span>
+        }
+
+<span class="fc" id="L74">        findViewById(R.id.custom_list_back).setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L75">            Intent back = new Intent();</span>
+<span class="nc" id="L76">            back.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L77">            setResult(RESULT_OK, back);</span>
+<span class="nc" id="L78">            finish();</span>
+<span class="nc" id="L79">        });</span>
+
+<span class="fc" id="L81">        fetchSongs();</span>
+
+<span class="pc" id="L83">        saveButton.setOnClickListener(v -&gt; saveList());</span>
+<span class="pc" id="L84">        deleteButton.setOnClickListener(v -&gt; deleteListWithTracks(listId));</span>
+<span class="fc" id="L85">    }</span>
+
+    private void fetchSongs() {
+<span class="fc" id="L88">        JsonArrayRequest request = new JsonArrayRequest(</span>
+                Request.Method.GET,
+                SONGS_ENDPOINT,
+                null,
+                this::populateSongs,
+<span class="nc" id="L93">                error -&gt; Toast.makeText(this, &quot;Error fetching songs&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="fc" id="L95">        queue.add(request);</span>
+<span class="fc" id="L96">    }</span>
+
+    private void populateSongs(JSONArray songs) {
+<span class="fc" id="L99">        ArrayList&lt;String&gt; songTitles = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        for (int i = 0; i &lt; songs.length(); i++) {</span>
+            try {
+<span class="fc" id="L102">                JSONObject song = songs.getJSONObject(i);</span>
+<span class="fc" id="L103">                songTitles.add(song.getString(&quot;name&quot;));</span>
+<span class="fc" id="L104">                allSongs.add(song);</span>
+<span class="nc" id="L105">            } catch (JSONException e) {</span>
+<span class="nc" id="L106">                e.printStackTrace();</span>
+<span class="fc" id="L107">            }</span>
+        }
+
+<span class="fc" id="L110">        ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;&gt;(</span>
+                this,
+                android.R.layout.simple_list_item_multiple_choice,
+                songTitles
+        );
+
+<span class="fc" id="L116">        songListView.setAdapter(adapter);</span>
+<span class="fc" id="L117">        songListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);</span>
+
+<span class="fc" id="L119">        songListView.setOnItemClickListener((parent, view, position, id) -&gt; {</span>
+            try {
+<span class="nc" id="L121">                int songId = allSongs.get(position).getInt(&quot;id&quot;);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">                if (songListView.isItemChecked(position)) {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">                    if (!selectedSongIds.contains(songId)) selectedSongIds.add(songId);</span>
+                } else {
+<span class="nc" id="L125">                    selectedSongIds.remove(Integer.valueOf(songId));</span>
+                }
+<span class="nc" id="L127">            } catch (JSONException e) {</span>
+<span class="nc" id="L128">                e.printStackTrace();</span>
+<span class="nc" id="L129">            }</span>
+<span class="nc" id="L130">        });</span>
+
+<span class="fc" id="L132">        songsLoaded = true;</span>
+<span class="fc" id="L133">    }</span>
+
+    private void fetchListDetails(int id) {
+<span class="fc" id="L136">        String url = LISTS_ENDPOINT + &quot;/&quot; + id;</span>
+<span class="fc" id="L137">        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L139">                    titleInput.setText(response.optString(&quot;title&quot;));</span>
+<span class="nc" id="L140">                    descInput.setText(response.optString(&quot;description&quot;));</span>
+<span class="nc" id="L141">                    fetchExistingTracks(id);</span>
+<span class="nc" id="L142">                },</span>
+<span class="fc" id="L143">                error -&gt; Toast.makeText(this, &quot;Error loading list&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="fc" id="L145">        queue.add(request);</span>
+<span class="fc" id="L146">    }</span>
+
+    private void saveList() {
+        try {
+<span class="nc" id="L150">            JSONObject body = new JSONObject();</span>
+<span class="nc" id="L151">            body.put(&quot;title&quot;, titleInput.getText().toString());</span>
+<span class="nc" id="L152">            body.put(&quot;description&quot;, descInput.getText().toString());</span>
+<span class="nc" id="L153">            body.put(&quot;privacy&quot;, &quot;PUBLIC&quot;);</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">            if (coverImageBase64 != null) body.put(&quot;coverImage&quot;, coverImageBase64);</span>
+
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            int method = (listId == -1) ? Request.Method.POST : Request.Method.PUT;</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">            String url = (listId == -1) ? LISTS_ENDPOINT : LISTS_ENDPOINT + &quot;/&quot; + listId;</span>
+
+<span class="nc" id="L159">            JsonObjectRequest request = new JsonObjectRequest(method, url, body,</span>
+                    response -&gt; {
+                        try {
+<span class="nc" id="L162">                            int savedListId = response.getInt(&quot;listId&quot;);</span>
+<span class="nc" id="L163">                            addSongsToList(savedListId);</span>
+<span class="nc" id="L164">                        } catch (JSONException e) {</span>
+<span class="nc" id="L165">                            e.printStackTrace();</span>
+<span class="nc" id="L166">                        }</span>
+<span class="nc" id="L167">                    },</span>
+<span class="nc" id="L168">                    error -&gt; Toast.makeText(this, &quot;Error saving list&quot;, Toast.LENGTH_SHORT).show()</span>
+            );
+
+<span class="nc" id="L171">            queue.add(request);</span>
+<span class="nc" id="L172">        } catch (JSONException e) {</span>
+<span class="nc" id="L173">            e.printStackTrace();</span>
+<span class="nc" id="L174">        }</span>
+<span class="nc" id="L175">    }</span>
+
+    private void addSongsToList(int listId) {
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        for (Integer songId : selectedSongIds) {</span>
+<span class="nc" id="L179">            String url = LISTS_ENDPOINT + &quot;/&quot; + listId + &quot;/songs/&quot; + songId;</span>
+<span class="nc" id="L180">            JsonObjectRequest request = new JsonObjectRequest(</span>
+                    Request.Method.POST, url, new JSONObject(),
+<span class="nc" id="L182">                    response -&gt; Log.d(&quot;AddSong&quot;, &quot;Added song &quot; + songId),</span>
+<span class="nc" id="L183">                    error -&gt; Log.e(&quot;AddSong&quot;, &quot;Failed to add song &quot; + songId)</span>
+            );
+<span class="nc" id="L185">            queue.add(request);</span>
+<span class="nc" id="L186">        }</span>
+<span class="nc" id="L187">        Toast.makeText(this, &quot;List saved successfully!&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L188">        finish();</span>
+<span class="nc" id="L189">    }</span>
+
+    private void fetchExistingTracks(int id) {
+<span class="nc" id="L192">        String url = LISTS_ENDPOINT + &quot;/&quot; + id + &quot;/tracks&quot;;</span>
+<span class="nc" id="L193">        JsonArrayRequest request = new JsonArrayRequest(</span>
+                Request.Method.GET,
+                url,
+                null,
+                response -&gt; {
+<span class="nc" id="L198">                    existingTrackIds.clear();</span>
+<span class="nc" id="L199">                    selectedSongIds.clear();</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">                    for (int i = 0; i &lt; response.length(); i++) {</span>
+                        try {
+<span class="nc" id="L202">                            int trackId = response.getJSONObject(i).getInt(&quot;id&quot;);</span>
+<span class="nc" id="L203">                            existingTrackIds.add(trackId);</span>
+<span class="nc" id="L204">                            selectedSongIds.add(trackId);</span>
+<span class="nc" id="L205">                        } catch (JSONException e) {</span>
+<span class="nc" id="L206">                            e.printStackTrace();</span>
+<span class="nc" id="L207">                        }</span>
+                    }
+<span class="nc" id="L209">                    existingTracksLoaded = true;</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">                    if (songsLoaded) filterOutExistingSongs();</span>
+<span class="nc" id="L211">                },</span>
+<span class="nc" id="L212">                error -&gt; Log.e(&quot;CustomListPage&quot;, &quot;Error fetching existing tracks&quot;)</span>
+        );
+<span class="nc" id="L214">        queue.add(request);</span>
+<span class="nc" id="L215">    }</span>
+
+    private void filterOutExistingSongs() {
+<span class="nc" id="L218">        ArrayList&lt;String&gt; filteredTitles = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L219">        ArrayList&lt;JSONObject&gt; filteredSongs = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">        for (JSONObject song : allSongs) {</span>
+            try {
+<span class="nc" id="L222">                int songId = song.getInt(&quot;id&quot;);</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">                if (!existingTrackIds.contains(songId)) {</span>
+<span class="nc" id="L224">                    filteredSongs.add(song);</span>
+<span class="nc" id="L225">                    filteredTitles.add(song.getString(&quot;name&quot;));</span>
+                }
+<span class="nc" id="L227">            } catch (JSONException e) {</span>
+<span class="nc" id="L228">                e.printStackTrace();</span>
+<span class="nc" id="L229">            }</span>
+<span class="nc" id="L230">        }</span>
+
+<span class="nc" id="L232">        allSongs.clear();</span>
+<span class="nc" id="L233">        allSongs.addAll(filteredSongs);</span>
+
+<span class="nc" id="L235">        ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;&gt;(</span>
+                this,
+                android.R.layout.simple_list_item_multiple_choice,
+                filteredTitles
+        );
+<span class="nc" id="L240">        songListView.setAdapter(adapter);</span>
+<span class="nc" id="L241">    }</span>
+
+    private void deleteListWithTracks(int listId) {
+        // 1️⃣ Fetch all tracks
+<span class="nc" id="L245">        JsonArrayRequest tracksRequest = new JsonArrayRequest(</span>
+                Request.Method.GET,
+                LISTS_ENDPOINT + &quot;/&quot; + listId + &quot;/tracks&quot;,
+                null,
+                tracksResponse -&gt; {
+<span class="nc bnc" id="L250" title="All 2 branches missed.">                    if (tracksResponse.length() == 0) {</span>
+<span class="nc" id="L251">                        deleteListOnly(listId);</span>
+<span class="nc" id="L252">                        return;</span>
+                    }
+
+<span class="nc" id="L255">                    final int[] deletedCount = {0};</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">                    for (int i = 0; i &lt; tracksResponse.length(); i++) {</span>
+                        try {
+<span class="nc" id="L258">                            int trackId = tracksResponse.getJSONObject(i).getInt(&quot;id&quot;);</span>
+<span class="nc" id="L259">                            String url = LISTS_ENDPOINT + &quot;/&quot; + listId + &quot;/songs/&quot; + trackId;</span>
+
+<span class="nc" id="L261">                            StringRequest deleteTrackRequest = new StringRequest(</span>
+                                    Request.Method.DELETE,
+                                    url,
+                                    response -&gt; {
+<span class="nc" id="L265">                                        deletedCount[0]++;</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">                                        if (deletedCount[0] == tracksResponse.length()) deleteListOnly(listId);</span>
+<span class="nc" id="L267">                                    },</span>
+                                    error -&gt; {
+<span class="nc" id="L269">                                        deletedCount[0]++;</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">                                        if (deletedCount[0] == tracksResponse.length()) deleteListOnly(listId);</span>
+<span class="nc" id="L271">                                    }</span>
+<span class="nc" id="L272">                            ) {</span>
+                                @Override
+                                public java.util.Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L275">                                    java.util.Map&lt;String, String&gt; headers = new java.util.HashMap&lt;&gt;();</span>
+<span class="nc" id="L276">                                    headers.put(&quot;Cookie&quot;, &quot;JSESSIONID=&quot; + QueueApplication.getSessionId());</span>
+<span class="nc" id="L277">                                    return headers;</span>
+                                }
+                            };
+<span class="nc" id="L280">                            queue.add(deleteTrackRequest);</span>
+<span class="nc" id="L281">                        } catch (JSONException e) {</span>
+<span class="nc" id="L282">                            e.printStackTrace();</span>
+<span class="nc" id="L283">                        }</span>
+                    }
+<span class="nc" id="L285">                },</span>
+<span class="nc" id="L286">                error -&gt; Toast.makeText(this, &quot;Failed to fetch tracks&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+<span class="nc" id="L288">        queue.add(tracksRequest);</span>
+<span class="nc" id="L289">    }</span>
+
+    private void deleteListOnly(int listId) {
+<span class="nc" id="L292">        String url = LISTS_ENDPOINT + &quot;/&quot; + listId;</span>
+<span class="nc" id="L293">        StringRequest deleteRequest = new StringRequest(</span>
+                Request.Method.DELETE,
+                url,
+<span class="nc" id="L296">                response -&gt; Toast.makeText(this, &quot;List deleted successfully&quot;, Toast.LENGTH_SHORT).show(),</span>
+<span class="nc" id="L297">                error -&gt; Toast.makeText(this, &quot;Failed to delete list&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L298">        ) {</span>
+            @Override
+            public java.util.Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L301">                java.util.Map&lt;String, String&gt; headers = new java.util.HashMap&lt;&gt;();</span>
+<span class="nc" id="L302">                headers.put(&quot;Cookie&quot;, &quot;JSESSIONID=&quot; + QueueApplication.getSessionId());</span>
+<span class="nc" id="L303">                return headers;</span>
+            }
+        };
+<span class="nc" id="L306">        queue.add(deleteRequest);</span>
+<span class="nc" id="L307">    }</span>
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+<span class="nc" id="L311">        super.onActivityResult(requestCode, resultCode, data);</span>
+
+<span class="nc bnc" id="L313" title="All 6 branches missed.">        if (requestCode == 1001 &amp;&amp; resultCode == RESULT_OK &amp;&amp; data != null) {</span>
+            try {
+<span class="nc" id="L315">                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), data.getData());</span>
+<span class="nc" id="L316">                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 512, 512, true);</span>
+<span class="nc" id="L317">                ByteArrayOutputStream buffer = new ByteArrayOutputStream();</span>
+<span class="nc" id="L318">                scaled.compress(Bitmap.CompressFormat.JPEG, 70, buffer);</span>
+<span class="nc" id="L319">                coverImageBase64 = Base64.encodeToString(buffer.toByteArray(), Base64.NO_WRAP);</span>
+<span class="nc" id="L320">                coverImageButton.setImageBitmap(scaled);</span>
+<span class="nc" id="L321">            } catch (Exception e) {</span>
+<span class="nc" id="L322">                e.printStackTrace();</span>
+<span class="nc" id="L323">            }</span>
+        }
+<span class="nc" id="L325">    }</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

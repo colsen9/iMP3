@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MusicCatalogue.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">MusicCatalogue.java</span></div><h1>MusicCatalogue.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Base64;
+import android.util.LruCache;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.*;
+import android.app.AlertDialog;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.ImageLoader;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.NetworkImageView;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+<span class="nc" id="L38">public class MusicCatalogue extends AppCompatActivity {</span>
+    private int userId;
+<span class="nc" id="L40">    private final String baseUrl = &quot;http://coms-3090-027.class.las.iastate.edu:8080/music/&quot;;</span>
+    private RequestQueue requestQueue;
+    private ImageLoader imageLoader;
+    private LinearLayout recommendedAlbumContainer, generalListContainer;
+    private SearchView searchBar;
+    private Button filterSongsBtn, filterAlbumsBtn, clearFiltersBtn, loginBtn;
+<span class="nc" id="L46">    private JSONArray allAlbums = new JSONArray();</span>
+<span class="nc" id="L47">    private JSONArray allSongs = new JSONArray();</span>
+<span class="nc" id="L48">    private enum FilterMode {ALL, SONGS, ALBUMS}</span>
+<span class="nc" id="L49">    private FilterMode currentFilter = FilterMode.ALL;</span>
+<span class="nc" id="L50">    private Map&lt;Integer, Bitmap&gt; albumArtCache = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L51">    private final Map&lt;Integer, String&gt; artistCache = new HashMap&lt;&gt;();</span>
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="nc" id="L55">        super.onCreate(savedInstanceState);</span>
+<span class="nc" id="L56">        setContentView(R.layout.music_catalogue);</span>
+
+<span class="nc" id="L58">        Intent intent = getIntent();</span>
+<span class="nc" id="L59">        userId = intent.getIntExtra(&quot;userId&quot;, -1);</span>
+
+<span class="nc" id="L61">        requestQueue = Volley.newRequestQueue(this);</span>
+<span class="nc" id="L62">        imageLoader = new ImageLoader(requestQueue, new ImageLoader.ImageCache() {</span>
+<span class="nc" id="L63">            private final LruCache&lt;String, Bitmap&gt; cache = new LruCache&lt;&gt;(30);</span>
+
+            @Override
+            public Bitmap getBitmap(String url) {
+<span class="nc" id="L67">                return cache.get(url);</span>
+            }
+
+            @Override
+            public void putBitmap(String url, Bitmap bitmap) {
+<span class="nc" id="L72">                cache.put(url, bitmap);</span>
+<span class="nc" id="L73">            }</span>
+        });
+
+<span class="nc" id="L76">        recommendedAlbumContainer = findViewById(R.id.recommendedAlbumContainer);</span>
+<span class="nc" id="L77">        generalListContainer = findViewById(R.id.generalListContainer);</span>
+<span class="nc" id="L78">        searchBar = findViewById(R.id.searchBar);</span>
+<span class="nc" id="L79">        filterSongsBtn = findViewById(R.id.filterSongsBtn);</span>
+<span class="nc" id="L80">        filterAlbumsBtn = findViewById(R.id.filterAlbumsBtn);</span>
+<span class="nc" id="L81">        clearFiltersBtn = findViewById(R.id.clearFiltersBtn);</span>
+<span class="nc" id="L82">        ImageButton ProfileButton = findViewById(R.id.profileBtn);</span>
+<span class="nc" id="L83">        ImageButton ChatButton = findViewById(R.id.chatBtn);</span>
+<span class="nc" id="L84">        ImageButton NotificationsButton = findViewById(R.id.notificationsBtn);</span>
+<span class="nc" id="L85">        ImageButton RecommendationsButton = findViewById(R.id.recommendationsBtn);</span>
+<span class="nc" id="L86">        ImageButton sotdButton = findViewById(R.id.sotdBtn); // Added by Graysen</span>
+<span class="nc" id="L87">        loginBtn = findViewById(R.id.login_btn);</span>
+
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (userId == -1) loginBtn.setVisibility(View.VISIBLE);</span>
+<span class="nc" id="L90">        else loginBtn.setVisibility(View.GONE);</span>
+
+<span class="nc" id="L92">        ProfileButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L93">            Intent FollowerView = new Intent(MusicCatalogue.this, ProfilePage.class);</span>
+<span class="nc" id="L94">            FollowerView.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L95">            startActivity(FollowerView);</span>
+<span class="nc" id="L96">        });</span>
+
+<span class="nc" id="L98">        ChatButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L99">            Intent chat = new Intent(MusicCatalogue.this, ChatActivity.class);</span>
+<span class="nc" id="L100">            chat.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L101">            startActivity(chat);</span>
+<span class="nc" id="L102">        });</span>
+
+<span class="nc" id="L104">        NotificationsButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L105">            Intent notif = new Intent(MusicCatalogue.this, NotificationsPage.class);</span>
+<span class="nc" id="L106">            notif.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L107">            startActivity(notif);</span>
+<span class="nc" id="L108">        });</span>
+
+        // Button added by Graysen
+<span class="nc" id="L111">        sotdButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L112">            Intent sotd = new Intent(MusicCatalogue.this, DayTrackPage.class);</span>
+<span class="nc" id="L113">            sotd.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L114">            startActivity(sotd);</span>
+<span class="nc" id="L115">        });</span>
+
+<span class="nc" id="L117">        RecommendationsButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L118">            Intent reco = new Intent(MusicCatalogue.this, RecommendationsPage.class);</span>
+<span class="nc" id="L119">            reco.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L120">            startActivity(reco);</span>
+<span class="nc" id="L121">        });</span>
+
+<span class="nc" id="L123">        loginBtn.setOnClickListener(v -&gt; startActivity(new Intent(MusicCatalogue.this, LoginPage.class)));</span>
+
+<span class="nc" id="L125">        fetchAlbums();</span>
+<span class="nc" id="L126">        fetchSongs();</span>
+
+<span class="nc" id="L128">        filterSongsBtn.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L129">            currentFilter = FilterMode.SONGS;</span>
+<span class="nc" id="L130">            refreshGeneralList();</span>
+<span class="nc" id="L131">        });</span>
+<span class="nc" id="L132">        filterAlbumsBtn.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L133">            currentFilter = FilterMode.ALBUMS;</span>
+<span class="nc" id="L134">            refreshGeneralList();</span>
+<span class="nc" id="L135">        });</span>
+<span class="nc" id="L136">        clearFiltersBtn.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L137">            currentFilter = FilterMode.ALL;</span>
+<span class="nc" id="L138">            searchBar.setQuery(&quot;&quot;, false);</span>
+<span class="nc" id="L139">            refreshGeneralList();</span>
+<span class="nc" id="L140">        });</span>
+
+<span class="nc" id="L142">        searchBar.setOnQueryTextListener(new SearchView.OnQueryTextListener() {</span>
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+<span class="nc" id="L145">                filterSearch(query);</span>
+<span class="nc" id="L146">                return true;</span>
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+<span class="nc" id="L151">                filterSearch(newText);</span>
+<span class="nc" id="L152">                return true;</span>
+            }
+        });
+<span class="nc" id="L155">    }</span>
+
+    // Fetch Data
+    private void fetchAlbums() {
+<span class="nc" id="L159">        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, baseUrl + &quot;albums&quot;, null,</span>
+                response -&gt; {
+<span class="nc" id="L161">                    allAlbums = response;</span>
+<span class="nc" id="L162">                    buildAlbumArtCache();</span>
+<span class="nc" id="L163">                    fillRecommendedAlbums();</span>
+<span class="nc" id="L164">                    refreshGeneralList();</span>
+<span class="nc" id="L165">                },</span>
+<span class="nc" id="L166">                error -&gt; Log.e(&quot;MusicCatalogue&quot;, &quot;Error fetching albums&quot;, error));</span>
+<span class="nc" id="L167">        requestQueue.add(req);</span>
+<span class="nc" id="L168">    }</span>
+
+    private void fetchSongs() {
+<span class="nc" id="L171">        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, baseUrl + &quot;tracks&quot;, null,</span>
+                response -&gt; {
+<span class="nc" id="L173">                    allSongs = response;</span>
+<span class="nc" id="L174">                    refreshGeneralList();</span>
+<span class="nc" id="L175">                },</span>
+<span class="nc" id="L176">                error -&gt; Log.e(&quot;MusicCatalogue&quot;, &quot;Error fetching songs&quot;, error));</span>
+<span class="nc" id="L177">        requestQueue.add(req);</span>
+<span class="nc" id="L178">    }</span>
+
+    //Album Art
+    private Bitmap decodeAlbumArt(JSONObject item) {
+<span class="nc bnc" id="L182" title="All 4 branches missed.">        if (!item.has(&quot;albumArt&quot;) || item.isNull(&quot;albumArt&quot;)) return null;</span>
+
+        try {
+<span class="nc" id="L185">            Object art = item.get(&quot;albumArt&quot;);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">            if (art instanceof JSONArray) {</span>
+<span class="nc" id="L187">                JSONArray arr = (JSONArray) art;</span>
+<span class="nc" id="L188">                byte[] bytes = new byte[arr.length()];</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">                for (int i = 0; i &lt; arr.length(); i++) {</span>
+<span class="nc" id="L190">                    bytes[i] = (byte) arr.optInt(i, 0);</span>
+                }
+<span class="nc" id="L192">                return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">            } else if (art instanceof String) {</span>
+<span class="nc" id="L194">                byte[] decodedBytes = Base64.decode((String) art, Base64.DEFAULT);</span>
+<span class="nc" id="L195">                return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);</span>
+            }
+<span class="nc" id="L197">        } catch (Exception e) {</span>
+<span class="nc" id="L198">            e.printStackTrace();</span>
+<span class="nc" id="L199">        }</span>
+<span class="nc" id="L200">        return null;</span>
+    }
+
+    private void buildAlbumArtCache() {
+<span class="nc" id="L204">        albumArtCache.clear();</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">        for (int i = 0; i &lt; allAlbums.length(); i++) {</span>
+<span class="nc" id="L206">            JSONObject album = allAlbums.optJSONObject(i);</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">            if (album == null) continue;</span>
+
+<span class="nc" id="L209">            int albumId = album.optInt(&quot;id&quot;, -1);</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">            if (albumId == -1) continue;</span>
+
+<span class="nc" id="L212">            Bitmap albumBitmap = decodeAlbumArt(album);</span>
+<span class="nc" id="L213">            albumArtCache.put(albumId, albumBitmap);</span>
+        }
+<span class="nc" id="L215">    }</span>
+
+    // Recommended Albums
+    private void fillRecommendedAlbums() {
+<span class="nc" id="L219">        recommendedAlbumContainer.removeAllViews();</span>
+<span class="nc" id="L220">        int count = Math.min(allAlbums.length(), 6);</span>
+
+        // Convert JSONArray to List
+<span class="nc" id="L223">        List&lt;JSONObject&gt; albumList = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">        for (int i = 0; i &lt; allAlbums.length(); i++) {</span>
+<span class="nc" id="L225">            albumList.add(allAlbums.optJSONObject(i));</span>
+        }
+
+<span class="nc" id="L228">        Collections.shuffle(albumList);</span>
+
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        for (int i = 0; i &lt; count; i++) {</span>
+<span class="nc" id="L231">            JSONObject album = albumList.get(i);</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">            if (album == null) continue;</span>
+
+<span class="nc" id="L234">            int albumId = album.optInt(&quot;id&quot;, -1);</span>
+<span class="nc" id="L235">            Bitmap albumBitmap = albumArtCache.get(albumId);</span>
+
+<span class="nc" id="L237">            View card = createCard(album, true, albumBitmap);</span>
+<span class="nc" id="L238">            recommendedAlbumContainer.addView(card);</span>
+        }
+<span class="nc" id="L240">    }</span>
+
+    private Bitmap getSongAlbumArt(JSONObject song) {
+<span class="nc" id="L243">        JSONArray albumIds = song.optJSONArray(&quot;albumIds&quot;);</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">        if (albumIds != null) {</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">            for (int j = 0; j &lt; albumIds.length(); j++) {</span>
+<span class="nc" id="L246">                int albumId = albumIds.optInt(j, -1);</span>
+<span class="nc" id="L247">                Bitmap art = albumArtCache.get(albumId);</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">                if (art != null) return art;</span>
+            }
+        }
+<span class="nc" id="L251">        return null;</span>
+    }
+
+    private View createCard(JSONObject item, boolean isAlbum, Bitmap albumArt) {
+<span class="nc" id="L255">        LayoutInflater inflater = LayoutInflater.from(this);</span>
+<span class="nc" id="L256">        View card = inflater.inflate(R.layout.card_music, null);</span>
+
+<span class="nc" id="L258">        ImageView img = card.findViewById(R.id.cardImage);</span>
+<span class="nc" id="L259">        TextView title = card.findViewById(R.id.cardTitle);</span>
+<span class="nc" id="L260">        TextView artist = card.findViewById(R.id.cardArtist);</span>
+
+<span class="nc" id="L262">        int id = item.optInt(&quot;id&quot;);</span>
+<span class="nc" id="L263">        String titleStr = item.optString(&quot;name&quot;, &quot;Untitled&quot;);</span>
+<span class="nc" id="L264">        Object artistIds = item.opt(&quot;artistIds&quot;);</span>
+
+<span class="nc bnc" id="L266" title="All 2 branches missed.">        if (albumArt != null) {</span>
+<span class="nc" id="L267">            img.setImageBitmap(albumArt);</span>
+        } else {
+<span class="nc" id="L269">            img.setImageResource(R.drawable.imp3);</span>
+        }
+
+<span class="nc" id="L272">        title.setText(titleStr);</span>
+<span class="nc" id="L273">        artist.setText(&quot;Loading artist...&quot;);</span>
+<span class="nc" id="L274">        fetchArtistNames(artistIds, artist);</span>
+
+<span class="nc" id="L276">        card.setOnClickListener(v -&gt; {</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">            Intent intent = new Intent(this, isAlbum ? AlbumsPage.class : SongsPage.class);</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">            intent.putExtra(isAlbum ? &quot;albumId&quot; : &quot;songId&quot;, id);</span>
+<span class="nc" id="L279">            intent.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L280">            startActivity(intent);</span>
+<span class="nc" id="L281">        });</span>
+
+<span class="nc" id="L283">        return card;</span>
+    }
+
+    private void fetchArtistNames(Object artistIds, TextView artistTextView) {
+<span class="nc bnc" id="L287" title="All 2 branches missed.">        if (artistIds == null) {</span>
+<span class="nc" id="L288">            artistTextView.setText(&quot;Unknown&quot;);</span>
+<span class="nc" id="L289">            return;</span>
+        }
+
+        try {
+<span class="nc bnc" id="L293" title="All 2 branches missed.">            if (artistIds instanceof JSONArray) {</span>
+<span class="nc" id="L294">                JSONArray idsArray = (JSONArray) artistIds;</span>
+<span class="nc" id="L295">                StringBuilder artistNames = new StringBuilder();</span>
+
+<span class="nc bnc" id="L297" title="All 2 branches missed.">                for (int i = 0; i &lt; idsArray.length(); i++) {</span>
+<span class="nc" id="L298">                    int artistId = idsArray.optInt(i, -1);</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">                    if (artistId == -1) continue;</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">                    if (artistCache.containsKey(artistId)) {</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">                        if (artistNames.length() &gt; 0) artistNames.append(&quot;, &quot;);</span>
+<span class="nc" id="L302">                        artistNames.append(artistCache.get(artistId));</span>
+<span class="nc" id="L303">                        artistTextView.setText(artistNames.toString());</span>
+<span class="nc" id="L304">                        continue;</span>
+                    }
+
+<span class="nc" id="L307">                    String url = baseUrl + &quot;artists/&quot; + artistId;</span>
+<span class="nc" id="L308">                    JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,</span>
+                            response -&gt; {
+<span class="nc" id="L310">                                String name = response.optString(&quot;name&quot;, &quot;Unknown&quot;);</span>
+<span class="nc" id="L311">                                artistCache.put(artistId, name);</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">                                if (artistNames.length() &gt; 0) artistNames.append(&quot;, &quot;);</span>
+<span class="nc" id="L313">                                artistNames.append(name);</span>
+<span class="nc" id="L314">                                artistTextView.setText(artistNames.toString());</span>
+<span class="nc" id="L315">                            },</span>
+<span class="nc" id="L316">                            error -&gt; Log.e(&quot;MusicCatalogue&quot;, &quot;Error fetching artistId=&quot; + artistId, error)</span>
+                    );
+<span class="nc" id="L318">                    requestQueue.add(req);</span>
+                }
+            }
+<span class="nc" id="L321">        } catch (Exception e) {</span>
+<span class="nc" id="L322">            artistTextView.setText(&quot;Unknown&quot;);</span>
+<span class="nc" id="L323">        }</span>
+<span class="nc" id="L324">    }</span>
+
+    // General Catalogue
+    private void refreshGeneralList() {
+<span class="nc" id="L328">        generalListContainer.removeAllViews();</span>
+<span class="nc" id="L329">        List&lt;JSONObject&gt; combinedList = new ArrayList&lt;&gt;();</span>
+
+        try {
+<span class="nc bnc" id="L332" title="All 4 branches missed.">            if (currentFilter == FilterMode.ALL || currentFilter == FilterMode.ALBUMS)</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">                for (int i = 0; i &lt; allAlbums.length(); i++)</span>
+<span class="nc" id="L334">                    combinedList.add(allAlbums.getJSONObject(i).put(&quot;type&quot;, &quot;album&quot;));</span>
+<span class="nc bnc" id="L335" title="All 4 branches missed.">            if (currentFilter == FilterMode.ALL || currentFilter == FilterMode.SONGS)</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">                for (int i = 0; i &lt; allSongs.length(); i++)</span>
+<span class="nc" id="L337">                    combinedList.add(allSongs.getJSONObject(i).put(&quot;type&quot;, &quot;song&quot;));</span>
+<span class="nc" id="L338">        } catch (JSONException e) {</span>
+<span class="nc" id="L339">            e.printStackTrace();</span>
+<span class="nc" id="L340">        }</span>
+
+<span class="nc" id="L342">        Collections.shuffle(combinedList);</span>
+
+<span class="nc" id="L344">        JSONArray combined = new JSONArray();</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">        for (JSONObject obj : combinedList) combined.put(obj);</span>
+
+<span class="nc" id="L347">        addItemsToGrid(combined);</span>
+<span class="nc" id="L348">    }</span>
+
+    private void filterSearch(String query) {
+<span class="nc" id="L351">        query = query.toLowerCase().trim();</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">        if (query.isEmpty()) {</span>
+<span class="nc" id="L353">            refreshGeneralList();</span>
+<span class="nc" id="L354">            return;</span>
+        }
+
+<span class="nc" id="L357">        JSONArray filtered = new JSONArray();</span>
+        try {
+<span class="nc" id="L359">            JSONArray source = new JSONArray();</span>
+<span class="nc bnc" id="L360" title="All 4 branches missed.">            if (currentFilter == FilterMode.ALL || currentFilter == FilterMode.ALBUMS)</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">                for (int i = 0; i &lt; allAlbums.length(); i++)</span>
+<span class="nc" id="L362">                    source.put(allAlbums.getJSONObject(i).put(&quot;type&quot;, &quot;album&quot;));</span>
+<span class="nc bnc" id="L363" title="All 4 branches missed.">            if (currentFilter == FilterMode.ALL || currentFilter == FilterMode.SONGS)</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">                for (int i = 0; i &lt; allSongs.length(); i++)</span>
+<span class="nc" id="L365">                    source.put(allSongs.getJSONObject(i).put(&quot;type&quot;, &quot;song&quot;));</span>
+
+<span class="nc bnc" id="L367" title="All 2 branches missed.">            for (int i = 0; i &lt; source.length(); i++) {</span>
+<span class="nc" id="L368">                JSONObject obj = source.getJSONObject(i);</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">                if (obj.optString(&quot;name&quot;, &quot;&quot;).toLowerCase().contains(query))</span>
+<span class="nc" id="L370">                    filtered.put(obj);</span>
+            }
+<span class="nc" id="L372">        } catch (JSONException e) {</span>
+<span class="nc" id="L373">            e.printStackTrace();</span>
+<span class="nc" id="L374">        }</span>
+<span class="nc" id="L375">        generalListContainer.removeAllViews();</span>
+<span class="nc" id="L376">        addItemsToGrid(filtered);</span>
+<span class="nc" id="L377">    }</span>
+
+    private void addItemsToGrid(JSONArray items) {
+<span class="nc" id="L380">        int perRow = 3;</span>
+<span class="nc" id="L381">        LinearLayout currentRow = null;</span>
+
+<span class="nc bnc" id="L383" title="All 2 branches missed.">        for (int i = 0; i &lt; items.length(); i++) {</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">            if (i % perRow == 0) {</span>
+<span class="nc" id="L385">                currentRow = new LinearLayout(this);</span>
+<span class="nc" id="L386">                currentRow.setOrientation(LinearLayout.HORIZONTAL);</span>
+<span class="nc" id="L387">                currentRow.setWeightSum(perRow);</span>
+<span class="nc" id="L388">                generalListContainer.addView(currentRow);</span>
+            }
+
+            try {
+<span class="nc" id="L392">                JSONObject item = items.getJSONObject(i);</span>
+<span class="nc" id="L393">                boolean isAlbum = &quot;album&quot;.equals(item.optString(&quot;type&quot;));</span>
+
+                // Determine the correct album art
+                Bitmap albumArtBitmap;
+<span class="nc bnc" id="L397" title="All 2 branches missed.">                if (isAlbum) {</span>
+<span class="nc" id="L398">                    int albumId = item.optInt(&quot;id&quot;, -1);</span>
+<span class="nc" id="L399">                    albumArtBitmap = albumArtCache.get(albumId);</span>
+<span class="nc" id="L400">                } else {</span>
+<span class="nc" id="L401">                    albumArtBitmap = getSongAlbumArt(item); // &lt;-- important for songs</span>
+                }
+
+<span class="nc" id="L404">                View card = createCard(item, isAlbum, albumArtBitmap);</span>
+
+<span class="nc" id="L406">                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(</span>
+                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
+                );
+<span class="nc" id="L409">                params.setMargins(4, 4, 4, 4);</span>
+<span class="nc" id="L410">                card.setLayoutParams(params);</span>
+
+<span class="nc bnc" id="L412" title="All 2 branches missed.">                if (currentRow != null) {</span>
+<span class="nc" id="L413">                    currentRow.addView(card);</span>
+                }
+<span class="nc" id="L415">            } catch (JSONException e) {</span>
+<span class="nc" id="L416">                e.printStackTrace();</span>
+<span class="nc" id="L417">            }</span>
+        }
+<span class="nc" id="L419">    }</span>
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

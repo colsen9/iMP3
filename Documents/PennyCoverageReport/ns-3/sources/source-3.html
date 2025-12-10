@@ -1,0 +1,488 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SpotifyAuthController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.common</a>
+</div>
+
+<h1>Coverage Summary for Class: SpotifyAuthController (com.imp3.Backend.common)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SpotifyAuthController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (5/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    11.5%
+  </span>
+  <span class="absValue">
+    (6/52)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    8.7%
+  </span>
+  <span class="absValue">
+    (13/150)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.common;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.imp3.Backend.user.User;
+&nbsp;import com.imp3.Backend.user.UserRepository;
+&nbsp;import jakarta.servlet.http.HttpServletResponse;
+&nbsp;import jakarta.servlet.http.HttpSession;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import lombok.extern.slf4j.Slf4j;
+&nbsp;import org.springframework.http.*;
+&nbsp;import org.springframework.util.LinkedMultiValueMap;
+&nbsp;import org.springframework.util.MultiValueMap;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;import org.springframework.web.client.RestTemplate;
+&nbsp;import org.springframework.web.server.ResponseStatusException;
+&nbsp;
+&nbsp;import java.io.IOException;
+&nbsp;import java.net.URLEncoder;
+&nbsp;import java.nio.charset.StandardCharsets;
+&nbsp;import java.time.Instant;
+&nbsp;import java.util.Map;
+&nbsp;
+<b class="fc">&nbsp;@Slf4j</b>
+&nbsp;@RestController
+<b class="fc">&nbsp;@RequiredArgsConstructor</b>
+&nbsp;@RequestMapping(&quot;/api/spotify&quot;)
+&nbsp;public class SpotifyAuthController extends AbstractController {
+&nbsp;
+<b class="fc">&nbsp;    private final String clientId = System.getenv(&quot;SPOTIFY_CLIENT_ID&quot;);</b>
+<b class="fc">&nbsp;    private final String clientSecret = System.getenv(&quot;SPOTIFY_CLIENT_SECRET&quot;);</b>
+<b class="fc">&nbsp;    private final String redirectUri = System.getenv(&quot;SPOTIFY_REDIRECT_URI&quot;);</b>
+<b class="fc">&nbsp;    private final RestTemplate restTemplate = new RestTemplate();</b>
+&nbsp;    private final UserRepository userrepository;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Redirects the user to Spotify&#39;s OAuth authorization page
+&nbsp;     * @param response the HTTP response used to send the redirect to Spotify
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     * @return null on successful redirect, or error ResponseEntity if not logged in or misconfigured
+&nbsp;     * @throws IOException if the redirect cannot be sent
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/login&quot;)
+&nbsp;    public ResponseEntity&lt;String&gt; login(HttpServletResponse response, HttpSession session,
+&nbsp;                                        @RequestParam(required = false) Integer uid) throws IOException {
+<b class="pc">&nbsp;        if(clientId == null || clientSecret == null || redirectUri == null){</b>
+<b class="nc">&nbsp;            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)</b>
+<b class="nc">&nbsp;                    .body(&quot;Spotify integration not configured&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        if(uid == null) {</b>
+<b class="fc">&nbsp;            uid = getSessionUid(session);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(uid == null){</b>
+<b class="nc">&nbsp;            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)</b>
+<b class="nc">&nbsp;                    .body(&quot;Must be logged in to link to Spotify&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        String scopes = URLEncoder.encode(&quot;user-read-email user-read-private user-top-read user-library-read playlist-read-private user-follow-read&quot;,</b>
+&nbsp;                StandardCharsets.UTF_8);
+&nbsp;
+<b class="nc">&nbsp;        String url = &quot;https://accounts.spotify.com/authorize&quot;</b>
+&nbsp;                + &quot;?client_id=&quot; + clientId
+&nbsp;                + &quot;&amp;response_type=code&quot;
+<b class="nc">&nbsp;                + &quot;&amp;redirect_uri=&quot; + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8)</b>
+&nbsp;                + &quot;&amp;scope=&quot; + scopes
+&nbsp;                + &quot;&amp;state=&quot; + uid;
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Redirecting to spotify login: {}&quot;, url);</b>
+<b class="nc">&nbsp;        response.sendRedirect(url);</b>
+<b class="nc">&nbsp;        return null;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Handles Spotify&#39;s OAuth callback after user login
+&nbsp;     * @param code the authorization code returned by Spotify
+&nbsp;     * @param error returned from Spotify if the user denied access
+&nbsp;     * @param session the current user session where tokens will be stored
+&nbsp;     * @param state saved by the login redirect
+&nbsp;     * @return 200 OK on success, or appropriate error response
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/callback&quot;)
+&nbsp;    public ResponseEntity&lt;String&gt; callback(@RequestParam(required = false) String code,
+&nbsp;                                           @RequestParam(required = false, name = &quot;error&quot;) String error,
+&nbsp;                                           @RequestParam(required = false) String state,
+&nbsp;                                           HttpSession session,
+&nbsp;                                           HttpServletResponse httpResponse ) throws IOException {
+<b class="pc">&nbsp;        if(error != null){</b>
+<b class="nc">&nbsp;            log.error(&quot;Spotify OAuth error: {}&quot;, error);</b>
+<b class="nc">&nbsp;            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(&quot;Spotify authorization failed: &quot; + error);</b>
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        if(code == null){</b>
+<b class="fc">&nbsp;            return ResponseEntity.badRequest().body(&quot;Missing authorization code&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if(state == null){</b>
+<b class="nc">&nbsp;            return ResponseEntity.badRequest().body(&quot;Missing state parameter&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        Integer uid;
+&nbsp;        try {
+<b class="nc">&nbsp;            uid = Integer.parseInt(state);</b>
+&nbsp;        } catch(NumberFormatException e){
+<b class="nc">&nbsp;            return ResponseEntity.badRequest().body(&quot;Invalid state parameter&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);</b>
+<b class="nc">&nbsp;        headers.setBasicAuth(clientId, clientSecret);</b>
+&nbsp;
+<b class="nc">&nbsp;        MultiValueMap&lt;String, String&gt; form = new LinkedMultiValueMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        form.add(&quot;grant_type&quot;, &quot;authorization_code&quot;);</b>
+<b class="nc">&nbsp;        form.add(&quot;code&quot;, code);</b>
+<b class="nc">&nbsp;        form.add(&quot;redirect_uri&quot;, redirectUri);</b>
+&nbsp;
+<b class="nc">&nbsp;        HttpEntity&lt;MultiValueMap&lt;String, String&gt;&gt; request = new HttpEntity&lt;&gt;(form, headers);</b>
+&nbsp;
+<b class="nc">&nbsp;        ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(</b>
+&nbsp;                &quot;https://accounts.spotify.com/api/token&quot;,
+&nbsp;                HttpMethod.POST,
+&nbsp;                request,
+&nbsp;                JsonNode.class
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        JsonNode body = response.getBody();</b>
+<b class="nc">&nbsp;        if(body == null || !response.getStatusCode().is2xxSuccessful()){</b>
+<b class="nc">&nbsp;            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)</b>
+<b class="nc">&nbsp;                    .body(&quot;Token exchange failed&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        String accessToken = body.get(&quot;access_token&quot;).asText();</b>
+<b class="nc">&nbsp;        String refreshToken = body.hasNonNull(&quot;refresh_token&quot;)</b>
+<b class="nc">&nbsp;                ? body.get(&quot;refresh_token&quot;).asText()</b>
+<b class="nc">&nbsp;                : null;</b>
+<b class="nc">&nbsp;        int expiresIn = body.get(&quot;expires_in&quot;).asInt();</b>
+<b class="nc">&nbsp;        Instant expiry = Instant.now().plusSeconds(expiresIn);</b>
+&nbsp;
+&nbsp;        //get app user from session
+&nbsp;        //Integer uid = getSessionUid(session);
+&nbsp;
+<b class="nc">&nbsp;        User user = userrepository.findById(uid).orElseThrow(</b>
+<b class="nc">&nbsp;                () -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders meHeaders = new HttpHeaders();</b>
+<b class="nc">&nbsp;        meHeaders.setBearerAuth(accessToken);</b>
+<b class="nc">&nbsp;        HttpEntity&lt;Void&gt; meRequest = new HttpEntity&lt;&gt;(meHeaders);</b>
+&nbsp;
+<b class="nc">&nbsp;        ResponseEntity&lt;JsonNode&gt; meResponse = restTemplate.exchange(</b>
+&nbsp;                &quot;https://api.spotify.com/v1/me&quot;,
+&nbsp;                HttpMethod.GET,
+&nbsp;                meRequest,
+&nbsp;                JsonNode.class
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        JsonNode meBody = meResponse.getBody();</b>
+<b class="nc">&nbsp;        String spotifyUserId = (meBody != null &amp;&amp; meBody.hasNonNull(&quot;id&quot;))</b>
+<b class="nc">&nbsp;                ? meBody.get(&quot;id&quot;).asText()</b>
+<b class="nc">&nbsp;                : null;</b>
+&nbsp;
+<b class="nc">&nbsp;        user.setSpotifyUserId(spotifyUserId);</b>
+<b class="nc">&nbsp;        user.setSpotifyAccessToken(accessToken);</b>
+<b class="nc">&nbsp;        user.setSpotifyAccessTokenExpiry(expiry);</b>
+&nbsp;
+<b class="nc">&nbsp;        if(refreshToken != null){</b>
+<b class="nc">&nbsp;            user.setSpotifyRefreshToken(refreshToken);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        userrepository.save(user);</b>
+&nbsp;
+&nbsp;
+<b class="nc">&nbsp;        session.setAttribute(&quot;spotifyAccessToken&quot;, accessToken);</b>
+<b class="nc">&nbsp;        session.setAttribute(&quot;spotifyRefreshToken&quot;, refreshToken);</b>
+<b class="nc">&nbsp;        session.setAttribute(&quot;spotifyTokenExpiry&quot;, Instant.now().plusSeconds(expiresIn));</b>
+&nbsp;
+<b class="nc">&nbsp;        httpResponse.sendRedirect(&quot;imp3://spotify-callback?success=true&amp;uid=&quot; + uid);</b>
+<b class="nc">&nbsp;        return null;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Unlinks a Spotify account for a given user
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     * @return ResponseEntity&lt;String&gt; status message after unlinking Spotify
+&nbsp;     */
+&nbsp;    @DeleteMapping(&quot;/unlink&quot;)
+&nbsp;    public ResponseEntity&lt;String&gt; unlinkSpotify(HttpSession session) {
+<b class="fc">&nbsp;        Integer uid = getSessionUid(session);</b>
+&nbsp;
+<b class="nc">&nbsp;        User user = userrepository.findById(uid).orElseThrow(</b>
+<b class="nc">&nbsp;                () -&gt; new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;User not found&quot;)</b>
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        user.setSpotifyAccessToken(null);</b>
+<b class="nc">&nbsp;        user.setSpotifyRefreshToken(null);</b>
+<b class="nc">&nbsp;        user.setSpotifyAccessTokenExpiry(null);</b>
+<b class="nc">&nbsp;        user.setSpotifyUserId(null);</b>
+<b class="nc">&nbsp;        userrepository.save(user);</b>
+&nbsp;
+<b class="nc">&nbsp;        session.removeAttribute(&quot;spotifyAccessToken&quot;);</b>
+<b class="nc">&nbsp;        session.removeAttribute(&quot;spotifyRefreshToken&quot;);</b>
+<b class="nc">&nbsp;        session.removeAttribute(&quot;spotifyTokenExpiry&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        return ResponseEntity.ok(&quot;Spotify unlinked. Re-auth at /api/spotify/login&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Returns the current user&#39;s Spotify access token, refreshing if needed
+&nbsp;     * @param uid user ID
+&nbsp;     * @return the access token or error
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/token&quot;)
+&nbsp;    public ResponseEntity&lt;?&gt; getToken(@RequestParam Integer uid){
+<b class="nc">&nbsp;        User user  = userrepository.findById(uid)</b>
+<b class="nc">&nbsp;                .orElseThrow(()-&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        if(user.getSpotifyRefreshToken() == null) {</b>
+<b class="nc">&nbsp;            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)</b>
+<b class="nc">&nbsp;                    .body(Map.of(&quot;error&quot;, &quot;Spotify not linked&quot;, &quot;needsAuth&quot;, true));</b>
+&nbsp;
+&nbsp;    }
+&nbsp;        // Check if token is expired or about to expire (within 60 seconds)
+<b class="nc">&nbsp;        if (user.getSpotifyAccessTokenExpiry() == null ||</b>
+<b class="nc">&nbsp;                Instant.now().plusSeconds(60).isAfter(user.getSpotifyAccessTokenExpiry())) {</b>
+&nbsp;
+&nbsp;            // Refresh the token
+<b class="nc">&nbsp;            HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);</b>
+<b class="nc">&nbsp;            headers.setBasicAuth(clientId, clientSecret);</b>
+&nbsp;
+<b class="nc">&nbsp;            MultiValueMap&lt;String, String&gt; form = new LinkedMultiValueMap&lt;&gt;();</b>
+<b class="nc">&nbsp;            form.add(&quot;grant_type&quot;, &quot;refresh_token&quot;);</b>
+<b class="nc">&nbsp;            form.add(&quot;refresh_token&quot;, user.getSpotifyRefreshToken());</b>
+&nbsp;
+<b class="nc">&nbsp;            HttpEntity&lt;MultiValueMap&lt;String, String&gt;&gt; request = new HttpEntity&lt;&gt;(form, headers);</b>
+&nbsp;
+&nbsp;            try {
+<b class="nc">&nbsp;                ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(</b>
+&nbsp;                        &quot;https://accounts.spotify.com/api/token&quot;,
+&nbsp;                        HttpMethod.POST,
+&nbsp;                        request,
+&nbsp;                        JsonNode.class
+&nbsp;                );
+&nbsp;
+<b class="nc">&nbsp;                JsonNode body = response.getBody();</b>
+<b class="nc">&nbsp;                if (body == null || !response.getStatusCode().is2xxSuccessful()) {</b>
+<b class="nc">&nbsp;                    return ResponseEntity.status(HttpStatus.BAD_GATEWAY)</b>
+<b class="nc">&nbsp;                            .body(Map.of(&quot;error&quot;, &quot;Token refresh failed&quot;));</b>
+&nbsp;                }
+&nbsp;
+<b class="nc">&nbsp;                String newAccessToken = body.get(&quot;access_token&quot;).asText();</b>
+<b class="nc">&nbsp;                int expiresIn = body.get(&quot;expires_in&quot;).asInt();</b>
+&nbsp;
+&nbsp;                // Update stored token
+<b class="nc">&nbsp;                user.setSpotifyAccessToken(newAccessToken);</b>
+<b class="nc">&nbsp;                user.setSpotifyAccessTokenExpiry(Instant.now().plusSeconds(expiresIn));</b>
+&nbsp;
+&nbsp;                // Spotify may return a new refresh token
+<b class="nc">&nbsp;                if (body.hasNonNull(&quot;refresh_token&quot;)) {</b>
+<b class="nc">&nbsp;                    user.setSpotifyRefreshToken(body.get(&quot;refresh_token&quot;).asText());</b>
+&nbsp;                }
+&nbsp;
+<b class="nc">&nbsp;                userrepository.save(user);</b>
+&nbsp;
+&nbsp;            } catch (Exception e) {
+<b class="nc">&nbsp;                log.error(&quot;Failed to refresh Spotify token&quot;, e);</b>
+<b class="nc">&nbsp;                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)</b>
+<b class="nc">&nbsp;                        .body(Map.of(&quot;error&quot;, &quot;Token refresh failed&quot;, &quot;needsAuth&quot;, true));</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return ResponseEntity.ok(Map.of(</b>
+<b class="nc">&nbsp;                &quot;accessToken&quot;, user.getSpotifyAccessToken(),</b>
+<b class="nc">&nbsp;                &quot;expiresAt&quot;, user.getSpotifyAccessTokenExpiry().toString(),</b>
+<b class="nc">&nbsp;                &quot;spotifyUserId&quot;, user.getSpotifyUserId()</b>
+&nbsp;        ));
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Proxy search to Spotify API
+&nbsp;     * @param uid of the user id (must have Spotify linked)
+&nbsp;     * @param q search query
+&nbsp;     * @param type type of search artist, track, album, or comma-separated combination
+&nbsp;     * @param limit max results to return (default 20)
+&nbsp;     * @return Spotify search results or error
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/search&quot;)
+&nbsp;    public ResponseEntity&lt;?&gt; searchSpotify(
+&nbsp;            @RequestParam Integer uid,
+&nbsp;            @RequestParam String q,
+&nbsp;            @RequestParam(defaultValue = &quot;album,track&quot;) String type,
+&nbsp;            @RequestParam(defaultValue = &quot;20&quot;) int limit) {
+<b class="nc">&nbsp;        User user = userrepository.findById(uid).orElseThrow(</b>
+<b class="nc">&nbsp;                () -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        if (user.getSpotifyRefreshToken() == null) {</b>
+<b class="nc">&nbsp;            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)</b>
+<b class="nc">&nbsp;                    .body(Map.of(&quot;error&quot;, &quot;Spotify not linked&quot;, &quot;needsAuth&quot;, true));</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // Check if token expired or expiring within 60 seconds
+<b class="nc">&nbsp;        if (user.getSpotifyAccessTokenExpiry() == null ||</b>
+<b class="nc">&nbsp;                Instant.now().plusSeconds(60).isAfter(user.getSpotifyAccessTokenExpiry())) {</b>
+&nbsp;
+&nbsp;            // Refresh the token
+<b class="nc">&nbsp;            HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);</b>
+<b class="nc">&nbsp;            headers.setBasicAuth(clientId, clientSecret);</b>
+&nbsp;
+<b class="nc">&nbsp;            MultiValueMap&lt;String, String&gt; form = new LinkedMultiValueMap&lt;&gt;();</b>
+<b class="nc">&nbsp;            form.add(&quot;grant_type&quot;, &quot;refresh_token&quot;);</b>
+<b class="nc">&nbsp;            form.add(&quot;refresh_token&quot;, user.getSpotifyRefreshToken());</b>
+&nbsp;
+<b class="nc">&nbsp;            HttpEntity&lt;MultiValueMap&lt;String, String&gt;&gt; request = new HttpEntity&lt;&gt;(form, headers);</b>
+&nbsp;
+&nbsp;            try {
+<b class="nc">&nbsp;                ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(</b>
+&nbsp;                        &quot;https://accounts.spotify.com/api/token&quot;,
+&nbsp;                        HttpMethod.POST,
+&nbsp;                        request,
+&nbsp;                        JsonNode.class
+&nbsp;                );
+&nbsp;
+<b class="nc">&nbsp;                JsonNode body = response.getBody();</b>
+<b class="nc">&nbsp;                if (body == null || !response.getStatusCode().is2xxSuccessful()) {</b>
+<b class="nc">&nbsp;                    return ResponseEntity.status(HttpStatus.BAD_GATEWAY)</b>
+<b class="nc">&nbsp;                            .body(Map.of(&quot;error&quot;, &quot;Token refresh failed&quot;));</b>
+&nbsp;                }
+&nbsp;
+<b class="nc">&nbsp;                user.setSpotifyAccessToken(body.get(&quot;access_token&quot;).asText());</b>
+<b class="nc">&nbsp;                user.setSpotifyAccessTokenExpiry(Instant.now().plusSeconds(body.get(&quot;expires_in&quot;).asInt()));</b>
+&nbsp;
+<b class="nc">&nbsp;                if (body.hasNonNull(&quot;refresh_token&quot;)) {</b>
+<b class="nc">&nbsp;                    user.setSpotifyRefreshToken(body.get(&quot;refresh_token&quot;).asText());</b>
+&nbsp;                }
+&nbsp;
+<b class="nc">&nbsp;                userrepository.save(user);</b>
+&nbsp;
+&nbsp;            } catch (Exception e) {
+<b class="nc">&nbsp;                log.error(&quot;Failed to refresh Spotify token&quot;, e);</b>
+<b class="nc">&nbsp;                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)</b>
+<b class="nc">&nbsp;                        .body(Map.of(&quot;error&quot;, &quot;Token refresh failed&quot;, &quot;needsAuth&quot;, true));</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+&nbsp;        // Call Spotify search API
+<b class="nc">&nbsp;        String url = &quot;https://api.spotify.com/v1/search?q=&quot; +</b>
+<b class="nc">&nbsp;                URLEncoder.encode(q, StandardCharsets.UTF_8) +</b>
+&nbsp;                &quot;&amp;type=&quot; + type +
+&nbsp;                &quot;&amp;limit=&quot; + limit;
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders searchHeaders = new HttpHeaders();</b>
+<b class="nc">&nbsp;        searchHeaders.setBearerAuth(user.getSpotifyAccessToken());</b>
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(</b>
+&nbsp;                    url,
+&nbsp;                    HttpMethod.GET,
+&nbsp;                    new HttpEntity&lt;&gt;(searchHeaders),
+&nbsp;                    JsonNode.class
+&nbsp;            );
+<b class="nc">&nbsp;            return ResponseEntity.ok(response.getBody());</b>
+&nbsp;
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            log.error(&quot;Spotify search failed&quot;, e);</b>
+<b class="nc">&nbsp;            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)</b>
+<b class="nc">&nbsp;                    .body(Map.of(&quot;error&quot;, &quot;Spotify search failed&quot;));</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    }
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-09 15:12</div>
+</div>
+</body>
+</html>

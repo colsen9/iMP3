@@ -1,0 +1,94 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TrackRepository</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.music</a>
+</div>
+
+<h1>Coverage Summary for Class: TrackRepository (com.imp3.Backend.music)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+</tr>
+<tr>
+  <td class="name">TrackRepository</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.music;
+&nbsp;
+&nbsp;import org.springframework.stereotype.Repository;
+&nbsp;import org.springframework.data.jpa.repository.JpaRepository;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;@Repository
+&nbsp;public interface TrackRepository extends JpaRepository&lt;Track, Integer&gt; {
+&nbsp;
+&nbsp;    // basic functions
+&nbsp;    List&lt;Track&gt; findByArtistsId(Integer artistId);
+&nbsp;    List&lt;Track&gt; findByAlbumsId(Integer albumId);
+&nbsp;    List&lt;Track&gt; findDistinctByArtists_Id(Integer artistId);
+&nbsp;    List&lt;Track&gt; findDistinctByAlbums_Id(Integer albumId);
+&nbsp;
+&nbsp;//    // finding singles: find by artist, exclude anything with non-null album
+&nbsp;//    List&lt;Track&gt; findByArtistSingle(Integer artistId);
+&nbsp;
+&nbsp;    // Find Tracks by Name, partial matches accepted
+&nbsp;    List&lt;Track&gt; findByNameStartingWith(String name);
+&nbsp;
+&nbsp;    &lt;T&gt; Optional&lt;T&gt; findBySpotifyId(String spotifyId);
+&nbsp;
+&nbsp;    Optional&lt;Object&gt; findByTags_NameIgnoreCase(String tagName);
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-07 14:28</div>
+</div>
+</body>
+</html>

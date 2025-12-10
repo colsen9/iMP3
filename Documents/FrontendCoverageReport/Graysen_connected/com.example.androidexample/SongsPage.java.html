@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SongsPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">SongsPage.java</span></div><h1>SongsPage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Bundle;
+import android.widget.*;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+<span class="nc" id="L19">public class SongsPage extends AppCompatActivity {</span>
+<span class="nc" id="L20">    private final String baseUrl = &quot;http://coms-3090-027.class.las.iastate.edu:8080&quot;;</span>
+    private RequestQueue queue;
+    private ImageView songCover;
+    private TextView songTitle, songAlbum, songGenres, songLength, songMood, songBpm, songAvgRating, userReviewText;
+    private LinearLayout artistContainer;
+    private Button btnReturnCatalogue, btnReviewSong;
+    private RatingBar songRatingBar;
+
+    private int songId, albumId, userId;
+<span class="nc" id="L29">    private String songTitleString = &quot;Unknown Song&quot;;</span>
+<span class="nc" id="L30">    private int firstArtistId = -1;</span>
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="nc" id="L34">        super.onCreate(savedInstanceState);</span>
+<span class="nc" id="L35">        setContentView(R.layout.songs_page);</span>
+
+        // Initialize Volley
+<span class="nc" id="L38">        queue = QueueApplication.getQueue();</span>
+
+        // Bind UI
+<span class="nc" id="L41">        songCover = findViewById(R.id.songCover);</span>
+<span class="nc" id="L42">        songTitle = findViewById(R.id.songTitle);</span>
+<span class="nc" id="L43">        songAlbum = findViewById(R.id.songAlbum);</span>
+<span class="nc" id="L44">        artistContainer = findViewById(R.id.artistContainer);</span>
+<span class="nc" id="L45">        songGenres = findViewById(R.id.songGenres);</span>
+<span class="nc" id="L46">        songLength = findViewById(R.id.songLength);</span>
+<span class="nc" id="L47">        songMood = findViewById(R.id.songMood);</span>
+<span class="nc" id="L48">        songBpm = findViewById(R.id.songBpm);</span>
+<span class="nc" id="L49">        songAvgRating = findViewById(R.id.avgRatingText);</span>
+<span class="nc" id="L50">        songRatingBar = findViewById(R.id.songRatingBar);</span>
+<span class="nc" id="L51">        userReviewText = findViewById(R.id.userReviewText);</span>
+<span class="nc" id="L52">        btnReturnCatalogue = findViewById(R.id.btnReturnCatalogue);</span>
+<span class="nc" id="L53">        btnReviewSong = findViewById(R.id.btnReviewSong);</span>
+
+        // Get IDs
+<span class="nc" id="L56">        songId = getIntent().getIntExtra(&quot;songId&quot;,-1);</span>
+<span class="nc" id="L57">        userId = getIntent().getIntExtra(&quot;userId&quot;,-1);</span>
+
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        if (songId != -1) loadSongData();</span>
+
+<span class="nc" id="L61">        btnReturnCatalogue.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L62">            setResult(RESULT_OK, new Intent().putExtra(&quot;userId&quot;, userId));</span>
+<span class="nc" id="L63">            finish();</span>
+<span class="nc" id="L64">        });</span>
+
+<span class="nc" id="L66">        btnReviewSong.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L67">            Intent intent = new Intent(this, ReviewsPage.class);</span>
+<span class="nc" id="L68">            intent.putExtra(&quot;itemId&quot;, songId);</span>
+<span class="nc" id="L69">            intent.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L70">            intent.putExtra(&quot;itemType&quot;, &quot;tracks&quot;);</span>
+<span class="nc" id="L71">            intent.putExtra(&quot;itemName&quot;, songTitleString);</span>
+<span class="nc" id="L72">            intent.putExtra(&quot;albumId&quot;, albumId);</span>
+<span class="nc" id="L73">            startActivity(intent);</span>
+<span class="nc" id="L74">        });</span>
+<span class="nc" id="L75">    }</span>
+
+    /** Load TrackDTO info **/
+    private void loadSongData() {
+<span class="nc" id="L79">        String url = baseUrl + &quot;/music/tracks/&quot; + songId;</span>
+
+<span class="nc" id="L81">        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+                    try {
+                        // Track info
+<span class="nc" id="L85">                        songTitleString = response.optString(&quot;name&quot;, &quot;Unknown Song&quot;);</span>
+<span class="nc" id="L86">                        songTitle.setText(songTitleString);</span>
+<span class="nc" id="L87">                        songGenres.setText(&quot;Genre: &quot; + response.optString(&quot;genre&quot;, &quot;Unknown&quot;));</span>
+<span class="nc" id="L88">                        songLength.setText(&quot;Duration: &quot; + formatDuration(response.optInt(&quot;duration&quot;,0)));</span>
+<span class="nc" id="L89">                        songMood.setText(&quot;Mood: &quot; + response.optString(&quot;mood&quot;, &quot;Unknown&quot;));</span>
+<span class="nc" id="L90">                        songBpm.setText(&quot;BPM: &quot; + response.optInt(&quot;bpm&quot;, 0));</span>
+<span class="nc" id="L91">                        songAvgRating.setText(&quot;Average: &quot; + response.optDouble(&quot;averageRating&quot;, 0) + &quot; stars&quot;);</span>
+
+                        // Artist(s)
+<span class="nc" id="L94">                        JSONArray artistIds = response.optJSONArray(&quot;artistIds&quot;);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                        if (artistIds != null) fetchArtistNames(artistIds);</span>
+
+                        // Album(s)
+<span class="nc" id="L98">                        JSONArray albumIds = response.optJSONArray(&quot;albumIds&quot;);</span>
+<span class="nc bnc" id="L99" title="All 4 branches missed.">                        if (albumIds != null &amp;&amp; albumIds.length() &gt; 0) {</span>
+<span class="nc" id="L100">                            albumId = albumIds.getInt(0);</span>
+<span class="nc" id="L101">                            fetchAlbumData(albumId);</span>
+                        } else {
+<span class="nc" id="L103">                            songAlbum.setText(&quot;Album: Unknown&quot;);</span>
+                        }
+
+                        // User review
+<span class="nc" id="L107">                        fetchUserReview();</span>
+<span class="nc" id="L108">                        fetchAverageRating();</span>
+
+<span class="nc" id="L110">                    } catch (JSONException e) {</span>
+<span class="nc" id="L111">                        e.printStackTrace();</span>
+<span class="nc" id="L112">                    }</span>
+<span class="nc" id="L113">                },</span>
+                error -&gt; {
+<span class="nc" id="L115">                    Toast.makeText(this, &quot;Error loading song&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L116">                    error.printStackTrace();</span>
+<span class="nc" id="L117">                });</span>
+
+<span class="nc" id="L119">        queue.add(req);</span>
+<span class="nc" id="L120">    }</span>
+
+    /** Fetch album name &amp; album art **/
+    private void fetchAlbumData(int albumId) {
+<span class="nc" id="L124">        String url = baseUrl + &quot;/music/albums/&quot; + albumId;</span>
+<span class="nc" id="L125">        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L127">                    songAlbum.setText(&quot;Album: &quot; + response.optString(&quot;name&quot;,&quot;Unknown Album&quot;));</span>
+
+                    // Set album art
+<span class="nc bnc" id="L130" title="All 2 branches missed.">                    if (!response.isNull(&quot;albumArt&quot;)) {</span>
+<span class="nc" id="L131">                        Bitmap albumArtBitmap = decodeAlbumArt(response.opt(&quot;albumArt&quot;));</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">                        if (albumArtBitmap != null) songCover.setImageBitmap(albumArtBitmap);</span>
+                    }
+
+<span class="nc" id="L135">                    songAlbum.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L136">                        Intent i = new Intent(this, AlbumsPage.class);</span>
+<span class="nc" id="L137">                        i.putExtra(&quot;albumId&quot;, albumId);</span>
+<span class="nc" id="L138">                        i.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L139">                        startActivity(i);</span>
+<span class="nc" id="L140">                    });</span>
+<span class="nc" id="L141">                },</span>
+                error -&gt; {
+<span class="nc" id="L143">                    songAlbum.setText(&quot;Album: Unknown&quot;);</span>
+<span class="nc" id="L144">                    error.printStackTrace();</span>
+<span class="nc" id="L145">                });</span>
+<span class="nc" id="L146">        queue.add(req);</span>
+<span class="nc" id="L147">    }</span>
+
+    /** Decode album art from JSONArray or Base64 String (API 24 compatible) **/
+    private Bitmap decodeAlbumArt(Object artObj) {
+        try {
+<span class="nc bnc" id="L152" title="All 2 branches missed.">            if (artObj instanceof JSONArray) {</span>
+<span class="nc" id="L153">                JSONArray arr = (JSONArray) artObj;</span>
+<span class="nc" id="L154">                byte[] bytes = new byte[arr.length()];</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">                for (int i = 0; i &lt; arr.length(); i++) bytes[i] = (byte) arr.getInt(i);</span>
+<span class="nc" id="L156">                return BitmapFactory.decodeByteArray(bytes,0,bytes.length);</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">            } else if (artObj instanceof String) {</span>
+<span class="nc" id="L158">                byte[] decoded = android.util.Base64.decode((String) artObj, android.util.Base64.DEFAULT);</span>
+<span class="nc" id="L159">                return BitmapFactory.decodeByteArray(decoded,0,decoded.length);</span>
+            }
+<span class="nc" id="L161">        } catch (Exception e) {</span>
+<span class="nc" id="L162">            e.printStackTrace();</span>
+<span class="nc" id="L163">        }</span>
+<span class="nc" id="L164">        return null;</span>
+    }
+
+    /** Fetch artist names by IDs **/
+    private void fetchArtistNames(JSONArray artistIds) throws JSONException {
+<span class="nc" id="L169">        artistContainer.removeAllViews();</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        for (int i = 0; i &lt; artistIds.length(); i++) {</span>
+<span class="nc" id="L171">            int artistId = artistIds.getInt(i);</span>
+<span class="nc" id="L172">            String url = baseUrl + &quot;/music/artists/&quot; + artistId;</span>
+
+<span class="nc" id="L174">            JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,</span>
+                    res -&gt; {
+<span class="nc" id="L176">                        String name = res.optString(&quot;name&quot;, &quot;Unknown Artist&quot;);</span>
+<span class="nc" id="L177">                        Button artistBtn = new Button(this);</span>
+<span class="nc" id="L178">                        artistBtn.setText(name);</span>
+<span class="nc" id="L179">                        styleArtistButton(artistBtn);</span>
+
+<span class="nc" id="L181">                        artistBtn.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L182">                            Intent intent = new Intent(this, ArtistPage.class);</span>
+<span class="nc" id="L183">                            intent.putExtra(&quot;artistId&quot;, artistId);</span>
+<span class="nc" id="L184">                            intent.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L185">                            startActivity(intent);</span>
+<span class="nc" id="L186">                        });</span>
+
+<span class="nc" id="L188">                        artistContainer.addView(artistBtn);</span>
+<span class="nc" id="L189">                    },</span>
+                    error -&gt; {
+<span class="nc" id="L191">                        Button artistBtn = new Button(this);</span>
+<span class="nc" id="L192">                        artistBtn.setText(&quot;Unknown Artist&quot;);</span>
+<span class="nc" id="L193">                        styleArtistButton(artistBtn);</span>
+<span class="nc" id="L194">                        artistContainer.addView(artistBtn);</span>
+<span class="nc" id="L195">                    });</span>
+<span class="nc" id="L196">            queue.add(req);</span>
+        }
+<span class="nc" id="L198">    }</span>
+
+    private void styleArtistButton(Button btn) {
+<span class="nc" id="L201">        btn.setBackgroundResource(android.R.color.transparent);</span>
+<span class="nc" id="L202">        btn.setTextColor(getResources().getColor(android.R.color.darker_gray));</span>
+<span class="nc" id="L203">        btn.setTextSize(16);</span>
+<span class="nc" id="L204">        btn.setPadding(0,0,0,0);</span>
+<span class="nc" id="L205">        btn.setMinWidth(0);</span>
+<span class="nc" id="L206">        btn.setMinHeight(0);</span>
+<span class="nc" id="L207">        btn.setAllCaps(false);</span>
+<span class="nc" id="L208">    }</span>
+
+    private void fetchAverageRating() {
+<span class="nc" id="L211">        String url = baseUrl + &quot;/reviews/tracks/&quot; + songId;</span>
+
+<span class="nc" id="L213">        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+                    try {
+<span class="nc bnc" id="L216" title="All 2 branches missed.">                        if (response.length() == 0) {</span>
+<span class="nc" id="L217">                            songAvgRating.setText(&quot;0 stars&quot;);</span>
+<span class="nc" id="L218">                            return;</span>
+                        }
+
+<span class="nc" id="L221">                        double total = 0;</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">                        for (int i = 0; i &lt; response.length(); i++) {</span>
+<span class="nc" id="L223">                            JSONObject reviewObj = response.getJSONObject(i);</span>
+<span class="nc" id="L224">                            int rating = reviewObj.optInt(&quot;rating&quot;, 0);</span>
+<span class="nc" id="L225">                            total += rating;</span>
+                        }
+
+<span class="nc" id="L228">                        double avg = total / response.length();</span>
+<span class="nc" id="L229">                        double avgStars = avg / 2.0;</span>
+
+<span class="nc" id="L231">                        songAvgRating.setText(String.format(&quot;%.1f stars&quot;, avgStars));</span>
+
+<span class="nc" id="L233">                    } catch (JSONException e) {</span>
+<span class="nc" id="L234">                        e.printStackTrace();</span>
+<span class="nc" id="L235">                        songAvgRating.setText(&quot;N/A&quot;);</span>
+<span class="nc" id="L236">                    }</span>
+<span class="nc" id="L237">                },</span>
+                error -&gt; {
+<span class="nc" id="L239">                    songAvgRating.setText(&quot;N/A&quot;);</span>
+<span class="nc" id="L240">                }</span>
+        );
+
+<span class="nc" id="L243">        queue.add(req);</span>
+<span class="nc" id="L244">    }</span>
+
+    /** Fetch user review **/
+    private void fetchUserReview() {
+<span class="nc bnc" id="L248" title="All 2 branches missed.">        if (userId == -1) {</span>
+<span class="nc" id="L249">            userReviewText.setText(&quot;User not logged in.&quot;);</span>
+<span class="nc" id="L250">            return;</span>
+        }
+
+<span class="nc" id="L253">        String url = baseUrl + &quot;/reviews/tracks/&quot; + songId + &quot;/&quot; + userId;</span>
+
+<span class="nc" id="L255">        JsonArrayRequest req = new JsonArrayRequest(url,</span>
+                response -&gt; {
+<span class="nc bnc" id="L257" title="All 2 branches missed.">                    if (response.length() &gt; 0) {</span>
+                        try {
+<span class="nc" id="L259">                            JSONObject review = response.getJSONObject(0); // take first review</span>
+<span class="nc" id="L260">                            float rating = (float) review.optDouble(&quot;rating&quot;, 0) / 2f;</span>
+<span class="nc" id="L261">                            songRatingBar.setStepSize(0.5f);</span>
+<span class="nc" id="L262">                            songRatingBar.setRating(rating);</span>
+<span class="nc" id="L263">                            userReviewText.setText(review.optString(&quot;review&quot;, &quot;No review yet.&quot;));</span>
+<span class="nc" id="L264">                        } catch (JSONException e) {</span>
+<span class="nc" id="L265">                            e.printStackTrace();</span>
+<span class="nc" id="L266">                            userReviewText.setText(&quot;Error parsing review.&quot;);</span>
+<span class="nc" id="L267">                        }</span>
+                    } else {
+<span class="nc" id="L269">                        userReviewText.setText(&quot;No review found for this song.&quot;);</span>
+                    }
+<span class="nc" id="L271">                },</span>
+<span class="nc" id="L272">                error -&gt; userReviewText.setText(&quot;No review found for this song.&quot;)</span>
+        );
+
+<span class="nc" id="L275">        queue.add(req);</span>
+<span class="nc" id="L276">    }</span>
+
+
+    private String formatDuration(int seconds) {
+<span class="nc" id="L280">        int mins = seconds / 60;</span>
+<span class="nc" id="L281">        int secs = seconds % 60;</span>
+<span class="nc" id="L282">        return String.format(&quot;%d:%02d&quot;, mins, secs);</span>
+    }
+}
+
+
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

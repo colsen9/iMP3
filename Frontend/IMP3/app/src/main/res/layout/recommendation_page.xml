@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layout_recommendations"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".RecommendationsPage">
+
+    <!-- Top bar with Return button -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="start"
+        android:paddingBottom="8dp">
+
+        <Button
+            android:id="@+id/btn_return"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Return"
+            android:layout_marginEnd="8dp"
+            android:backgroundTint="@color/recs"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Recommendations"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_vertical"/>
+
+    </LinearLayout>
+
+    <!-- RecyclerView for recommendations -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_recommendations"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="vertical" />
+
+    <!-- Add Recommendation button -->
+    <Button
+        android:id="@+id/btn_add_rec"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Recommend a Song or Album to another user"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/recs"/>
+
+    <Button
+        android:id="@+id/btn_fetch_suggestions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Get Suggestions via Gemini AI"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/recs"/>
+
+    <Button
+        android:id="@+id/btn_fetch_user_recs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View other users recommendations"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/recs"/>
+
+</LinearLayout>
+

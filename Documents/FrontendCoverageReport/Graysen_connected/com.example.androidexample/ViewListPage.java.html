@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ViewListPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">ViewListPage.java</span></div><h1>ViewListPage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.*;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.android.volley.Request;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+
+<span class="nc" id="L19">public class ViewListPage extends AppCompatActivity {</span>
+
+    private TextView titleText, descText;
+    private ListView songListView;
+    private Button editButton, backButton;
+
+<span class="nc" id="L25">    private ArrayList&lt;String&gt; songTitles = new ArrayList&lt;&gt;();</span>
+
+    private int listId, userId;
+
+    private static final String BASE_URL = &quot;http://coms-3090-027.class.las.iastate.edu:8080&quot;;
+    private static final String LISTS_ENDPOINT = BASE_URL + &quot;/lists&quot;;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="nc" id="L34">        super.onCreate(savedInstanceState);</span>
+<span class="nc" id="L35">        setContentView(R.layout.view_list_page);</span>
+
+<span class="nc" id="L37">        titleText = findViewById(R.id.viewListTitle);</span>
+<span class="nc" id="L38">        descText = findViewById(R.id.viewListDesc);</span>
+<span class="nc" id="L39">        songListView = findViewById(R.id.viewListSongs);</span>
+<span class="nc" id="L40">        editButton = findViewById(R.id.editListButton);</span>
+<span class="nc" id="L41">        backButton = findViewById(R.id.viewListBack);</span>
+
+<span class="nc" id="L43">        listId = getIntent().getIntExtra(&quot;listId&quot;, -1);</span>
+<span class="nc" id="L44">        userId = getIntent().getIntExtra(&quot;userId&quot;, -1);</span>
+
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (listId == -1) {</span>
+<span class="nc" id="L47">            Toast.makeText(this, &quot;Invalid list&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L48">            finish();</span>
+<span class="nc" id="L49">            return;</span>
+        }
+
+<span class="nc" id="L52">        fetchListDetails();</span>
+<span class="nc" id="L53">        fetchListSongs();</span>
+
+<span class="nc" id="L55">        editButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L56">            Intent intent = new Intent(ViewListPage.this, CustomListPage.class);</span>
+<span class="nc" id="L57">            intent.putExtra(&quot;listId&quot;, listId);</span>
+<span class="nc" id="L58">            intent.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L59">            startActivity(intent);</span>
+<span class="nc" id="L60">        });</span>
+
+<span class="nc" id="L62">        backButton.setOnClickListener(v -&gt; finish());</span>
+<span class="nc" id="L63">    }</span>
+
+    private void fetchListDetails() {
+<span class="nc" id="L66">        String url = LISTS_ENDPOINT + &quot;/&quot; + listId;</span>
+
+<span class="nc" id="L68">        JsonObjectRequest request = new JsonObjectRequest(</span>
+                Request.Method.GET, url, null,
+                response -&gt; {
+<span class="nc" id="L71">                    titleText.setText(response.optString(&quot;title&quot;));</span>
+<span class="nc" id="L72">                    descText.setText(response.optString(&quot;description&quot;));</span>
+<span class="nc" id="L73">                },</span>
+<span class="nc" id="L74">                error -&gt; Toast.makeText(this, &quot;Failed to load list&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+
+<span class="nc" id="L77">        QueueApplication.getQueue().add(request);</span>
+<span class="nc" id="L78">    }</span>
+
+    private void fetchListSongs() {
+<span class="nc" id="L81">        String url = LISTS_ENDPOINT + &quot;/&quot; + listId + &quot;/tracks&quot;;</span>
+
+<span class="nc" id="L83">        JsonArrayRequest request = new JsonArrayRequest(</span>
+                Request.Method.GET, url, null,
+                response -&gt; {
+<span class="nc" id="L86">                    songTitles.clear();</span>
+
+<span class="nc bnc" id="L88" title="All 2 branches missed.">                    for (int i = 0; i &lt; response.length(); i++) {</span>
+                        try {
+<span class="nc" id="L90">                            JSONObject song = response.getJSONObject(i);</span>
+<span class="nc" id="L91">                            songTitles.add(song.getString(&quot;name&quot;));</span>
+<span class="nc" id="L92">                        } catch (JSONException e) {</span>
+<span class="nc" id="L93">                            e.printStackTrace();</span>
+<span class="nc" id="L94">                        }</span>
+                    }
+
+<span class="nc" id="L97">                    ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;&gt;(</span>
+                            this,
+                            android.R.layout.simple_list_item_1,
+                            songTitles
+                    );
+
+<span class="nc" id="L103">                    songListView.setAdapter(adapter);</span>
+<span class="nc" id="L104">                },</span>
+                error -&gt; {
+<span class="nc" id="L106">                    Log.e(&quot;ViewListPage&quot;, &quot;Failed to load songs&quot;);</span>
+<span class="nc" id="L107">                    Toast.makeText(this, &quot;Failed to load songs&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L108">                }</span>
+        );
+
+<span class="nc" id="L111">        QueueApplication.getQueue().add(request);</span>
+<span class="nc" id="L112">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

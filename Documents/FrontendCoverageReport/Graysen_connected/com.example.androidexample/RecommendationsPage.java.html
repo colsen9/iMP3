@@ -1,0 +1,716 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RecommendationsPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">RecommendationsPage.java</span></div><h1>RecommendationsPage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.app.AlertDialog;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Bundle;
+import android.util.Base64;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.HttpCookie;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+<span class="nc" id="L45">public class RecommendationsPage extends AppCompatActivity {</span>
+
+    private RecyclerView recyclerView;
+    private RecommendationAdapter adapter;
+    private String sessionCookie;
+    private Button btnAdd, btnReturn, btnFetchSuggestions, btnFetchUserRecs;
+    private int userId;
+<span class="nc" id="L52">    private RequestQueue requestQueue = QueueApplication.getQueue();</span>
+<span class="nc" id="L53">    private List&lt;Recommendation&gt; recommendationList = new ArrayList&lt;&gt;();</span>
+    private static final String BASE_URL = &quot;http://coms-3090-027.class.las.iastate.edu:8080/rec&quot;;
+<span class="nc" id="L55">    private String spotifyAccessToken = null;</span>
+<span class="nc" id="L56">    private String selectedSpotifyId = null;</span>
+<span class="nc" id="L57">    private Integer selectedRecipientUid = null;</span>
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="nc" id="L61">        super.onCreate(savedInstanceState);</span>
+<span class="nc" id="L62">        setContentView(R.layout.recommendation_page);</span>
+
+<span class="nc" id="L64">        userId = getIntent().getIntExtra(&quot;userId&quot;, -1);</span>
+<span class="nc" id="L65">        sessionCookie = getSessionCookie();</span>
+
+<span class="nc" id="L67">        recyclerView = findViewById(R.id.recycler_recommendations);</span>
+<span class="nc" id="L68">        recyclerView.setLayoutManager(new LinearLayoutManager(this));</span>
+
+<span class="nc" id="L70">        btnAdd = findViewById(R.id.btn_add_rec);</span>
+<span class="nc" id="L71">        btnReturn = findViewById(R.id.btn_return);</span>
+<span class="nc" id="L72">        btnFetchSuggestions = findViewById(R.id.btn_fetch_suggestions);</span>
+<span class="nc" id="L73">        btnFetchUserRecs = findViewById(R.id.btn_fetch_user_recs);</span>
+
+<span class="nc" id="L75">        btnAdd.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L76">            selectedRecipientUid = null;</span>
+<span class="nc" id="L77">            fetchAllUsersForRecipientSelection();</span>
+<span class="nc" id="L78">        });</span>
+
+<span class="nc" id="L80">        btnReturn.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L81">            Intent intent = new Intent();</span>
+<span class="nc" id="L82">            intent.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L83">            setResult(RESULT_OK, intent);</span>
+<span class="nc" id="L84">            finish();</span>
+<span class="nc" id="L85">        });</span>
+
+<span class="nc" id="L87">        btnFetchSuggestions.setOnClickListener(v -&gt; fetchSuggestedTracks());</span>
+<span class="nc" id="L88">        btnFetchUserRecs.setOnClickListener(v -&gt; fetchAllUsers());</span>
+
+<span class="nc" id="L90">        fetchRecommendations();</span>
+<span class="nc" id="L91">    }</span>
+
+    private String getSessionCookie() {
+<span class="nc" id="L94">        String sid = QueueApplication.getSessionId();</span>
+<span class="nc bnc" id="L95" title="All 4 branches missed.">        if (sid != null &amp;&amp; !sid.isEmpty()) {</span>
+<span class="nc" id="L96">            return &quot;JSESSIONID=&quot; + sid;</span>
+        }
+<span class="nc" id="L98">        return &quot;&quot;;</span>
+    }
+
+    private void fetchRecommendations() {
+<span class="nc" id="L102">        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, BASE_URL, null,</span>
+                response -&gt; {
+<span class="nc" id="L104">                    recommendationList.clear();</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">                    for (int i = 0; i &lt; response.length(); i++) {</span>
+                        try {
+<span class="nc" id="L107">                            JSONObject obj = response.getJSONObject(i);</span>
+<span class="nc" id="L108">                            recommendationList.add(parseRecommendation(obj));</span>
+<span class="nc" id="L109">                        } catch (JSONException e) {</span>
+<span class="nc" id="L110">                            e.printStackTrace();</span>
+<span class="nc" id="L111">                        }</span>
+                    }
+<span class="nc" id="L113">                    setupRecyclerView();</span>
+<span class="nc" id="L114">                },</span>
+<span class="nc" id="L115">                error -&gt; Toast.makeText(this, &quot;Error fetching recommendations&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L116">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L119">                return getAuthHeaders();</span>
+            }
+        };
+
+<span class="nc" id="L123">        requestQueue.add(request);</span>
+<span class="nc" id="L124">    }</span>
+
+    private Recommendation parseRecommendation(JSONObject obj) throws JSONException {
+<span class="nc" id="L127">        Recommendation rec = new Recommendation();</span>
+<span class="nc" id="L128">        rec.recId = obj.getInt(&quot;recId&quot;);</span>
+<span class="nc" id="L129">        rec.senderUid = obj.getInt(&quot;senderUid&quot;);</span>
+<span class="nc" id="L130">        rec.recipientUid = obj.getInt(&quot;recipientUid&quot;);</span>
+<span class="nc" id="L131">        rec.type = obj.getString(&quot;type&quot;);</span>
+<span class="nc" id="L132">        rec.itemId = obj.getString(&quot;itemId&quot;);</span>
+<span class="nc" id="L133">        rec.title = obj.getString(&quot;title&quot;);</span>
+<span class="nc" id="L134">        rec.source = obj.getString(&quot;source&quot;);</span>
+<span class="nc" id="L135">        rec.rationale = obj.optString(&quot;rationale&quot;);</span>
+<span class="nc" id="L136">        rec.privacy = obj.getString(&quot;privacy&quot;);</span>
+<span class="nc" id="L137">        return rec;</span>
+    }
+
+    private void setupRecyclerView() {
+<span class="nc" id="L141">        adapter = new RecommendationAdapter(recommendationList, new RecommendationAdapter.OnItemClickListener() {</span>
+            @Override
+            public void onEditClick(Recommendation rec) {
+<span class="nc" id="L144">                fetchSpotifyTokenAndShowDialog(rec);</span>
+<span class="nc" id="L145">            }</span>
+
+            @Override
+            public void onDeleteClick(Recommendation rec) {
+<span class="nc" id="L149">                deleteRecommendation(rec.recId);</span>
+<span class="nc" id="L150">            }</span>
+
+            @Override
+            public void onSpotifyClick(Recommendation rec) {
+<span class="nc" id="L154">                fetchSpotifyInfo(rec.recId);</span>
+<span class="nc" id="L155">            }</span>
+        });
+<span class="nc" id="L157">        recyclerView.setAdapter(adapter);</span>
+<span class="nc" id="L158">    }</span>
+
+    private void fetchAllUsersForRecipientSelection() {
+<span class="nc" id="L161">        String url = &quot;http://coms-3090-027.class.las.iastate.edu:8080/users/all&quot;;</span>
+
+<span class="nc" id="L163">        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L165">                    List&lt;User&gt; users = new ArrayList&lt;&gt;();</span>
+                    try {
+<span class="nc bnc" id="L167" title="All 2 branches missed.">                        for (int i = 0; i &lt; response.length(); i++) {</span>
+<span class="nc" id="L168">                            JSONObject obj = response.getJSONObject(i);</span>
+<span class="nc" id="L169">                            int uid = obj.getInt(&quot;id&quot;);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">                            if (uid == userId) continue; // Don't list yourself</span>
+<span class="nc" id="L171">                            String username = obj.getString(&quot;username&quot;);</span>
+
+<span class="nc" id="L173">                            byte[] pictureBytes = null;</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">                            if (!obj.isNull(&quot;picture&quot;)) {</span>
+<span class="nc" id="L175">                                String base64 = obj.getString(&quot;picture&quot;);</span>
+<span class="nc bnc" id="L176" title="All 6 branches missed.">                                if (base64 != null &amp;&amp; !base64.isEmpty() &amp;&amp; !base64.equals(&quot;null&quot;)) {</span>
+<span class="nc" id="L177">                                    pictureBytes = Base64.decode(base64, Base64.DEFAULT);</span>
+                                }
+                            }
+
+<span class="nc" id="L181">                            users.add(new User(username, uid, pictureBytes, obj.optString(&quot;type&quot;, &quot;user&quot;)));</span>
+                        }
+<span class="nc" id="L183">                        showRecipientSelectionDialog(users);</span>
+<span class="nc" id="L184">                    } catch (JSONException e) {</span>
+<span class="nc" id="L185">                        e.printStackTrace();</span>
+<span class="nc" id="L186">                        Toast.makeText(this, &quot;Failed to parse users&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L187">                    }</span>
+<span class="nc" id="L188">                },</span>
+<span class="nc" id="L189">                error -&gt; Toast.makeText(this, &quot;Failed to fetch users&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L190">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L193">                return getAuthHeaders();</span>
+            }
+        };
+
+<span class="nc" id="L197">        requestQueue.add(request);</span>
+<span class="nc" id="L198">    }</span>
+
+    /* Fetch all users from the backend */
+    private void fetchAllUsers() {
+<span class="nc" id="L202">        String url = &quot;http://coms-3090-027.class.las.iastate.edu:8080/users/all&quot;;</span>
+
+<span class="nc" id="L204">        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L206">                    List&lt;User&gt; users = new ArrayList&lt;&gt;();</span>
+                    try {
+<span class="nc bnc" id="L208" title="All 2 branches missed.">                        for (int i = 0; i &lt; response.length(); i++) {</span>
+<span class="nc" id="L209">                            JSONObject obj = response.getJSONObject(i);</span>
+<span class="nc" id="L210">                            String username = obj.getString(&quot;username&quot;);</span>
+<span class="nc" id="L211">                            String type = obj.optString(&quot;type&quot;, &quot;user&quot;);</span>
+<span class="nc" id="L212">                            int uid = obj.getInt(&quot;id&quot;); // use 'id', not 'uid'</span>
+<span class="nc" id="L213">                            byte[] pictureBytes = null;</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                            if (!obj.isNull(&quot;picture&quot;)) {</span>
+<span class="nc" id="L215">                                String base64 = obj.getString(&quot;picture&quot;);</span>
+<span class="nc bnc" id="L216" title="All 6 branches missed.">                                if (base64 != null &amp;&amp; !base64.isEmpty() &amp;&amp; !base64.equals(&quot;null&quot;)) {</span>
+<span class="nc" id="L217">                                    pictureBytes = Base64.decode(base64, Base64.DEFAULT);</span>
+                                }
+                            }
+<span class="nc" id="L220">                            users.add(new User(username, uid, pictureBytes, type));</span>
+                        }
+<span class="nc" id="L222">                        showUserSelectionDialog(users);</span>
+<span class="nc" id="L223">                    } catch (JSONException e) {</span>
+<span class="nc" id="L224">                        e.printStackTrace();</span>
+<span class="nc" id="L225">                        Toast.makeText(this, &quot;Failed to parse users&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L226">                    }</span>
+<span class="nc" id="L227">                },</span>
+<span class="nc" id="L228">                error -&gt; Toast.makeText(this, &quot;Failed to fetch users&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L229">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders () {
+<span class="nc" id="L232">                return getAuthHeaders();</span>
+            }
+        };
+
+<span class="nc" id="L236">        requestQueue.add(request);</span>
+<span class="nc" id="L237">    }</span>
+
+    /* Show a simple dialog to select a user */
+    private void showUserSelectionDialog(List&lt;User&gt; users) {
+<span class="nc" id="L241">        AlertDialog.Builder builder = new AlertDialog.Builder(this);</span>
+<span class="nc" id="L242">        builder.setTitle(&quot;Select a User&quot;);</span>
+
+<span class="nc" id="L244">        ListView listView = new ListView(this);</span>
+<span class="nc" id="L245">        builder.setView(listView);</span>
+
+<span class="nc" id="L247">        ArrayAdapter&lt;User&gt; adapter = new ArrayAdapter&lt;User&gt;(this, R.layout.dialog_users, R.id.txt_username, users) {</span>
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+<span class="nc" id="L250">                View view = convertView;</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">                if (view == null) {</span>
+<span class="nc" id="L252">                    view = LayoutInflater.from(getContext()).inflate(R.layout.dialog_users, parent, false);</span>
+                }
+
+<span class="nc" id="L255">                User user = getItem(position);</span>
+<span class="nc" id="L256">                TextView txtUsername = view.findViewById(R.id.txt_username);</span>
+<span class="nc" id="L257">                ImageView imgUser = view.findViewById(R.id.img_user);</span>
+
+<span class="nc" id="L259">                txtUsername.setText(user.getUsername());</span>
+
+<span class="nc bnc" id="L261" title="All 4 branches missed.">                if (user.getPicture() != null &amp;&amp; user.getPicture().length &gt; 0) {</span>
+<span class="nc" id="L262">                    Bitmap bmp = BitmapFactory.decodeByteArray(user.getPicture(), 0, user.getPicture().length);</span>
+<span class="nc" id="L263">                    imgUser.setImageBitmap(bmp);</span>
+<span class="nc" id="L264">                } else {</span>
+<span class="nc" id="L265">                    imgUser.setImageResource(R.drawable.imp3);</span>
+                }
+
+<span class="nc" id="L268">                imgUser.setBackgroundResource(R.drawable.circle);</span>
+<span class="nc" id="L269">                imgUser.setClipToOutline(true);</span>
+
+<span class="nc" id="L271">                return view;</span>
+            }
+        };
+
+<span class="nc" id="L275">        listView.setAdapter(adapter);</span>
+
+<span class="nc" id="L277">        AlertDialog dialog = builder.create();</span>
+
+<span class="nc" id="L279">        listView.setOnItemClickListener((parent, view, position, id) -&gt; {</span>
+<span class="nc" id="L280">            User selectedUser = users.get(position);</span>
+<span class="nc" id="L281">            fetchUserPublicRecommendations(selectedUser.getId());</span>
+<span class="nc" id="L282">            dialog.dismiss();</span>
+<span class="nc" id="L283">        });</span>
+
+<span class="nc" id="L285">        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, &quot;Cancel&quot;, (d, which) -&gt; dialog.dismiss());</span>
+
+<span class="nc" id="L287">        dialog.show();</span>
+<span class="nc" id="L288">    }</span>
+
+    private void fetchUserPublicRecommendations(int profileUid) {
+<span class="nc" id="L291">        String url = BASE_URL + &quot;/users/&quot; + profileUid;</span>
+
+<span class="nc" id="L293">        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L295">                    recommendationList.clear();</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">                    for (int i = 0; i &lt; response.length(); i++) {</span>
+                        try {
+<span class="nc" id="L298">                            recommendationList.add(parseRecommendation(response.getJSONObject(i)));</span>
+<span class="nc" id="L299">                        } catch (JSONException e) {</span>
+<span class="nc" id="L300">                            e.printStackTrace();</span>
+<span class="nc" id="L301">                        }</span>
+                    }
+<span class="nc" id="L303">                    setupRecyclerView();</span>
+<span class="nc" id="L304">                },</span>
+<span class="nc" id="L305">                error -&gt; Toast.makeText(this, &quot;Failed to fetch user's public recommendations&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L306">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L309">                return getAuthHeaders();</span>
+            }
+        };
+<span class="nc" id="L312">        requestQueue.add(request);</span>
+<span class="nc" id="L313">    }</span>
+
+    /* Fetch suggested tracks using Spotify + Gemini pipeline */
+    private void fetchSuggestedTracks() {
+<span class="nc" id="L317">        String url = BASE_URL + &quot;/suggestions&quot;;</span>
+
+<span class="nc" id="L319">        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L321">                    recommendationList.clear();</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">                    for (int i = 0; i &lt; response.length(); i++) {</span>
+                        try {
+<span class="nc" id="L324">                            JSONObject obj = response.getJSONObject(i);</span>
+<span class="nc" id="L325">                            Recommendation rec = new Recommendation();</span>
+<span class="nc" id="L326">                            rec.recId = obj.optInt(&quot;trackId&quot;, -1);</span>
+<span class="nc" id="L327">                            rec.title = obj.optString(&quot;name&quot;);</span>
+<span class="nc" id="L328">                            rec.itemId = obj.optString(&quot;spotifyId&quot;);</span>
+<span class="nc" id="L329">                            rec.type = &quot;track&quot;;</span>
+<span class="nc" id="L330">                            rec.rationale = obj.optString(&quot;reason&quot;); // or other field depending on SuggestedTrackResponse</span>
+<span class="nc" id="L331">                            recommendationList.add(rec);</span>
+<span class="nc" id="L332">                        } catch (JSONException e) {</span>
+<span class="nc" id="L333">                            e.printStackTrace();</span>
+<span class="nc" id="L334">                        }</span>
+                    }
+<span class="nc" id="L336">                    setupRecyclerView();</span>
+<span class="nc" id="L337">                },</span>
+                error -&gt; {
+<span class="nc bnc" id="L339" title="All 2 branches missed.">                    if (error.networkResponse != null) {</span>
+<span class="nc" id="L340">                        int statusCode = error.networkResponse.statusCode;</span>
+<span class="nc" id="L341">                        String body = new String(error.networkResponse.data);</span>
+<span class="nc" id="L342">                        Log.e(&quot;FetchSuggestions&quot;, &quot;Error &quot; + statusCode + &quot;: &quot; + body);</span>
+<span class="nc" id="L343">                    } else {</span>
+<span class="nc" id="L344">                        Log.e(&quot;FetchSuggestions&quot;, &quot;No network response&quot;, error);</span>
+                    }
+<span class="nc" id="L346">                    Toast.makeText(this, &quot;Failed to fetch suggested tracks&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L347">                }</span>
+
+<span class="nc" id="L349">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L352">                return getAuthHeaders();</span>
+            }
+        };
+
+<span class="nc" id="L356">        request.setRetryPolicy(new DefaultRetryPolicy(</span>
+                10000, // 10 seconds timeout
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        ));
+
+<span class="nc" id="L362">        requestQueue.add(request);</span>
+<span class="nc" id="L363">    }</span>
+
+    private void showRecipientSelectionDialog(List&lt;User&gt; users) {
+<span class="nc" id="L366">        AlertDialog.Builder builder = new AlertDialog.Builder(this);</span>
+<span class="nc" id="L367">        builder.setTitle(&quot;Send Recommendation To:&quot;);</span>
+
+<span class="nc" id="L369">        ListView lv = new ListView(this);</span>
+<span class="nc" id="L370">        builder.setView(lv);</span>
+
+<span class="nc" id="L372">        ArrayAdapter&lt;User&gt; adapter = new ArrayAdapter&lt;User&gt;(</span>
+<span class="nc" id="L373">                this, R.layout.dialog_users, R.id.txt_username, users) {</span>
+
+            @Override public View getView(int pos, View convertView, ViewGroup parent) {
+<span class="nc" id="L376">                View view = convertView;</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">                if (view == null)</span>
+<span class="nc" id="L378">                    view = LayoutInflater.from(getContext()).inflate(R.layout.dialog_users, parent, false);</span>
+
+<span class="nc" id="L380">                User user = getItem(pos);</span>
+<span class="nc" id="L381">                TextView txtUsername = view.findViewById(R.id.txt_username);</span>
+<span class="nc" id="L382">                ImageView imgUser = view.findViewById(R.id.img_user);</span>
+
+<span class="nc" id="L384">                txtUsername.setText(user.getUsername());</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">                if (user.getPicture() != null) {</span>
+<span class="nc" id="L386">                    Bitmap bmp = BitmapFactory.decodeByteArray(user.getPicture(), 0, user.getPicture().length);</span>
+<span class="nc" id="L387">                    imgUser.setImageBitmap(bmp);</span>
+<span class="nc" id="L388">                } else imgUser.setImageResource(R.drawable.imp3);</span>
+
+<span class="nc" id="L390">                imgUser.setBackgroundResource(R.drawable.circle);</span>
+<span class="nc" id="L391">                imgUser.setClipToOutline(true);</span>
+
+<span class="nc" id="L393">                return view;</span>
+            }
+        };
+
+<span class="nc" id="L397">        lv.setAdapter(adapter);</span>
+
+<span class="nc" id="L399">        AlertDialog dialog = builder.create();</span>
+
+<span class="nc" id="L401">        lv.setOnItemClickListener((parent, view, pos, id) -&gt; {</span>
+<span class="nc" id="L402">            selectedRecipientUid = users.get(pos).getId();</span>
+<span class="nc" id="L403">            dialog.dismiss();</span>
+
+            // Continue flow: get Spotify token → show recommendation dialog
+<span class="nc" id="L406">            fetchSpotifyTokenAndShowDialog(null);</span>
+<span class="nc" id="L407">        });</span>
+
+<span class="nc" id="L409">        dialog.show();</span>
+<span class="nc" id="L410">    }</span>
+
+    private void fetchSpotifyTokenAndShowDialog(Recommendation rec) {
+<span class="nc" id="L413">        String url = &quot;http://coms-3090-027.class.las.iastate.edu:8080/api/spotify/token?uid=&quot; + userId;</span>
+
+<span class="nc" id="L415">        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc" id="L417">                    spotifyAccessToken = response.optString(&quot;accessToken&quot;, null);</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">                    if (spotifyAccessToken == null) {</span>
+<span class="nc" id="L419">                        Toast.makeText(this, &quot;Spotify not linked&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L420">                        return;</span>
+                    }
+<span class="nc" id="L422">                    showAddEditDialog(rec);</span>
+<span class="nc" id="L423">                },</span>
+<span class="nc" id="L424">                error -&gt; Toast.makeText(this, &quot;Spotify not linked&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L425">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L428">                return getAuthHeaders();</span>
+            }
+        };
+
+<span class="nc" id="L432">        requestQueue.add(request);</span>
+<span class="nc" id="L433">    }</span>
+
+    private void showAddEditDialog(Recommendation rec) {
+<span class="nc bnc" id="L436" title="All 2 branches missed.">        boolean isEdit = rec != null;</span>
+
+<span class="nc" id="L438">        AlertDialog.Builder builder = new AlertDialog.Builder(this);</span>
+<span class="nc bnc" id="L439" title="All 2 branches missed.">        builder.setTitle(isEdit ? &quot;Edit Recommendation&quot; : &quot;Add Recommendation&quot;);</span>
+
+<span class="nc" id="L441">        View layout = LayoutInflater.from(this).inflate(R.layout.dialog_add_edit_rec, null);</span>
+<span class="nc" id="L442">        builder.setView(layout);</span>
+
+<span class="nc" id="L444">        EditText inputTitle = layout.findViewById(R.id.input_title);</span>
+<span class="nc" id="L445">        EditText inputType = layout.findViewById(R.id.input_type);</span>
+<span class="nc" id="L446">        EditText inputRationale = layout.findViewById(R.id.input_rationale);</span>
+<span class="nc" id="L447">        EditText inputPrivacy = layout.findViewById(R.id.input_privacy);</span>
+<span class="nc" id="L448">        Button btnSelectSpotify = layout.findViewById(R.id.btn_select_spotify);</span>
+
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        if (isEdit) {</span>
+<span class="nc" id="L451">            selectedRecipientUid = rec.recipientUid;</span>
+<span class="nc" id="L452">            inputTitle.setText(rec.title);</span>
+<span class="nc" id="L453">            inputType.setText(rec.type);</span>
+<span class="nc" id="L454">            inputRationale.setText(rec.rationale);</span>
+<span class="nc" id="L455">            inputPrivacy.setText(rec.privacy);</span>
+<span class="nc" id="L456">            selectedSpotifyId = rec.itemId;</span>
+        } else {
+<span class="nc" id="L458">            inputPrivacy.setText(&quot;PUBLIC&quot;);</span>
+<span class="nc" id="L459">            selectedSpotifyId = null;</span>
+        }
+
+<span class="nc" id="L462">        btnSelectSpotify.setOnClickListener(v -&gt; showSpotifySearchDialog(inputTitle, inputType));</span>
+
+<span class="nc bnc" id="L464" title="All 2 branches missed.">        builder.setPositiveButton(isEdit ? &quot;Update&quot; : &quot;Add&quot;, (dialog, which) -&gt; {</span>
+            try {
+<span class="nc bnc" id="L466" title="All 2 branches missed.">                if (selectedSpotifyId == null) {</span>
+<span class="nc" id="L467">                    Toast.makeText(this, &quot;Please select a Spotify track&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L468">                    return;</span>
+                }
+
+<span class="nc" id="L471">                JSONObject requestBody = new JSONObject();</span>
+<span class="nc" id="L472">                requestBody.put(&quot;title&quot;, inputTitle.getText().toString());</span>
+<span class="nc" id="L473">                requestBody.put(&quot;type&quot;, inputType.getText().toString());</span>
+<span class="nc" id="L474">                requestBody.put(&quot;itemId&quot;, selectedSpotifyId);</span>
+<span class="nc" id="L475">                requestBody.put(&quot;rationale&quot;, inputRationale.getText().toString());</span>
+<span class="nc" id="L476">                requestBody.put(&quot;privacy&quot;, inputPrivacy.getText().toString());</span>
+<span class="nc" id="L477">                requestBody.put(&quot;recipientUid&quot;, selectedRecipientUid);</span>
+
+<span class="nc bnc" id="L479" title="All 2 branches missed.">                if (isEdit) {</span>
+<span class="nc" id="L480">                    updateRecommendation(rec.recId, requestBody);</span>
+                } else {
+<span class="nc" id="L482">                    createRecommendation(requestBody);</span>
+                }
+<span class="nc" id="L484">            } catch (JSONException e) {</span>
+<span class="nc" id="L485">                e.printStackTrace();</span>
+<span class="nc" id="L486">            }</span>
+<span class="nc" id="L487">        });</span>
+
+<span class="nc" id="L489">        builder.setNegativeButton(&quot;Cancel&quot;, (dialog, which) -&gt; dialog.dismiss());</span>
+<span class="nc" id="L490">        builder.show();</span>
+<span class="nc" id="L491">    }</span>
+
+    // Spotify search dialog
+    private void showSpotifySearchDialog(EditText inputTitle, EditText inputType) {
+<span class="nc" id="L495">        AlertDialog.Builder builder = new AlertDialog.Builder(this);</span>
+<span class="nc" id="L496">        builder.setTitle(&quot;Search Spotify Track or Album&quot;);</span>
+
+<span class="nc" id="L498">        final EditText input = new EditText(this);</span>
+<span class="nc" id="L499">        input.setHint(&quot;Enter song or album name&quot;);</span>
+<span class="nc" id="L500">        builder.setView(input);</span>
+
+<span class="nc" id="L502">        builder.setPositiveButton(&quot;Search&quot;, (dialog, which) -&gt; {</span>
+<span class="nc" id="L503">            String query = input.getText().toString().trim();</span>
+<span class="nc bnc" id="L504" title="All 2 branches missed.">            if (query.isEmpty()) {</span>
+<span class="nc" id="L505">                Toast.makeText(this, &quot;Enter a search term&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L506">                return;</span>
+            }
+<span class="nc" id="L508">            searchSpotify(query, inputTitle, inputType);</span>
+<span class="nc" id="L509">        });</span>
+
+<span class="nc" id="L511">        builder.setNegativeButton(&quot;Cancel&quot;, (dialog, which) -&gt; dialog.dismiss());</span>
+<span class="nc" id="L512">        builder.show();</span>
+<span class="nc" id="L513">    }</span>
+
+    // Perform Spotify search via backend proxy
+    private void searchSpotify(String query, EditText inputTitle, EditText inputType) {
+<span class="nc bnc" id="L517" title="All 4 branches missed.">        if (spotifyAccessToken == null || spotifyAccessToken.isBlank()) {</span>
+<span class="nc" id="L518">            Toast.makeText(this, &quot;Spotify token missing — please try again&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L519">            return;</span>
+        }
+
+<span class="nc" id="L522">        String url = &quot;http://coms-3090-027.class.las.iastate.edu:8080/api/spotify/search&quot;</span>
+                + &quot;?uid=&quot; + userId
+<span class="nc" id="L524">                + &quot;&amp;q=&quot; + query.replace(&quot; &quot;, &quot;%20&quot;)</span>
+                + &quot;&amp;type=track,album&quot;
+                + &quot;&amp;limit=20&quot;;
+
+<span class="nc" id="L528">        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+                    try {
+<span class="nc" id="L531">                        List&lt;String&gt; labels = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L532">                        List&lt;String&gt; ids = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L533">                        List&lt;String&gt; types = new ArrayList&lt;&gt;();</span>
+
+                        // Tracks
+<span class="nc bnc" id="L536" title="All 4 branches missed.">                        if (response.has(&quot;tracks&quot;) &amp;&amp; response.getJSONObject(&quot;tracks&quot;).has(&quot;items&quot;)) {</span>
+<span class="nc" id="L537">                            JSONArray tracks = response.getJSONObject(&quot;tracks&quot;).getJSONArray(&quot;items&quot;);</span>
+<span class="nc bnc" id="L538" title="All 2 branches missed.">                            for (int i = 0; i &lt; tracks.length(); i++) {</span>
+<span class="nc" id="L539">                                JSONObject t = tracks.getJSONObject(i);</span>
+<span class="nc" id="L540">                                String name = t.optString(&quot;name&quot;, &quot;Unknown Track&quot;);</span>
+<span class="nc" id="L541">                                String artist = &quot;Unknown Artist&quot;;</span>
+                                try {
+<span class="nc" id="L543">                                    artist = t.getJSONArray(&quot;artists&quot;).getJSONObject(0).optString(&quot;name&quot;, artist);</span>
+<span class="nc" id="L544">                                } catch (Exception ignored) {}</span>
+<span class="nc" id="L545">                                labels.add(&quot;TRACK: &quot; + name + &quot; — &quot; + artist);</span>
+<span class="nc" id="L546">                                ids.add(t.getString(&quot;id&quot;));</span>
+<span class="nc" id="L547">                                types.add(&quot;track&quot;);</span>
+                            }
+                        }
+
+                        // Albums
+<span class="nc bnc" id="L552" title="All 4 branches missed.">                        if (response.has(&quot;albums&quot;) &amp;&amp; response.getJSONObject(&quot;albums&quot;).has(&quot;items&quot;)) {</span>
+<span class="nc" id="L553">                            JSONArray albums = response.getJSONObject(&quot;albums&quot;).getJSONArray(&quot;items&quot;);</span>
+<span class="nc bnc" id="L554" title="All 2 branches missed.">                            for (int i = 0; i &lt; albums.length(); i++) {</span>
+<span class="nc" id="L555">                                JSONObject a = albums.getJSONObject(i);</span>
+<span class="nc" id="L556">                                String name = a.optString(&quot;name&quot;, &quot;Unknown Album&quot;);</span>
+<span class="nc" id="L557">                                String artist = &quot;Unknown Artist&quot;;</span>
+                                try {
+<span class="nc" id="L559">                                    artist = a.getJSONArray(&quot;artists&quot;).getJSONObject(0).optString(&quot;name&quot;, artist);</span>
+<span class="nc" id="L560">                                } catch (Exception ignored) {}</span>
+<span class="nc" id="L561">                                labels.add(&quot;ALBUM: &quot; + name + &quot; — &quot; + artist);</span>
+<span class="nc" id="L562">                                ids.add(a.getString(&quot;id&quot;));</span>
+<span class="nc" id="L563">                                types.add(&quot;album&quot;);</span>
+                            }
+                        }
+
+<span class="nc bnc" id="L567" title="All 2 branches missed.">                        if (labels.isEmpty()) {</span>
+<span class="nc" id="L568">                            Toast.makeText(this, &quot;No results found&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L569">                            return;</span>
+                        }
+
+<span class="nc" id="L572">                        String[] labelsArray = labels.toArray(new String[0]);</span>
+<span class="nc" id="L573">                        String[] idsArray = ids.toArray(new String[0]);</span>
+<span class="nc" id="L574">                        String[] typesArray = types.toArray(new String[0]);</span>
+
+<span class="nc" id="L576">                        AlertDialog.Builder selectBuilder = new AlertDialog.Builder(this);</span>
+<span class="nc" id="L577">                        selectBuilder.setTitle(&quot;Select Track or Album&quot;);</span>
+<span class="nc" id="L578">                        selectBuilder.setItems(labelsArray, (d, which) -&gt; {</span>
+<span class="nc" id="L579">                            selectedSpotifyId = idsArray[which];</span>
+<span class="nc" id="L580">                            inputType.setText(typesArray[which]);</span>
+
+                            // If user selected an album, ask to pick a track
+<span class="nc bnc" id="L583" title="All 2 branches missed.">                            if (typesArray[which].equals(&quot;album&quot;)) {</span>
+                                // Prefill album info instead of forcing track selection
+<span class="nc" id="L585">                                inputTitle.setText(labelsArray[which].replaceFirst(&quot;^ALBUM:\\s*&quot;, &quot;&quot;));</span>
+<span class="nc" id="L586">                                inputType.setText(&quot;album&quot;);</span>
+<span class="nc" id="L587">                                selectedSpotifyId = idsArray[which];</span>
+                            } else {
+<span class="nc" id="L589">                                inputTitle.setText(labelsArray[which].replaceFirst(&quot;^TRACK:\\s*&quot;, &quot;&quot;));</span>
+<span class="nc" id="L590">                                inputType.setText(&quot;track&quot;);</span>
+<span class="nc" id="L591">                                selectedSpotifyId = idsArray[which];</span>
+                            }
+
+<span class="nc" id="L594">                        });</span>
+<span class="nc" id="L595">                        selectBuilder.show();</span>
+
+<span class="nc" id="L597">                    } catch (Exception e) {</span>
+<span class="nc" id="L598">                        e.printStackTrace();</span>
+<span class="nc" id="L599">                        Toast.makeText(this, &quot;Failed to parse search results&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L600">                    }</span>
+<span class="nc" id="L601">                },</span>
+                error -&gt; {
+<span class="nc" id="L603">                    error.printStackTrace();</span>
+<span class="nc" id="L604">                    Toast.makeText(this, &quot;Spotify search failed&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L605">                }</span>
+<span class="nc" id="L606">        ) {</span>
+        @Override
+        public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L609">            return getAuthHeaders();</span>
+        }
+        };
+
+<span class="nc" id="L613">        requestQueue.add(request);</span>
+<span class="nc" id="L614">    }</span>
+
+    private void deleteRecommendation(int recId) {
+<span class="nc" id="L617">        String url = BASE_URL + &quot;/&quot; + recId;</span>
+<span class="nc" id="L618">        StringRequest request = new StringRequest(Request.Method.DELETE, url,</span>
+                response -&gt; {
+<span class="nc" id="L620">                    Toast.makeText(this, &quot;Deleted successfully&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L621">                    fetchRecommendations();</span>
+<span class="nc" id="L622">                },</span>
+<span class="nc" id="L623">                error -&gt; Toast.makeText(this, &quot;Failed to delete&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L624">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L627">                return getAuthHeaders();</span>
+            }
+        };
+<span class="nc" id="L630">        requestQueue.add(request);</span>
+<span class="nc" id="L631">    }</span>
+
+    private void createRecommendation(JSONObject body) {
+<span class="nc" id="L634">        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, BASE_URL, body,</span>
+                response -&gt; {
+<span class="nc" id="L636">                    Toast.makeText(this, &quot;Recommendation Sent!&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L637">                    fetchRecommendations();</span>
+<span class="nc" id="L638">                },</span>
+<span class="nc" id="L639">                error -&gt; Toast.makeText(this, &quot;Failed to add recommendation&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L640">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L643">                return getAuthHeaders();</span>
+            }
+        };
+<span class="nc" id="L646">        requestQueue.add(request);</span>
+<span class="nc" id="L647">    }</span>
+
+    private void updateRecommendation(int recId, JSONObject requestBody) {
+<span class="nc" id="L650">        String url = BASE_URL + &quot;/&quot; + recId;</span>
+<span class="nc" id="L651">        JsonObjectRequest request = new JsonObjectRequest(Request.Method.PUT, url, requestBody,</span>
+                response -&gt; {
+<span class="nc" id="L653">                    Toast.makeText(this, &quot;Updated successfully&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L654">                    fetchRecommendations();</span>
+<span class="nc" id="L655">                },</span>
+<span class="nc" id="L656">                error -&gt; Toast.makeText(this, &quot;Failed to update&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L657">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L660">                return getAuthHeaders();</span>
+            }
+        };
+<span class="nc" id="L663">        requestQueue.add(request);</span>
+<span class="nc" id="L664">    }</span>
+
+    private void fetchSpotifyInfo(int recId) {
+<span class="nc" id="L667">        String url = BASE_URL + &quot;/&quot; + recId + &quot;/spotify&quot;;</span>
+
+<span class="nc" id="L669">        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+                    try {
+<span class="nc" id="L672">                        String trackName = response.optString(&quot;name&quot;, &quot;Unknown Track&quot;);</span>
+<span class="nc" id="L673">                        JSONArray artists = response.getJSONArray(&quot;artists&quot;);</span>
+<span class="nc" id="L674">                        String artistName = artists.getJSONObject(0).optString(&quot;name&quot;, &quot;Unknown Artist&quot;);</span>
+<span class="nc" id="L675">                        String albumName = response.getJSONObject(&quot;album&quot;).optString(&quot;name&quot;, &quot;Unknown Album&quot;);</span>
+
+<span class="nc" id="L677">                        String message = &quot;Track: &quot; + trackName + &quot;\nArtist: &quot; + artistName + &quot;\nAlbum: &quot; + albumName;</span>
+
+<span class="nc" id="L679">                        new AlertDialog.Builder(this)</span>
+<span class="nc" id="L680">                                .setTitle(&quot;Spotify Info&quot;)</span>
+<span class="nc" id="L681">                                .setMessage(message)</span>
+<span class="nc" id="L682">                                .setPositiveButton(&quot;OK&quot;, null)</span>
+<span class="nc" id="L683">                                .show();</span>
+<span class="nc" id="L684">                    } catch (Exception e) {</span>
+<span class="nc" id="L685">                        e.printStackTrace();</span>
+<span class="nc" id="L686">                        Toast.makeText(this, &quot;Failed to parse Spotify info&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L687">                    }</span>
+<span class="nc" id="L688">                },</span>
+<span class="nc" id="L689">                error -&gt; Toast.makeText(this, &quot;Failed to fetch Spotify info&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L690">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders () {
+<span class="nc" id="L693">                return getAuthHeaders();</span>
+            }
+        };
+
+<span class="nc" id="L697">        requestQueue.add(request);</span>
+<span class="nc" id="L698">    }</span>
+
+    private Map&lt;String, String&gt; getAuthHeaders() {
+<span class="nc" id="L701">        Map&lt;String, String&gt; headers = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L702" title="All 4 branches missed.">        if (sessionCookie != null &amp;&amp; !sessionCookie.isEmpty()) {</span>
+<span class="nc" id="L703">            headers.put(&quot;Cookie&quot;, sessionCookie);</span>
+        }
+<span class="nc" id="L705">        return headers;</span>
+    }
+}
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

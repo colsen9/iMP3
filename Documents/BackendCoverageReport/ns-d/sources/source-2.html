@@ -1,0 +1,546 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > UserController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.user</a>
+</div>
+
+<h1>Coverage Summary for Class: UserController (com.imp3.Backend.user)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">UserController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    89.5%
+  </span>
+  <span class="absValue">
+    (17/19)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    46.8%
+  </span>
+  <span class="absValue">
+    (29/62)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    79.2%
+  </span>
+  <span class="absValue">
+    (99/125)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.user;
+&nbsp;
+&nbsp;import com.imp3.Backend.common.AbstractController;
+&nbsp;import com.imp3.Backend.follow.Follow;
+&nbsp;import com.imp3.Backend.follow.FollowRepository;
+&nbsp;import com.imp3.Backend.notification.NotificationService;
+&nbsp;import jakarta.servlet.http.HttpSession;
+&nbsp;import lombok.extern.slf4j.Slf4j;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.core.io.ClassPathResource;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;import org.springframework.web.server.ResponseStatusException;
+&nbsp;import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+&nbsp;import org.springframework.security.crypto.password.PasswordEncoder;
+&nbsp;
+&nbsp;import java.io.ByteArrayInputStream;
+&nbsp;import java.io.IOException;
+&nbsp;import java.io.InputStream;
+&nbsp;import java.util.*;
+&nbsp;
+<b class="fc">&nbsp;@Slf4j</b>
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;/users&quot;)
+<b class="fc">&nbsp;public class UserController extends AbstractController {</b>
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    UserRepository userrepository;
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    FollowRepository followrepository;
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    NotificationService notificationservice;
+&nbsp;
+&nbsp;    public PasswordEncoder passwordEncoder(){
+<b class="fc">&nbsp;        return new BCryptPasswordEncoder();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates a new user (uses POST)
+&nbsp;     * @param user to be added to the website
+&nbsp;     * @return user that was just created
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/signup&quot;)
+&nbsp;    public User signUp(@RequestBody User user){
+&nbsp;        //Checks that email has not been used
+<b class="fc">&nbsp;        if(userrepository.findByEmail(user.getEmail()).isPresent()){</b>
+<b class="fc">&nbsp;            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;Email already in use&quot;);</b>
+&nbsp;        }
+&nbsp;        //hashes the password before saving
+<b class="fc">&nbsp;        user.setPassword(passwordEncoder().encode(user.getPassword()));</b>
+&nbsp;
+<b class="fc">&nbsp;        return userrepository.save(user);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    // Basic support for logging a user in (uses POST)
+&nbsp;    // note: no thought given toward security, basic functionality only
+&nbsp;    @PostMapping(&quot;/login&quot;)
+&nbsp;    public Map&lt;String, Integer&gt; login(@RequestBody Map&lt;String, String&gt; authentication, HttpSession session) {
+&nbsp;
+<b class="fc">&nbsp;        System.out.println(&quot;logging in&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        String email = authentication.get(&quot;email&quot;);</b>
+<b class="fc">&nbsp;        String password = authentication.get(&quot;password&quot;);</b>
+&nbsp;        
+&nbsp;        // if the user exists...
+<b class="pc">&nbsp;        if(userrepository.findByEmail(email).isPresent()) {</b>
+&nbsp;
+&nbsp;            // get user as a user object
+<b class="fc">&nbsp;            User user = userrepository.findByEmail(email).get();</b>
+&nbsp;
+&nbsp;            // banned users cannot log in
+<b class="pc">&nbsp;            if (user.getType().equals(&quot;banned&quot;)) {</b>
+<b class="nc">&nbsp;                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;No Login, User Banned&quot;);</b>
+&nbsp;            }
+&nbsp;           
+&nbsp;            // and if the password matches the stored hash...
+<b class="fc">&nbsp;            if (passwordEncoder().matches(password, user.getPassword())) {</b>
+&nbsp;
+&nbsp;                // get current user ID
+<b class="fc">&nbsp;                Integer userID = user.getId();</b>
+&nbsp;
+&nbsp;                // store current user ID and user type in session
+<b class="fc">&nbsp;                session.setAttribute(&quot;uid&quot;, user.getId());</b>
+<b class="fc">&nbsp;                session.setAttribute(&quot;type&quot;, user.getType());</b>
+&nbsp;
+&nbsp;                // then return a success message
+<b class="fc">&nbsp;                return Map.of(&quot;status&quot;, 200, &quot;user&quot;, userID);</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+&nbsp;        // else, return a failure message
+<b class="fc">&nbsp;        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;failure&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Deletes a user that has already been created (uses DELETE)
+&nbsp;     * @param id of the user
+&nbsp;     * @return user that was just deleted
+&nbsp;     */
+&nbsp;    @DeleteMapping(&quot;/{id}&quot;)
+&nbsp;    public User deleteUser(@PathVariable Integer id, HttpSession session) {
+&nbsp;        //fetch user by ID number or 404 if not found
+<b class="fc">&nbsp;        User toDelete = userrepository.findById(id).orElseThrow(()-&gt; new ResponseStatusException(</b>
+&nbsp;                        HttpStatus.NOT_FOUND,&quot;User not found&quot;));
+&nbsp;
+&nbsp;        // determine if the request is from an admin or the user themself
+<b class="fc">&nbsp;        Integer sessionId = getSessionUid(session);</b>
+<b class="fc">&nbsp;        String privilege = (String)session.getAttribute(&quot;type&quot;);</b>
+<b class="pc">&nbsp;        if (!sessionId.equals(id) &amp;&amp; !privilege.equals(&quot;admin&quot;)) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;UNAUTHORIZED&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        userrepository.delete(toDelete);</b>
+&nbsp;
+&nbsp;        //returns the deleted user (password is hidden)
+<b class="fc">&nbsp;        return toDelete;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Returns a list of all users
+&nbsp;     * @return list of all users on the website
+&nbsp;     */
+&nbsp;
+&nbsp;    @GetMapping(&quot;/all&quot;)
+&nbsp;    public List&lt;User&gt; getAllUsers(){
+<b class="fc">&nbsp;        return userrepository.findAll();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Follow a user
+&nbsp;     * @param id of the user they want to follow
+&nbsp;     * @return user that they now follow
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/{id}/follow&quot;)
+&nbsp;    public User followUser(@PathVariable Integer id, HttpSession session){
+&nbsp;
+&nbsp;        //confirm the user who is doing the following
+<b class="fc">&nbsp;        Integer currentId = (Integer)session.getAttribute(&quot;uid&quot;);</b>
+<b class="pc">&nbsp;        if(currentId == null){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Not logged in&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //ensures the user cannot follow themselves
+<b class="pc">&nbsp;        if(currentId.equals(id)){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Cannot follow yourself&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //fetch user by ID number or 404 if not found
+<b class="fc">&nbsp;        User toFollow = userrepository.findById(id).orElseThrow(()-&gt; new ResponseStatusException(</b>
+&nbsp;                        HttpStatus.NOT_FOUND, &quot;User not found&quot;));
+&nbsp;
+&nbsp;        //confirm the user doesn&#39;t already follow user toFollow
+<b class="fc">&nbsp;        if(followrepository.existsByFollower_IdAndFollowed_Id(currentId, id)){</b>
+<b class="fc">&nbsp;            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;Already following&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        Follow following = new Follow();</b>
+&nbsp;
+<b class="fc">&nbsp;        User follower = userrepository.findById(currentId).orElseThrow(()-&gt; new ResponseStatusException(</b>
+&nbsp;                        HttpStatus.NOT_FOUND, &quot;User not found&quot;));
+<b class="fc">&nbsp;        following.setFollower(follower);</b>
+<b class="fc">&nbsp;        following.setFollowed(toFollow);</b>
+<b class="fc">&nbsp;        followrepository.save(following);</b>
+&nbsp;
+<b class="fc">&nbsp;        notificationservice.notifyUserFollow(follower, toFollow);</b>
+&nbsp;
+<b class="fc">&nbsp;        return toFollow;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Unfollow a user
+&nbsp;     * @param id of the user they want to unfollow
+&nbsp;     * @return user that was just unfollowed
+&nbsp;     */
+&nbsp;    @DeleteMapping(&quot;/{id}/follow&quot;)
+&nbsp;    public User unfollowUser(@PathVariable Integer id, HttpSession session){
+&nbsp;        //confirm user doing the unfollowing
+<b class="fc">&nbsp;        Integer currentId = getSessionUid(session);</b>
+&nbsp;
+&nbsp;        //fetch by user ID or 404 if not found
+<b class="fc">&nbsp;        User toUnfollow = userrepository.findById(id).orElseThrow(()-&gt; new ResponseStatusException(</b>
+&nbsp;                HttpStatus.NOT_FOUND, &quot;User not found&quot;));
+&nbsp;
+<b class="fc">&nbsp;        var f = followrepository.findByFollower_IdAndFollowed_Id(currentId, id)</b>
+<b class="fc">&nbsp;                .orElseThrow(()-&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Not following&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        followrepository.delete(f);</b>
+&nbsp;
+<b class="fc">&nbsp;        return toUnfollow;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Returns a list of followers for the given user (by ID)
+&nbsp;     * @param id of the user
+&nbsp;     * @return followers for that user (in a list)
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{id}/followers&quot;)
+&nbsp;    public List&lt;User&gt; getFollowerS(@PathVariable Integer id){
+&nbsp;        //fetch by user ID, or 404 if not found
+<b class="fc">&nbsp;        userrepository.findById(id).orElseThrow(()-&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        return followrepository.getFollowersOf(id);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Returns list of users someone is following (by given ID)
+&nbsp;     * @param id of the user
+&nbsp;     * @return followed users (in a list)
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{id}/following&quot;)
+&nbsp;    public List&lt;User&gt; getFollowing(@PathVariable Integer id){
+&nbsp;        //fetch by user id, or 404 if not found
+<b class="fc">&nbsp;        userrepository.findById(id).orElseThrow(()-&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        return followrepository.getFollowingOf(id);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Returns list of user&#39;s mutuals (they are following each other)
+&nbsp;     * @param id of the user
+&nbsp;     * @return mutuals of the user
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{id}/mutuals&quot;)
+&nbsp;    public List&lt;User&gt; getMutuals(@PathVariable Integer id){
+&nbsp;        //fetch by user id, or 404 if not found
+<b class="fc">&nbsp;        userrepository.findById(id).orElseThrow(()-&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;User&gt; following = followrepository.getFollowingOf(id);</b>
+<b class="fc">&nbsp;        List&lt;User&gt; followers = followrepository.getFollowersOf(id);</b>
+<b class="fc">&nbsp;        List&lt;User&gt; mutuals = new ArrayList&lt;&gt;();</b>
+&nbsp;
+<b class="fc">&nbsp;        for(User follower : followers){</b>
+<b class="fc">&nbsp;            for(User followed : following){</b>
+<b class="pc">&nbsp;                if(follower != null &amp;&amp; followed != null &amp;&amp; follower.getId().equals(followed.getId())</b>
+<b class="pc">&nbsp;                                &amp;&amp; !follower.getId().equals(id)){</b>
+<b class="fc">&nbsp;                    mutuals.add(follower);</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        return mutuals;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  Updates the user&#39;s information (minus password) - updated by Sara on 11/24/2025
+&nbsp;     * @param id of the user
+&nbsp;     * @param body changes to update
+&nbsp;     * @param session containing &quot;uid&quot;
+&nbsp;     * @return 200 ok if updated correctly
+&nbsp;     */
+&nbsp;    @PutMapping(&quot;/{id}&quot;)
+&nbsp;    public Map&lt;String, Integer&gt; changeUserData(@PathVariable Integer id, @RequestBody Map&lt;String, String&gt; body, HttpSession session) {
+&nbsp;
+&nbsp;        // determine if the session is allowed to edit this information
+<b class="fc">&nbsp;        Integer sessionId = getSessionUid(session);</b>
+<b class="fc">&nbsp;        String privilege = (String)session.getAttribute(&quot;type&quot;);</b>
+<b class="pc">&nbsp;        if (!sessionId.equals(id) &amp;&amp; !privilege.equals(&quot;admin&quot;)) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;UNAUTHORIZED&quot;);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        User user = userrepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+&nbsp;        //ONLY UPDATE THE PRESENT FIELDS INSTEAD OF OVERWRITING THE FIELDS THAT ARE NOT PROVIDED TO BE NULL
+&nbsp;
+&nbsp;//        System.out.println(&quot;session type: &quot; + session.getAttribute(&quot;type&quot;));
+&nbsp;
+<b class="pc">&nbsp;        if(body.containsKey(&quot;email&quot;)){</b>
+<b class="fc">&nbsp;            user.setEmail(body.get(&quot;email&quot;));</b>
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        if(body.containsKey(&quot;username&quot;)){</b>
+<b class="nc">&nbsp;            user.setUsername(body.get(&quot;username&quot;));</b>
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        if(body.containsKey(&quot;type&quot;) &amp;&amp; session.getAttribute(&quot;type&quot;).equals(&quot;admin&quot;)){</b>
+<b class="nc">&nbsp;            user.setType(body.get(&quot;type&quot;));</b>
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        if(body.containsKey(&quot;firstname&quot;)){</b>
+<b class="fc">&nbsp;            user.setFirstname(body.get(&quot;firstname&quot;));</b>
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        if(body.containsKey(&quot;lastname&quot;)){</b>
+<b class="nc">&nbsp;            user.setLastname(body.get(&quot;lastname&quot;));</b>
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        if (body.containsKey(&quot;bio&quot;)) {</b>
+<b class="fc">&nbsp;            user.setBio(body.get(&quot;bio&quot;));</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //picture handling -- ADDED CHECKS TO PREVENT 500s
+<b class="pc">&nbsp;        if(body.containsKey(&quot;picture&quot;)){</b>
+<b class="nc">&nbsp;            String pictureBase64 = body.get(&quot;picture&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;            if(pictureBase64 != null &amp;&amp; !pictureBase64.isBlank()){</b>
+&nbsp;                byte[] bytes;
+&nbsp;                try {
+<b class="nc">&nbsp;                    bytes = Base64.getDecoder().decode(pictureBase64);</b>
+&nbsp;                } catch(IllegalArgumentException e){
+<b class="nc">&nbsp;                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Invalid picture data (not base64)&quot;);</b>
+&nbsp;                }
+<b class="nc">&nbsp;                if(bytes.length &gt; 5_000_000){</b>
+<b class="nc">&nbsp;                    throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, &quot;Profile picture is too large&quot;);</b>
+&nbsp;                }
+<b class="nc">&nbsp;                user.setPicture(bytes);</b>
+&nbsp;            }
+&nbsp;            //IF NULL/BLANK, DO NOTHING, KEEP EXISTING PICTURE
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        userrepository.save(user);</b>
+&nbsp;
+<b class="fc">&nbsp;        return Map.of(&quot;status&quot;, 200);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    // Change user&#39;s password
+&nbsp;    @PutMapping(&quot;{id}/password&quot;)
+&nbsp;    public Map&lt;String, Integer&gt; changePassword(@PathVariable Integer id, @RequestBody Map&lt;String, String&gt; authentication, HttpSession session) {
+<b class="nc">&nbsp;        String password_old = authentication.get(&quot;password_old&quot;);</b>
+<b class="nc">&nbsp;        String password_new = authentication.get(&quot;password_new&quot;);</b>
+&nbsp;
+&nbsp;//        // get current user from session&#39;s ID number
+&nbsp;//        Integer id = (Integer)session.getAttribute(&quot;uid&quot;);
+&nbsp;//        if (id == null) { throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Not logged in&quot;); }
+&nbsp;//        User user = userrepository.findById(id).orElseThrow(()-&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));
+&nbsp;
+&nbsp;        // get relevant user from url
+<b class="nc">&nbsp;        User user = userrepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+&nbsp;        // if password_old matches user&#39;s stored password, set their new password
+<b class="nc">&nbsp;        if (passwordEncoder().matches(password_old, user.getPassword())) {</b>
+<b class="nc">&nbsp;            user.setPassword(passwordEncoder().encode(password_new));</b>
+<b class="nc">&nbsp;            userrepository.save(user);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // if we made it here, we succeeded
+<b class="nc">&nbsp;        return Map.of(&quot;status&quot;, 200);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // get user&#39;s profile picture
+&nbsp;    @GetMapping(&quot;{id}/picture&quot;)
+&nbsp;    public byte[] getProfilePic(@PathVariable Integer id) {
+&nbsp;
+<b class="fc">&nbsp;        User user = userrepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        return user.getPicture();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // List all of User&#39;s information (except password)
+&nbsp;    @GetMapping(&quot;/{id}&quot;)
+&nbsp;    public User getUserInfo(@PathVariable Integer id) {
+&nbsp;
+&nbsp;        // Find user by ID, with an error catch for java reasons
+<b class="nc">&nbsp;        User user = userrepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+&nbsp;        // return the user, get automatically formatted as JSON
+<b class="nc">&nbsp;        return user;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    // search by partial name match
+&nbsp;    @GetMapping(&quot;search/{name}&quot;)
+&nbsp;    public List&lt;User&gt; searchNames(@PathVariable String name) {
+&nbsp;
+&nbsp;        // start with an array list
+<b class="fc">&nbsp;        List&lt;User&gt; matches = new ArrayList&lt;&gt;();</b>
+&nbsp;
+&nbsp;        // add all matching results
+<b class="fc">&nbsp;        matches.addAll(userrepository.findByFirstnameStartingWith(name));</b>
+<b class="fc">&nbsp;        matches.addAll(userrepository.findByLastnameStartingWith(name));</b>
+<b class="fc">&nbsp;        matches.addAll(userrepository.findByUsernameStartingWith(name));</b>
+&nbsp;
+&nbsp;        // remove duplicates by converting to a hashset and back
+<b class="fc">&nbsp;        List&lt;User&gt; clean = new ArrayList&lt;&gt;(new HashSet&lt;&gt;(matches));</b>
+&nbsp;
+&nbsp;        // return the clean list
+<b class="fc">&nbsp;        return clean;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ban a user
+&nbsp;    @PutMapping(&quot;ban/{userId}&quot;)
+&nbsp;    public Map&lt;String, Integer&gt; banUser(@PathVariable Integer userId, HttpSession session) {
+&nbsp;
+&nbsp;        // someone&#39;s in trouble
+<b class="fc">&nbsp;        User user = userrepository.findById(userId).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+&nbsp;        // only admins can proceed
+<b class="fc">&nbsp;        String privilege = (String)session.getAttribute(&quot;type&quot;);</b>
+<b class="pc">&nbsp;        if (!privilege.equals(&quot;admin&quot;)) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;UNAUTHORIZED&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // change user type to blocked
+<b class="fc">&nbsp;        user.setType(&quot;banned&quot;);</b>
+<b class="fc">&nbsp;        user.setFirstname(&quot;Banned&quot;);</b>
+<b class="fc">&nbsp;        user.setLastname(&quot;User&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        userrepository.save(user);</b>
+&nbsp;
+&nbsp;        // if we made it here, we succeeded
+<b class="fc">&nbsp;        return Map.of(&quot;status&quot;, 200);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // unban a user
+&nbsp;    @PutMapping(&quot;unban/{userId}&quot;)
+&nbsp;    public Map&lt;String, Integer&gt; unbanUser(@PathVariable Integer userId, HttpSession session) {
+&nbsp;
+&nbsp;        // someone&#39;s in trouble
+<b class="fc">&nbsp;        User user = userrepository.findById(userId).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;User not found&quot;));</b>
+&nbsp;
+&nbsp;        // only admins can proceed
+<b class="fc">&nbsp;        String privilege = (String)session.getAttribute(&quot;type&quot;);</b>
+<b class="pc">&nbsp;        if (!privilege.equals(&quot;admin&quot;)) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;UNAUTHORIZED&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // change user type to blocked
+<b class="fc">&nbsp;        user.setType(&quot;user&quot;);</b>
+<b class="fc">&nbsp;        user.setFirstname(&quot;Unbanned&quot;);</b>
+<b class="fc">&nbsp;        user.setLastname(&quot;User&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        userrepository.save(user);</b>
+&nbsp;
+&nbsp;        // if we made it here, we succeeded
+<b class="fc">&nbsp;        return Map.of(&quot;status&quot;, 200);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-07 14:28</div>
+</div>
+</body>
+</html>

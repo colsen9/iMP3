@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="12dp"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/btnReturnProfile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Return"
+            android:backgroundTint="@color/admin_color"/>
+
+        <!-- ================= USERS SECTION ================= -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:elevation="4dp"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Users"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:paddingBottom="10dp" />
+
+                <Button
+                    android:id="@+id/btnLoadUsers"
+                    android:layout_width="wrap_content"
+                    android:layout_height="50dp"
+                    android:backgroundTint="@color/admin_color_light"
+                    android:text="Show Users" />
+
+                <Button
+                    android:id="@+id/btnCloseUserList"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Close Users"
+                    android:backgroundTint="@color/admin_color_light"/>
+
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvUserList"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:layout_marginTop="10dp"
+                    android:background="#EFEFEF"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+
+        <!-- ================= ALBUMS SECTION ================= -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:elevation="4dp"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Albums"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:paddingBottom="10dp" />
+
+                <Button
+                    android:id="@+id/btnAddAlbum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Add New Album"
+                    android:backgroundTint="@color/admin_color_light"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvAlbumList"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:layout_marginTop="10dp"
+                    android:background="#EFEFEF" />
+
+                <LinearLayout
+                    android:id="@+id/albumForm"
+                    android:visibility="gone"
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="10dp"
+                    android:layout_marginTop="10dp"
+                    android:background="#DDDDDD">
+
+                    <EditText
+                        android:id="@+id/etAlbumSearch"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Search Album from Spotify" />
+
+                    <Button
+                        android:id="@+id/btnAlbumSearch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="50dp"
+                        android:text="Search Spotify"
+                        android:layout_marginBottom="6dp" />
+
+                    <EditText
+                        android:id="@+id/etAlbumName"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Album Name" />
+
+                    <EditText
+                        android:id="@+id/etAlbumArtistIds"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Artist IDs (1,2,3)" />
+
+                    <EditText
+                        android:id="@+id/etAlbumTrackIds"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Track IDs (1,2,3)" />
+
+                    <EditText
+                        android:id="@+id/etAlbumDuration"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Duration (seconds)" />
+
+                    <EditText
+                        android:id="@+id/etAlbumReleaseDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Release Year (e.g., 2023)" />
+
+                    <Button
+                        android:id="@+id/btnSelectAlbumArt"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:text="Select Album Art"
+                        android:layout_marginTop="6dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
+                        <Button
+                            android:id="@+id/btnSaveAlbum"
+                            android:layout_width="0dp"
+                            android:layout_height="50dp"
+                            android:layout_weight="1"
+                            android:text="Save" />
+
+                        <Button
+                            android:id="@+id/btnCancelAlbum"
+                            android:layout_width="0dp"
+                            android:layout_height="50dp"
+                            android:layout_weight="1"
+                            android:text="Cancel" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- ================= TRACKS SECTION ================= -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:elevation="4dp"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tracks"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:paddingBottom="10dp" />
+
+                <Button
+                    android:id="@+id/btnAddTrack"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Add New Track"
+                    android:backgroundTint="@color/admin_color_light"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvTrackList"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:layout_marginTop="10dp"
+                    android:background="#EFEFEF" />
+
+                <LinearLayout
+                    android:id="@+id/trackForm"
+                    android:visibility="gone"
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="10dp"
+                    android:layout_marginTop="10dp"
+                    android:background="#DDDDDD">
+
+                    <EditText
+                        android:id="@+id/etTrackSearch"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Search Track from Spotify" />
+
+                    <Button
+                        android:id="@+id/btnTrackSearch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="50dp"
+                        android:text="Search Spotify"
+                        android:layout_marginBottom="6dp" />
+
+                    <EditText
+                        android:id="@+id/etTrackName"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Track Name" />
+
+                    <EditText
+                        android:id="@+id/etTrackArtistIds"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Artist IDs (1,2,3)" />
+
+                    <EditText
+                        android:id="@+id/etTrackAlbumIds"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Album IDs (1,2,3)" />
+
+                    <EditText
+                        android:id="@+id/etTrackMood"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Mood" />
+
+                    <EditText
+                        android:id="@+id/etTrackGenre"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Genre" />
+
+                    <EditText
+                        android:id="@+id/etTrackDuration"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Duration (ms)" />
+
+                    <EditText
+                        android:id="@+id/etTrackTrackNumber"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Track Number (#)" />
+
+                    <EditText
+                        android:id="@+id/etTrackBPM"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="BPM" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
+                        <Button
+                            android:id="@+id/btnSaveTrack"
+                            android:layout_width="0dp"
+                            android:layout_height="50dp"
+                            android:layout_weight="1"
+                            android:text="Save" />
+
+                        <Button
+                            android:id="@+id/btnCancelTrack"
+                            android:layout_width="0dp"
+                            android:layout_height="50dp"
+                            android:layout_weight="1"
+                            android:text="Cancel" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- ================= ARTISTS SECTION ================= -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:elevation="4dp"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Artists"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:paddingBottom="10dp" />
+
+                <Button
+                    android:id="@+id/btnAddArtist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Add New Artist"
+                    android:backgroundTint="@color/admin_color_light"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvArtistList"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:layout_marginTop="10dp"
+                    android:background="#EFEFEF" />
+
+                <LinearLayout
+                    android:id="@+id/artistForm"
+                    android:visibility="gone"
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="10dp"
+                    android:layout_marginTop="10dp"
+                    android:background="#DDDDDD">
+
+                    <EditText
+                        android:id="@+id/etArtistName"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Artist Name" />
+
+                    <EditText
+                        android:id="@+id/etArtistBio"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Bio" />
+
+                    <EditText
+                        android:id="@+id/etArtistAlbumIds"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Album IDs (1,2,3)" />
+
+                    <EditText
+                        android:id="@+id/etArtistTrackIds"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Track IDs (1,2,3)" />
+
+                    <EditText
+                        android:id="@+id/etArtistYears"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:hint="Years Active (1990-2000)" />
+
+                    <Button
+                        android:id="@+id/btnSelectArtistPicture"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:text="Select Artist Picture"
+                        android:layout_marginTop="6dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
+                        <Button
+                            android:id="@+id/btnSaveArtist"
+                            android:layout_width="0dp"
+                            android:layout_height="50dp"
+                            android:layout_weight="1"
+                            android:text="Save" />
+
+                        <Button
+                            android:id="@+id/btnCancelArtist"
+                            android:layout_width="0dp"
+                            android:layout_height="50dp"
+                            android:layout_weight="1"
+                            android:text="Cancel" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+</ScrollView>
+
+
+
+
+
+
+

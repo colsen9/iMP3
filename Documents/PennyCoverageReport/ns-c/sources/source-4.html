@@ -1,0 +1,358 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TagService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.tag</a>
+</div>
+
+<h1>Coverage Summary for Class: TagService (com.imp3.Backend.tag)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TagService</td>
+<td class="coverageStat">
+  <span class="percent">
+    33.3%
+  </span>
+  <span class="absValue">
+    (2/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/44)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    2.7%
+  </span>
+  <span class="absValue">
+    (2/75)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TagService$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    33.3%
+  </span>
+  <span class="absValue">
+    (2/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/44)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    2.7%
+  </span>
+  <span class="absValue">
+    (2/75)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.tag;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.fasterxml.jackson.databind.ObjectMapper;
+&nbsp;import com.imp3.Backend.common.GeminiService;
+&nbsp;import com.imp3.Backend.common.SpotifyService;
+&nbsp;import com.imp3.Backend.user.User;
+&nbsp;import com.imp3.Backend.user.UserRepository;
+&nbsp;import jakarta.transaction.Transactional;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import lombok.extern.slf4j.Slf4j;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.HashSet;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Set;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+<b class="fc">&nbsp;@Slf4j</b>
+&nbsp;@Service
+<b class="fc">&nbsp;@RequiredArgsConstructor</b>
+&nbsp;public class TagService {
+&nbsp;
+&nbsp;    private final UserTagRepository usertagrepository;
+&nbsp;    private final TagRepository tagrepository;
+&nbsp;    private final UserRepository userrepository;
+&nbsp;    private final SpotifyService spotifyservice;
+&nbsp;    private final GeminiService geminiservice;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Generates tags for a user based on their Spotify listening history.
+&nbsp;     * Pulls top artists and extracts genres to create auto-generated tags.
+&nbsp;     * @param user to generate tags for
+&nbsp;     * @return list of newly created UserTags
+&nbsp;     */
+&nbsp;    @Transactional
+&nbsp;    public List&lt;UserTag&gt; generateTagsFromSpotify(User user){
+<b class="nc">&nbsp;        if(user.getSpotifyAccessToken() == null || user.getSpotifyAccessToken().isBlank()) {</b>
+<b class="nc">&nbsp;            log.warn(&quot;User {} has no Spotify token linked&quot;, user.getId());</b>
+<b class="nc">&nbsp;            return List.of();</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        List&lt;String&gt; artistNames = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        List&lt;String&gt; trackNames = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        Set&lt;String&gt; genres = new HashSet&lt;&gt;();</b>
+&nbsp;
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            JsonNode topArtists = spotifyservice.getUserTopArtists(user);</b>
+&nbsp;
+<b class="nc">&nbsp;            if(topArtists != null &amp;&amp; topArtists.isArray()){</b>
+<b class="nc">&nbsp;                for(JsonNode artist : topArtists){</b>
+<b class="nc">&nbsp;                    artistNames.add(artist.get(&quot;name&quot;).asText());</b>
+<b class="nc">&nbsp;                    if(artist.has(&quot;genres&quot;)){</b>
+<b class="nc">&nbsp;                        for(JsonNode genre : artist.get(&quot;genres&quot;)){</b>
+<b class="nc">&nbsp;                            genres.add(genre.asText().toLowerCase().trim());</b>
+&nbsp;                        }
+&nbsp;                    }
+&nbsp;                }
+&nbsp;            }
+&nbsp;        } catch (Exception e){
+<b class="nc">&nbsp;            log.warn(&quot;Failed to fetch top artists for user: {} {}&quot;, user.getId(), e.getMessage());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //fetch top tracks and extract genres from their artists
+&nbsp;        try {
+<b class="nc">&nbsp;            JsonNode topTracks = spotifyservice.getUserTopTracks(user);</b>
+&nbsp;
+<b class="nc">&nbsp;            if(topTracks != null &amp;&amp; topTracks.isArray()){</b>
+<b class="nc">&nbsp;                for(JsonNode track : topTracks){</b>
+<b class="nc">&nbsp;                    trackNames.add(track.get(&quot;name&quot;).asText());</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            log.warn(&quot;Failed to fetch top tracks for user {} : {}&quot;, user.getId(), e.getMessage());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //nothing to work with
+<b class="nc">&nbsp;        if(genres.isEmpty() &amp;&amp; artistNames.isEmpty()){</b>
+<b class="nc">&nbsp;            return List.of();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //use Gemini to create meaningful tags
+<b class="nc">&nbsp;        List&lt;String&gt; tagNames = generateTagsWithGemini(genres, artistNames, trackNames);</b>
+&nbsp;
+&nbsp;        //create UserTag entities
+<b class="nc">&nbsp;        List&lt;UserTag&gt; createdTags = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        for(String tagName : tagNames ){</b>
+&nbsp;
+<b class="nc">&nbsp;            Tag globalTag = tagrepository.findByName(tagName)</b>
+<b class="nc">&nbsp;                    .orElseGet(() -&gt; tagrepository.save(new Tag(tagName, Tag.TagCategory.OTHER)));</b>
+&nbsp;
+&nbsp;            //skip if user already has this tag
+<b class="nc">&nbsp;            if(usertagrepository.existsByUserAndTag(user, globalTag)){</b>
+&nbsp;                continue;
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            UserTag u = new UserTag(user, globalTag, UserTag.TagType.AUTO);</b>
+<b class="nc">&nbsp;            u.setSource(&quot;Spotify&quot;);</b>
+<b class="nc">&nbsp;            createdTags.add(usertagrepository.save(u));</b>
+&nbsp;        }
+&nbsp;
+&nbsp;
+<b class="nc">&nbsp;        return createdTags;</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  Generate new tags using the user&#39;s Spotify top genre/artist/track data
+&nbsp;     *  Tags generated by gemini
+&nbsp;     * @param genres top genres in user&#39;s listening history
+&nbsp;     * @param artists top artists in user&#39;s listening history
+&nbsp;     * @param tracks top tracks in user&#39;s listening history
+&nbsp;     * @return list of tags
+&nbsp;     */
+&nbsp;    private List&lt;String&gt; generateTagsWithGemini(Set&lt;String&gt; genres, List&lt;String&gt; artists, List&lt;String&gt; tracks) {
+<b class="nc">&nbsp;        String prompt = &quot;&quot;&quot;</b>
+&nbsp;        Based on this Spotify listening data, generate 5-8 short, vibe-based profile tags.
+&nbsp;        Tags should be 2-4 words, lowercase, describing music personality (not just genre names).
+&nbsp;        
+&nbsp;        Examples of good tags: &quot;late night driver&quot;, &quot;indie coffee shop&quot;, &quot;gym hype beast&quot;, &quot;sad girl autumn&quot;
+&nbsp;        Examples of bad tags: &quot;pop&quot;, &quot;rock&quot;, &quot;hip-hop&quot; (too generic)
+&nbsp;        
+&nbsp;        Genres: %s
+&nbsp;        Top Artists: %s
+&nbsp;        Top Tracks: %s
+&nbsp;        
+&nbsp;        Return ONLY a JSON array of strings, nothing else.
+<b class="nc">&nbsp;        &quot;&quot;&quot;.formatted(</b>
+<b class="nc">&nbsp;                String.join(&quot;, &quot;, genres),</b>
+<b class="nc">&nbsp;                String.join(&quot;, &quot;, artists.subList(0, Math.min(10, artists.size()))),</b>
+<b class="nc">&nbsp;                String.join(&quot;, &quot;, tracks.subList(0, Math.min(10, tracks.size())))</b>
+&nbsp;        );
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            String response = geminiservice.generate(prompt);</b>
+&nbsp;            // Parse JSON array from response
+<b class="nc">&nbsp;            return parseTagsFromResponse(response);</b>
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            log.warn(&quot;Gemini tag generation failed: {}&quot;, e.getMessage());</b>
+<b class="nc">&nbsp;            return List.of();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Parse JSON response from Gemini (clean up)
+&nbsp;     * @param response to clean up
+&nbsp;     * @return cleaned response
+&nbsp;     */
+&nbsp;    public List&lt;String&gt; parseTagsFromResponse(String response){
+&nbsp;        try {
+&nbsp;            //clean up response in case Gemini wraps it in markdown
+<b class="nc">&nbsp;            String cleaned = response.trim();</b>
+<b class="nc">&nbsp;            if(cleaned.startsWith(&quot;```json&quot;)){</b>
+<b class="nc">&nbsp;                cleaned = cleaned.substring(7);</b>
+&nbsp;            }
+<b class="nc">&nbsp;            if(cleaned.startsWith(&quot;```&quot;)){</b>
+<b class="nc">&nbsp;                cleaned = cleaned.substring(3);</b>
+&nbsp;            }
+<b class="nc">&nbsp;            if(cleaned.endsWith(&quot;```&quot;)){</b>
+<b class="nc">&nbsp;                cleaned = cleaned.substring(0, cleaned.length() - 3);</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            cleaned = cleaned.trim();</b>
+&nbsp;
+&nbsp;            //parse JSON array
+<b class="nc">&nbsp;            ObjectMapper mapper= new ObjectMapper();</b>
+<b class="nc">&nbsp;            JsonNode array = mapper.readTree(cleaned);</b>
+&nbsp;
+<b class="nc">&nbsp;            List&lt;String&gt; tags = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;            if(array.isArray()){</b>
+<b class="nc">&nbsp;                for(JsonNode node : array){</b>
+<b class="nc">&nbsp;                    String tag = node.asText().toLowerCase().trim();</b>
+<b class="nc">&nbsp;                    if(!tag.isBlank() &amp;&amp; tag.length() &lt;= 50){</b>
+<b class="nc">&nbsp;                        tags.add(tag);</b>
+&nbsp;                    }
+&nbsp;                }
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            return tags;</b>
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            log.warn(&quot;Failed to parse Gemini response: {}&quot;, e.getMessage());</b>
+<b class="nc">&nbsp;            return List.of();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Generates a profile summary for a user based on their tags using Gemini
+&nbsp;     * @param uid the user&#39;s ID
+&nbsp;     * @return generated summary string
+&nbsp;     */
+&nbsp;    public String generateProfileSummary(Integer uid){
+<b class="nc">&nbsp;        List&lt;UserTag&gt; u = usertagrepository.findByUser_Id(uid);</b>
+&nbsp;
+<b class="nc">&nbsp;        if(u.isEmpty()){</b>
+<b class="nc">&nbsp;            return &quot;This user hasn&#39;t added any music tags yet.&quot;;</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //extract tag names
+<b class="nc">&nbsp;        List&lt;String&gt; tagNames = u.stream()</b>
+<b class="nc">&nbsp;                .map(ut -&gt; ut.getTag().getName())</b>
+<b class="nc">&nbsp;                .collect(Collectors.toList());</b>
+&nbsp;
+<b class="nc">&nbsp;        String tagList = String.join(&quot;,&quot;, tagNames);</b>
+&nbsp;
+<b class="nc">&nbsp;        String prompt = &quot;Based on these music genre tags: [&quot; + tagList + &quot;], &quot; +</b>
+&nbsp;                &quot;write a brief 2-3 sentence profile summary describing this person&#39;s music taste.&quot; +
+&nbsp;                &quot;Be creative and conversational. Do not use bullet points.&quot;;
+&nbsp;
+<b class="nc">&nbsp;        String summary = geminiservice.generate(prompt);</b>
+&nbsp;
+&nbsp;        //clean up response
+<b class="nc">&nbsp;        summary = summary.replace(&quot;\\\&quot;&quot;, &quot;\&quot;&quot;)</b>
+<b class="nc">&nbsp;                .replace(&quot;\\n&quot;, &quot; &quot;)</b>
+<b class="nc">&nbsp;                .replace(&quot;\\&quot;, &quot;&quot;)</b>
+<b class="nc">&nbsp;                .trim();</b>
+&nbsp;
+<b class="nc">&nbsp;        return summary;</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-09 15:12</div>
+</div>
+</body>
+</html>

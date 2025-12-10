@@ -1,0 +1,309 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SongOfTheDayController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.songoftheday</a>
+</div>
+
+<h1>Coverage Summary for Class: SongOfTheDayController (com.imp3.Backend.songoftheday)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SongOfTheDayController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (9/9)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (9/18)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    62.3%
+  </span>
+  <span class="absValue">
+    (33/53)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.songoftheday;
+&nbsp;
+&nbsp;import com.imp3.Backend.music.Track;
+&nbsp;import com.imp3.Backend.music.TrackRepository;
+&nbsp;import jakarta.servlet.http.HttpSession;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;import org.springframework.web.server.ResponseStatusException;
+&nbsp;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.util.*;
+&nbsp;
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;sotd&quot;)
+<b class="fc">&nbsp;public class SongOfTheDayController {</b>
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Repos
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    SongOfTheDayRepository sotdrepository;
+&nbsp;    @Autowired
+&nbsp;    TrackRepository trackrepository;
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // GET Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // get today&#39;s SotD; make one if none exists
+&nbsp;    @GetMapping(&quot;today&quot;)
+&nbsp;    public Optional&lt;SongOfTheDay&gt; getToday() {
+&nbsp;
+<b class="fc">&nbsp;        LocalDate today = LocalDate.now();</b>
+&nbsp;
+&nbsp;        // make today&#39;s song of the day, if one doesn&#39;t exist
+<b class="pc">&nbsp;        if (sotdrepository.findByDate(today).isEmpty()) {</b>
+<b class="nc">&nbsp;            SongOfTheDay sotd = new SongOfTheDay();</b>
+&nbsp;
+&nbsp;            // get all tracks, pick a random one
+<b class="nc">&nbsp;            Random rand = new Random();</b>
+<b class="nc">&nbsp;            List&lt;Track&gt; tracks = trackrepository.findAll();</b>
+<b class="nc">&nbsp;            Track track = tracks.get(rand.nextInt(tracks.size()));</b>
+&nbsp;
+&nbsp;            // set the values and save them to the repo
+<b class="nc">&nbsp;            sotd.setTrackId(track.getId());</b>
+<b class="nc">&nbsp;            sotd.setDate(today);</b>
+<b class="nc">&nbsp;            sotd.setScore(0);</b>
+<b class="nc">&nbsp;            sotdrepository.save(sotd);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return sotdrepository.findByDate(today);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // get a specific SotD
+&nbsp;    @GetMapping(&quot;{date}&quot;)
+&nbsp;    public Optional&lt;SongOfTheDay&gt; findById(@PathVariable LocalDate date) {
+<b class="fc">&nbsp;        return sotdrepository.findByDate(date);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // get all SotDs
+&nbsp;    @GetMapping(&quot;all&quot;)
+&nbsp;    public List&lt;SongOfTheDay&gt; getAll() {
+<b class="fc">&nbsp;        return sotdrepository.findAll();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // POST Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    @PostMapping(&quot;/{date}/{trackId}&quot;)
+&nbsp;    public Map&lt;String, Integer&gt; insertSotD(@PathVariable LocalDate date, @PathVariable Integer trackId, HttpSession session) {
+&nbsp;
+&nbsp;        // only admins can schedule a specific song of the day
+<b class="fc">&nbsp;        String userType = (String)session.getAttribute(&quot;type&quot;);</b>
+<b class="pc">&nbsp;        if (!userType.equals(&quot;admin&quot;)) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;User Does Not Have Administrative Rights&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // make the Song of the Day object
+<b class="fc">&nbsp;        SongOfTheDay sotd = new SongOfTheDay();</b>
+&nbsp;
+&nbsp;        // check if the trackId exists, set in SotD if so
+<b class="fc">&nbsp;        Optional&lt;Track&gt; track = trackrepository.findById(trackId);</b>
+<b class="pc">&nbsp;        if (track.isPresent()) {</b>
+<b class="fc">&nbsp;            sotd.setTrackId(trackId);</b>
+&nbsp;        } else {
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Track not found: &quot; + trackId);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // check if the date is valid (YYYY-MM-DD), set if so
+<b class="pc">&nbsp;        if (sotdrepository.findByDate(date).isPresent()) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;Date Already Assigned&quot;);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        sotd.setDate(date);</b>
+&nbsp;
+&nbsp;        // start the score at 0
+<b class="fc">&nbsp;        sotd.setScore(0);</b>
+&nbsp;
+&nbsp;        // save the SotD
+<b class="fc">&nbsp;        sotdrepository.save(sotd);</b>
+&nbsp;
+&nbsp;        // if we made it here, we succeeded
+<b class="fc">&nbsp;        return Map.of(&quot;status&quot;, 200, &quot;trackId&quot;, sotd.getId());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // PUT Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // user upvotes song of the day
+&nbsp;    @PutMapping(&quot;/upvote&quot;)
+&nbsp;    public Map&lt;String, Integer&gt; upvote(HttpSession session) {
+&nbsp;
+&nbsp;        // get current userId from session
+<b class="fc">&nbsp;        Integer userId = (Integer) session.getAttribute(&quot;uid&quot;);</b>
+&nbsp;
+&nbsp;        // cast the vote via helper function
+<b class="fc">&nbsp;        castVote(userId, 1);</b>
+&nbsp;
+&nbsp;        // if we made it here, we succeeded
+<b class="nc">&nbsp;        return Map.of(&quot;status&quot;, 200);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // user downvotes song of the day
+&nbsp;    @PutMapping(&quot;/downvote&quot;)
+&nbsp;    public Map&lt;String, Integer&gt; downvote(HttpSession session) {
+&nbsp;
+&nbsp;        // get current userId from session
+<b class="fc">&nbsp;        Integer userId = (Integer) session.getAttribute(&quot;uid&quot;);</b>
+&nbsp;
+&nbsp;        // cast the vote via helper function
+<b class="fc">&nbsp;        castVote(userId, -1);</b>
+&nbsp;
+&nbsp;        // if we made it here, we succeeded
+<b class="nc">&nbsp;        return Map.of(&quot;status&quot;, 200);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // helper function to cast a vote
+&nbsp;    public void castVote(Integer userId, Integer score) {
+&nbsp;
+&nbsp;        // get today&#39;s Song of the Day, throw an error if it doesn&#39;t exist
+<b class="fc">&nbsp;        LocalDate today = LocalDate.now();</b>
+<b class="pc">&nbsp;        if (sotdrepository.findByDate(today).isEmpty()) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;No Song of the Day Today&quot;);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        SongOfTheDay sotd = sotdrepository.findByDate(today).get();</b>
+&nbsp;
+&nbsp;        // check if user has already voted
+<b class="pc">&nbsp;        if (sotd.getVoted() == null) {</b>
+<b class="nc">&nbsp;            sotd.setVoted(new ArrayList&lt;&gt;());</b>
+&nbsp;        }
+<b class="pc">&nbsp;        if (sotd.getVoted().contains(userId)) {</b>
+<b class="fc">&nbsp;            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;User Already Voted&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // add user to the voting roll
+<b class="nc">&nbsp;        sotd.getVoted().add(userId);</b>
+&nbsp;
+&nbsp;        // cast their vote
+<b class="nc">&nbsp;        sotd.setScore(sotd.getScore() + score);</b>
+&nbsp;
+&nbsp;        // save the result
+<b class="nc">&nbsp;        sotdrepository.save(sotd);</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // DELETE Methods
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    @DeleteMapping(&quot;{date}&quot;)
+&nbsp;    public Map&lt;String, Integer&gt; delete(@PathVariable LocalDate date, HttpSession session) {
+&nbsp;
+&nbsp;        // only admins can delete a song of the day entry
+<b class="fc">&nbsp;        String userType = (String)session.getAttribute(&quot;type&quot;);</b>
+<b class="pc">&nbsp;        if (!userType.equals(&quot;admin&quot;)) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;User Does Not Have Administrative Rights&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // check if song of the day exists for this date
+<b class="pc">&nbsp;        if (sotdrepository.findByDate(date).isEmpty()) {</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;No Song of the Day On This Day&quot;);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        SongOfTheDay sotd = sotdrepository.findByDate(date).get();</b>
+&nbsp;
+&nbsp;        // delete this entry
+<b class="fc">&nbsp;        sotdrepository.delete(sotd);</b>
+&nbsp;
+&nbsp;        // if we made it here, we succeeded
+<b class="fc">&nbsp;        return Map.of(&quot;status&quot;, 200);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-07 14:28</div>
+</div>
+</body>
+</html>

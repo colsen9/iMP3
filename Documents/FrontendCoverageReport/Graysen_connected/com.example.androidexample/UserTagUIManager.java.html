@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserTagUIManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">UserTagUIManager.java</span></div><h1>UserTagUIManager.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.content.Context;
+import android.util.Log;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+
+import com.google.android.flexbox.FlexboxLayout;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class UserTagUIManager {
+
+    private final Context context;
+    private final FlexboxLayout container;
+
+<span class="fc" id="L27">    public UserTagUIManager(Context context, FlexboxLayout container) {</span>
+<span class="fc" id="L28">        this.context = context;</span>
+<span class="fc" id="L29">        this.container = container;</span>
+<span class="fc" id="L30">    }</span>
+
+    public void displayUserTags(JSONArray tags, TagManager service) {
+<span class="nc" id="L33">        container.removeAllViews();</span>
+<span class="nc" id="L34">        Log.i(&quot;JSON Array Display user tags tags:&quot;, tags.toString());</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">        for (int i = 0; i &lt; tags.length(); i++) {</span>
+<span class="nc" id="L36">            JSONObject obj = tags.optJSONObject(i);</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">            if (obj != null) {</span>
+<span class="nc" id="L38">                addUserTagChip(obj, service);</span>
+            }
+        }
+<span class="nc" id="L41">    }</span>
+
+    public void displayOtherUserTags(JSONArray tags, TagManager service) {
+<span class="nc" id="L44">        container.removeAllViews();</span>
+<span class="nc" id="L45">        Log.i(&quot;JSON Array Display user tags tags:&quot;, tags.toString());</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        for (int i = 0; i &lt; tags.length(); i++) {</span>
+<span class="nc" id="L47">            JSONObject obj = tags.optJSONObject(i);</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">            if (obj != null) {</span>
+<span class="nc" id="L49">                addOtherUserTagChip(obj, service);</span>
+            }
+        }
+<span class="nc" id="L52">    }</span>
+
+
+    private void addUserTagChip(JSONObject tagObj, TagManager service) {
+<span class="nc" id="L56">        JSONObject tag = tagObj.optJSONObject(&quot;tag&quot;);</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (tag == null) return;</span>
+<span class="nc" id="L58">        Log.i(&quot;addUserTagChip tag info&quot;, tag.toString());</span>
+<span class="nc" id="L59">        int id = tagObj.optInt(&quot;userTagId&quot;);</span>
+<span class="nc" id="L60">        String name = tag.optString(&quot;name&quot;);</span>
+
+<span class="nc" id="L62">        TextView tv = TagChipView.create(context, name);</span>
+
+        // Delete on long press
+<span class="nc" id="L65">        tv.setOnLongClickListener(v -&gt; {</span>
+<span class="nc" id="L66">            service.deleteUserTag(id, new TagManager.EmptyCallback() {</span>
+                @Override public void onSuccess() {
+<span class="nc" id="L68">                    Log.i(&quot;Successful deletion of UserTag&quot;, &quot;yippee&quot;);</span>
+<span class="nc" id="L69">                    Toast.makeText(context, &quot;Successfully deleted tag&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L70">                    tv.setVisibility(TextView.GONE);</span>
+<span class="nc" id="L71">                    container.removeView(tv);</span>
+<span class="nc" id="L72">                    container.refreshDrawableState(); //TODO: Force refresh to make tag no longer display</span>
+<span class="nc" id="L73">                }</span>
+<span class="nc" id="L74">                @Override public void onError(String msg) {}</span>
+            });
+<span class="nc" id="L76">            return true;</span>
+        });
+<span class="nc" id="L78">        tv.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L79">            showEditTagDialog(id,name,service,tv);</span>
+<span class="nc" id="L80">        });</span>
+
+<span class="nc" id="L82">        container.addView(tv);</span>
+<span class="nc" id="L83">    }</span>
+    private void addOtherUserTagChip(JSONObject tagObj, TagManager service) {
+<span class="nc" id="L85">        JSONObject tag = tagObj.optJSONObject(&quot;tag&quot;);</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (tag == null) return;</span>
+<span class="nc" id="L87">        Log.i(&quot;addUserTagChip tag info&quot;, tag.toString());</span>
+<span class="nc" id="L88">        int id = tagObj.optInt(&quot;userTagId&quot;);</span>
+<span class="nc" id="L89">        String name = tag.optString(&quot;name&quot;);</span>
+
+<span class="nc" id="L91">        TextView tv = TagChipView.create(context, name);</span>
+
+<span class="nc" id="L93">        container.addView(tv);</span>
+<span class="nc" id="L94">    }</span>
+    private void showEditTagDialog(int tagId, String oldPrivacy, TagManager service, TextView tv) {
+<span class="nc" id="L96">        AlertDialog.Builder b = new AlertDialog.Builder(context);</span>
+<span class="nc" id="L97">        b.setTitle(&quot;Edit Tag Privacy&quot;);</span>
+
+<span class="nc" id="L99">        final Spinner input = new Spinner(context);</span>
+<span class="nc" id="L100">        List&lt;String&gt; privacyChoices = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L101">        privacyChoices.add(&quot;PRIVATE&quot;);</span>
+<span class="nc" id="L102">        privacyChoices.add(&quot;PUBLIC&quot;);</span>
+        // privacyChoices.add(&quot;MUTUALS&quot;); // :TODO
+<span class="nc" id="L104">        ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;&gt;(</span>
+                context,
+                android.R.layout.simple_spinner_item,
+                privacyChoices
+        );
+<span class="nc" id="L109">        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);</span>
+<span class="nc" id="L110">        input.setAdapter(adapter);</span>
+
+<span class="nc" id="L112">        b.setView(input);</span>
+
+<span class="nc" id="L114">        b.setPositiveButton(&quot;Save&quot;, (d, w) -&gt; {</span>
+<span class="nc" id="L115">            String newPrivacy = (String)input.getSelectedItem();</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            if (newPrivacy.isEmpty()) return;</span>
+
+<span class="nc" id="L118">            service.updateTag(tagId, newPrivacy, null, null, new TagManager.TagCallback() {</span>
+                @Override public void onSuccess(JSONObject tag) {
+<span class="nc" id="L120">                    Log.i(&quot;edit tag button press&quot;, &quot;&quot;);</span>
+<span class="nc" id="L121">                }</span>
+<span class="nc" id="L122">                @Override public void onError(String msg) {}</span>
+            });
+<span class="nc" id="L124">        });</span>
+
+<span class="nc" id="L126">        b.setNegativeButton(&quot;Cancel&quot;, null);</span>
+<span class="nc" id="L127">        b.show();</span>
+<span class="nc" id="L128">    }</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

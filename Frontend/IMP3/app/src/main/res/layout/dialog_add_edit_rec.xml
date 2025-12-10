@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Button to search/select Spotify track -->
+        <Button
+            android:id="@+id/btn_select_spotify"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Spotify Music"
+            android:layout_marginTop="8dp"/>
+
+        <!-- Title: updated dynamically from Spotify selection -->
+        <EditText
+            android:id="@+id/input_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Title (required)"
+            android:inputType="text"
+            android:importantForAutofill="yes" />
+
+        <!-- Type of recommendation -->
+        <EditText
+            android:id="@+id/input_type"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Type (e.g., Song, Album) (required)"
+            android:inputType="text"
+            android:layout_marginTop="8dp" />
+
+        <!-- Rationale (optional) -->
+        <EditText
+            android:id="@+id/input_rationale"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Rationale (optional)"
+            android:inputType="textMultiLine"
+            android:minLines="2"
+            android:gravity="top"
+            android:layout_marginTop="8dp" />
+
+        <!-- Privacy setting -->
+        <EditText
+            android:id="@+id/input_privacy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Privacy (PUBLIC/PRIVATE)"
+            android:inputType="text"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+</ScrollView>
+
+
+

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MainActivity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">MainActivity.java</span></div><h1>MainActivity.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+
+//import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+import com.android.volley.RequestQueue;
+
+import org.java_websocket.handshake.ServerHandshake;
+
+
+<span class="nc" id="L20">public class MainActivity extends AppCompatActivity implements WebSocketListener {</span>
+
+    private int userId;
+    private Button mainProfileButton;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="nc" id="L27">        super.onCreate(savedInstanceState);</span>
+        //EdgeToEdge.enable(this);
+<span class="nc" id="L29">        setContentView(R.layout.activity_main);</span>
+<span class="nc" id="L30">        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -&gt; {</span>
+<span class="nc" id="L31">            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());</span>
+<span class="nc" id="L32">            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);</span>
+<span class="nc" id="L33">            return insets;</span>
+        });
+<span class="nc" id="L35">        TextView idDebug = findViewById(R.id.main_id_debug);</span>
+<span class="nc" id="L36">        Button mainLoginButton = findViewById(R.id.main_login_btn);</span>
+<span class="nc" id="L37">        Button mainSignupButton = findViewById(R.id.main_signup_btn);</span>
+<span class="nc" id="L38">        Button mainNotificationsButton = findViewById(R.id.main_notifications_btn);</span>
+<span class="nc" id="L39">        mainProfileButton = findViewById(R.id.main_profile_btn);</span>
+<span class="nc" id="L40">        Button mainFollowerButton = findViewById(R.id.main_follower_btn);</span>
+<span class="nc" id="L41">        Button mainMusicCatalogueButton = findViewById(R.id.main_music_catalogue_btn);</span>
+<span class="nc" id="L42">        Button mainDebugIDButton = findViewById(R.id.main_profile_debugID_btn);</span>
+<span class="nc" id="L43">        Button mainFriendsButton = findViewById(R.id.main_friends_btn);</span>
+<span class="nc" id="L44">        Button mainCustomListButton = findViewById(R.id.main_custom_lists_btn);</span>
+<span class="nc" id="L45">        Button mainRecommendationsButton = findViewById(R.id.main_recommendation_btn);</span>
+<span class="nc" id="L46">        EditText setIdText = findViewById(R.id.debugSetID);</span>
+
+<span class="nc" id="L48">        mainDebugIDButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L49">            userId = Integer.parseInt(setIdText.getText().toString());</span>
+<span class="nc" id="L50">            idDebug.setText(&quot;DEBUG: Current attached ID is: &quot; +userId);</span>
+<span class="nc" id="L51">        });</span>
+
+<span class="nc" id="L53">        RequestQueue requestQueue = QueueApplication.getQueue();</span>
+        
+        /* Get userId from previous activity */
+<span class="nc" id="L56">        Intent intent = getIntent();</span>
+<span class="nc" id="L57">        userId = intent.getIntExtra(&quot;userId&quot;, -1);</span>
+<span class="nc" id="L58">        idDebug.setText(&quot;DEBUG: Current attached ID is: &quot; +userId);</span>
+
+<span class="nc" id="L60">        mainLoginButton.setOnClickListener(v -&gt; startActivity(new Intent(MainActivity.this, LoginPage.class)));</span>
+<span class="nc" id="L61">        mainSignupButton.setOnClickListener(v -&gt; startActivity(new Intent(MainActivity.this, SignupPage.class)));</span>
+
+<span class="nc" id="L63">        mainProfileButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L64">            Intent profilePage = new Intent(MainActivity.this, ProfilePage.class);</span>
+<span class="nc" id="L65">            profilePage.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L66">            startActivity(profilePage);</span>
+<span class="nc" id="L67">        });</span>
+<span class="nc" id="L68">        mainFriendsButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L69">            Intent profilePage = new Intent(MainActivity.this, ChatActivity.class);</span>
+<span class="nc" id="L70">            profilePage.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L71">            startActivity(profilePage);</span>
+<span class="nc" id="L72">        });</span>
+<span class="nc" id="L73">        mainFollowerButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L74">            Intent FollowerView = new Intent(MainActivity.this, FollowerView.class);</span>
+<span class="nc" id="L75">            FollowerView.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L76">            startActivity(FollowerView);</span>
+<span class="nc" id="L77">        });</span>
+<span class="nc" id="L78">        mainNotificationsButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L79">            Intent FollowerView = new Intent(MainActivity.this, NotificationsPage.class);</span>
+<span class="nc" id="L80">            FollowerView.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L81">            startActivity(FollowerView);</span>
+<span class="nc" id="L82">        });</span>
+<span class="nc" id="L83">        mainCustomListButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L84">            Intent FollowerView = new Intent(MainActivity.this, CustomListListPage.class);</span>
+<span class="nc" id="L85">            FollowerView.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L86">            startActivity(FollowerView);</span>
+<span class="nc" id="L87">        });</span>
+<span class="nc" id="L88">        mainMusicCatalogueButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L89">            Intent FollowerView = new Intent(MainActivity.this, MusicCatalogue.class);</span>
+<span class="nc" id="L90">            FollowerView.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L91">            startActivity(FollowerView);</span>
+<span class="nc" id="L92">        });</span>
+<span class="nc" id="L93">        mainRecommendationsButton.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L94">            Intent recommendationPage = new Intent(MainActivity.this, RecommendationsPage.class);</span>
+<span class="nc" id="L95">            recommendationPage.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L96">            startActivity(recommendationPage);</span>
+<span class="nc" id="L97">        });</span>
+<span class="nc" id="L98">    }</span>
+
+    @Override
+<span class="nc" id="L101">    public void onWebSocketMessage(String message) {}</span>
+
+    @Override
+<span class="nc" id="L104">    public void onWebSocketClose(int code, String reason, boolean remote) {}</span>
+
+    @Override
+<span class="nc" id="L107">    public void onWebSocketOpen(ServerHandshake handshakedata) {}</span>
+
+    @Override
+<span class="nc" id="L110">    public void onWebSocketError(Exception ex) {}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

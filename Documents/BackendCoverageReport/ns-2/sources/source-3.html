@@ -1,0 +1,285 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > ChatEndpoint</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.chat</a>
+</div>
+
+<h1>Coverage Summary for Class: ChatEndpoint (com.imp3.Backend.chat)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">ChatEndpoint</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    44.4%
+  </span>
+  <span class="absValue">
+    (4/9)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    14.6%
+  </span>
+  <span class="absValue">
+    (6/41)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.chat;
+&nbsp;
+&nbsp;import com.imp3.Backend.user.User;
+&nbsp;import com.imp3.Backend.user.UserRepository;
+&nbsp;import jakarta.websocket.*;
+&nbsp;import jakarta.websocket.server.PathParam;
+&nbsp;import jakarta.websocket.server.ServerEndpoint;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.stereotype.Component;
+&nbsp;import org.springframework.web.bind.annotation.PathVariable;
+&nbsp;import org.springframework.web.server.ResponseStatusException;
+&nbsp;
+&nbsp;import java.io.IOException;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.Objects;
+&nbsp;import java.util.concurrent.ConcurrentHashMap;
+&nbsp;
+&nbsp;@Component
+&nbsp;@ServerEndpoint(value=&quot;/chat/{userId}&quot;)
+<b class="fc">&nbsp;public class ChatEndpoint {</b>
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Setup
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    // for associating chatters with their socket sessions
+<b class="fc">&nbsp;    private static final Map&lt;Integer, Session&gt; userSessionMap = new ConcurrentHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;    private static final Map&lt;Session, Integer&gt; sessionUserMap = new ConcurrentHashMap&lt;&gt;();</b>
+&nbsp;
+&nbsp;    // server side logger
+<b class="fc">&nbsp;    private final Logger logger = LoggerFactory.getLogger(ChatEndpoint.class);</b>
+&nbsp;
+&nbsp;    // to make sure senders/receivers exist
+&nbsp;    private static UserRepository userrepository;
+<b class="fc">&nbsp;    static void attachUserRepo(UserRepository r) { userrepository = r; }</b>
+&nbsp;
+&nbsp;    // attach the chat repository too (seems more complicated than normal Controller classes)
+&nbsp;    private static ChatRepository chatrepository;
+<b class="fc">&nbsp;    static void attachChatRepo(ChatRepository r) { chatrepository = r; }</b>
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // On Open
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    @OnOpen
+&nbsp;    public void onOpen(Session session, @PathParam(&quot;userId&quot;) Integer userId) throws IOException {
+&nbsp;
+&nbsp;        // check if user actually exists
+<b class="nc">&nbsp;        User user = userrepository.findById(userId).orElse(null);</b>
+<b class="nc">&nbsp;        if (user == null) {</b>
+<b class="nc">&nbsp;            session.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT, &quot;User &quot; + userId + &quot; not found&quot;));</b>
+&nbsp;            return;
+&nbsp;        }
+&nbsp;
+&nbsp;        // server side log
+<b class="nc">&nbsp;        logger.info(&quot;[onOpen] {}&quot;, userId);</b>
+&nbsp;
+&nbsp;        // map user with session
+<b class="nc">&nbsp;        userSessionMap.put(userId, session);</b>
+&nbsp;
+&nbsp;        // map session with user
+<b class="nc">&nbsp;        sessionUserMap.put(session, userId);</b>
+&nbsp;
+&nbsp;        // send to the user joining in (for testing)
+<b class="nc">&nbsp;        sendChatToUser(userId, userId, &quot;You are online, &quot; + userId);</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // On Close
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    @OnClose
+&nbsp;    public void onClose(Session session) throws IOException {
+&nbsp;
+<b class="nc">&nbsp;        Integer userId = sessionUserMap.get(session);</b>
+&nbsp;
+<b class="nc">&nbsp;        sessionUserMap.remove(session);</b>
+<b class="nc">&nbsp;        userSessionMap.remove(userId);</b>
+&nbsp;
+<b class="nc">&nbsp;        logger.info(&quot;[onClose] {}&quot;, userId);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // On Error
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    @OnError
+&nbsp;    public void onError(Session session, Throwable thrown) throws IOException {
+<b class="nc">&nbsp;        Integer userId = sessionUserMap.get(session);</b>
+<b class="nc">&nbsp;        logger.error(&quot;[onError] user = {} : {}&quot;, userId, thrown.getMessage(), thrown);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // On Message
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    @OnMessage
+&nbsp;    public void OnMessage(Session session, String chat) throws IOException {
+&nbsp;
+<b class="nc">&nbsp;        logger.info(&quot;Beginning onMessage({})&quot;, chat);</b>
+&nbsp;
+&nbsp;        // get the sender&#39;s userId
+<b class="nc">&nbsp;        Integer sender = sessionUserMap.get(session);</b>
+&nbsp;
+&nbsp;        // split chat into receiver and message
+<b class="nc">&nbsp;        int commaIndex = chat.indexOf(&#39;,&#39;);</b>
+<b class="nc">&nbsp;        if (commaIndex == -1) {</b>
+<b class="nc">&nbsp;            logger.warn(&quot;Malformed message&quot;);</b>
+<b class="nc">&nbsp;            session.getBasicRemote().sendText(&quot;Error: bad message formatting&quot;);</b>
+&nbsp;            return;
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        String receiverString = chat.substring(0, commaIndex).trim();</b>
+<b class="nc">&nbsp;        String messageString = chat.substring(commaIndex + 1).trim();</b>
+&nbsp;
+&nbsp;        // parse the receiver id string into an integer
+&nbsp;        Integer receiver;
+&nbsp;        try {
+<b class="nc">&nbsp;            receiver = Integer.parseInt(receiverString);</b>
+&nbsp;        } catch (NumberFormatException e) {
+<b class="nc">&nbsp;            session.getBasicRemote().sendText(&quot;Error: bad receiver ID number&quot;);</b>
+&nbsp;            return;
+&nbsp;        }
+&nbsp;
+&nbsp;        // send the chat out
+<b class="nc">&nbsp;        sendChatToUser(sender, receiver, messageString);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Helper Functions
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    private void sendChatToUser(Integer sender, Integer receiver, String message) {
+&nbsp;
+<b class="nc">&nbsp;        logger.info(&quot;Beginning sendChatToUser({}, {}, {})&quot;, sender, receiver, message);</b>
+&nbsp;
+&nbsp;        // make a new chat
+<b class="nc">&nbsp;        Chat chat = new Chat();</b>
+&nbsp;
+&nbsp;        // populate the values
+<b class="nc">&nbsp;        chat.setSender(sender);</b>
+<b class="nc">&nbsp;        chat.setReceiver(receiver);</b>
+<b class="nc">&nbsp;        chat.setMessage(message);</b>
+<b class="nc">&nbsp;        chat.setUnread(true);</b>
+&nbsp;
+&nbsp;        // send the message to the sender and the receiver
+&nbsp;        try {
+&nbsp;
+&nbsp;            // message will appear on both user&#39;s screens
+<b class="nc">&nbsp;            userSessionMap.get(receiver).getBasicRemote().sendText(sender + &quot;: &quot; + message);</b>
+&nbsp;
+&nbsp;            // unless they sent it to themselves
+<b class="nc">&nbsp;            if (!sender.equals(receiver)) {</b>
+<b class="nc">&nbsp;                userSessionMap.get(sender).getBasicRemote().sendText(sender + &quot;: &quot; + message);</b>
+&nbsp;            }
+&nbsp;
+&nbsp;        } catch (IOException e) {
+<b class="nc">&nbsp;            logger.info(e.getMessage());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // save the message to the database
+<b class="nc">&nbsp;        chatrepository.save(chat);</b>
+&nbsp;
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-07 14:28</div>
+</div>
+</body>
+</html>

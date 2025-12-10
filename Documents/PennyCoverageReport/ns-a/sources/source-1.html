@@ -1,0 +1,168 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > Review</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.reviews</a>
+</div>
+
+<h1>Coverage Summary for Class: Review (com.imp3.Backend.reviews)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">Review</td>
+<td class="coverageStat">
+  <span class="percent">
+    90.9%
+  </span>
+  <span class="absValue">
+    (10/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    62.5%
+  </span>
+  <span class="absValue">
+    (10/16)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">Review$HibernateInstantiator</td>
+  </tr>
+  <tr>
+    <td class="name">Review$HibernateProxy</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    90.9%
+  </span>
+  <span class="absValue">
+    (10/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    62.5%
+  </span>
+  <span class="absValue">
+    (10/16)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.reviews;
+&nbsp;
+&nbsp;import jakarta.persistence.*;
+&nbsp;import lombok.Getter;
+&nbsp;import lombok.NoArgsConstructor;
+&nbsp;import lombok.Setter;
+&nbsp;
+&nbsp;@Getter
+<b class="fc">&nbsp;@Setter</b>
+<b class="fc">&nbsp;@NoArgsConstructor</b>
+&nbsp;@Entity
+&nbsp;@Table(name= &quot;reviews&quot;)
+&nbsp;
+&nbsp;public class Review {
+&nbsp;
+&nbsp;    // table columns: id, user uuid, album uuid, song uuid, rating, review text
+&nbsp;
+&nbsp;    @Id
+&nbsp;    @GeneratedValue(strategy = GenerationType.IDENTITY)
+<b class="fc">&nbsp;    private Integer id;</b>
+&nbsp;
+&nbsp;    @Column(name = &quot;userId&quot;, nullable = false, unique = false)
+<b class="fc">&nbsp;    private Integer userId;</b>
+&nbsp;
+&nbsp;    @Column(name = &quot;albumId&quot;, nullable = false, unique = false)
+<b class="fc">&nbsp;    private Integer albumId;</b>
+&nbsp;
+&nbsp;    @Column(name = &quot;songId&quot;, nullable = true, unique = false)
+<b class="fc">&nbsp;    private Integer songId;</b>
+&nbsp;
+&nbsp;    @Column(name = &quot;rating&quot;, nullable = false, unique = false)
+<b class="fc">&nbsp;    private Integer rating;</b>
+&nbsp;
+&nbsp;    @Column(name = &quot;review&quot;, nullable = true, unique = false, columnDefinition = &quot;TEXT&quot;)
+<b class="fc">&nbsp;    private String review;</b>
+&nbsp;
+&nbsp;    @Transient
+<b class="fc">&nbsp;    private String spotifyData;</b>
+&nbsp;
+&nbsp;    @Transient
+<b class="fc">&nbsp;    private String spotifyType;</b>
+&nbsp;
+<b class="nc">&nbsp;    public Review(Integer userId, Integer albumId, Integer songId, Integer rating, String review) {</b>
+<b class="nc">&nbsp;        this.userId = userId;</b>
+<b class="nc">&nbsp;        this.albumId = albumId;</b>
+<b class="nc">&nbsp;        this.songId = songId;</b>
+<b class="nc">&nbsp;        this.rating = rating;</b>
+<b class="nc">&nbsp;        this.review = review;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-09 15:12</div>
+</div>
+</body>
+</html>

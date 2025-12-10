@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FollowerView.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">FollowerView.java</span></div><h1>FollowerView.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Bundle;
+import android.util.Base64;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+<span class="fc" id="L32">public class FollowerView extends AppCompatActivity {</span>
+
+    private int userId;
+    private RequestQueue requestQueue;
+<span class="fc" id="L36">    private String serverUrl = &quot;http://coms-3090-027.class.las.iastate.edu:8080&quot;;</span>
+<span class="fc" id="L37">    private Set&lt;Integer&gt; displayedUsers = new HashSet&lt;&gt;();</span>
+    // Section layouts
+    private LinearLayout allUsersLayout, followersLayout, followingLayout, mutualsLayout;
+
+    // Cache for profile images
+<span class="fc" id="L42">    private Map&lt;Integer, Bitmap&gt; profileCache = new HashMap&lt;&gt;();</span>
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="fc" id="L46">        super.onCreate(savedInstanceState);</span>
+<span class="fc" id="L47">        setContentView(R.layout.follower_view);</span>
+
+<span class="fc" id="L49">        userId = getIntent().getIntExtra(&quot;userId&quot;, -1);</span>
+
+<span class="fc" id="L51">        Button backBtn = findViewById(R.id.follower_profile_btn);</span>
+<span class="fc" id="L52">        backBtn.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L53">            Intent back = new Intent();</span>
+<span class="nc" id="L54">            back.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L55">            setResult(RESULT_OK, back);</span>
+<span class="nc" id="L56">            finish();</span>
+<span class="nc" id="L57">        });</span>
+
+<span class="fc" id="L59">        allUsersLayout = findViewById(R.id.section_all_users);</span>
+<span class="fc" id="L60">        followersLayout = findViewById(R.id.section_followers);</span>
+<span class="fc" id="L61">        followingLayout = findViewById(R.id.section_following);</span>
+<span class="fc" id="L62">        mutualsLayout = findViewById(R.id.section_mutuals);</span>
+
+<span class="fc" id="L64">        requestQueue = QueueApplication.getQueue();</span>
+
+<span class="fc" id="L66">        loadAllSections();</span>
+<span class="fc" id="L67">    }</span>
+
+    private void loadAllSections() {
+<span class="fc" id="L70">        displayedUsers.clear();</span>
+<span class="fc" id="L71">        loadMutuals();</span>
+<span class="fc" id="L72">    }</span>
+
+    private void loadMutuals() {
+<span class="fc" id="L75">        loadSectionRequest(</span>
+                &quot;/users/&quot; + userId + &quot;/mutuals&quot;,
+                mutualsLayout,
+                SectionType.MUTUALS,
+                this::loadFollowing
+        );
+<span class="fc" id="L81">    }</span>
+
+    private void loadFollowing() {
+<span class="fc" id="L84">        loadSectionRequest(</span>
+                &quot;/users/&quot; + userId + &quot;/following&quot;,
+                followingLayout,
+                SectionType.FOLLOWING,
+                this::loadFollowers
+        );
+<span class="fc" id="L90">    }</span>
+
+    private void loadFollowers() {
+<span class="fc" id="L93">        loadSectionRequest(</span>
+                &quot;/users/&quot; + userId + &quot;/followers&quot;,
+                followersLayout,
+                SectionType.FOLLOWERS,
+                this::loadAllUsers
+        );
+<span class="fc" id="L99">    }</span>
+
+    private void loadAllUsers() {
+<span class="fc" id="L102">        loadSectionRequest(</span>
+                &quot;/users/all&quot;,
+                allUsersLayout,
+                SectionType.ALL_USERS,
+                null
+        );
+<span class="fc" id="L108">    }</span>
+
+    private void loadSectionRequest(
+            String endpoint,
+            LinearLayout container,
+            SectionType type,
+            Runnable next
+    ) {
+<span class="fc" id="L116">        JsonArrayRequest req = new JsonArrayRequest(</span>
+                Request.Method.GET,
+                serverUrl + endpoint,
+                null,
+                response -&gt; {
+<span class="fc" id="L121">                    populateSection(container, response, type, displayedUsers);</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">                    if (next != null) next.run();</span>
+<span class="fc" id="L123">                },</span>
+                error -&gt; {
+<span class="fc" id="L125">                    Log.e(&quot;FollowerView&quot;, &quot;Failed to load &quot; + type + &quot;: &quot; + error);</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">                    if (next != null) next.run();</span>
+<span class="fc" id="L127">                }</span>
+        );
+
+<span class="fc" id="L130">        requestQueue.add(req);</span>
+<span class="fc" id="L131">    }</span>
+
+<span class="fc" id="L133">    private enum SectionType { ALL_USERS, FOLLOWERS, FOLLOWING, MUTUALS }</span>
+
+    /*
+    private void loadSection(String endpoint, LinearLayout container, SectionType type, Set&lt;Integer&gt; displayedUsers) {
+        JsonArrayRequest req = new JsonArrayRequest(
+                Request.Method.GET,
+                serverUrl + endpoint,
+                null,
+                response -&gt; populateSection(container, response, type, displayedUsers),
+                error -&gt; Log.e(&quot;FollowerView&quot;, &quot;Failed to load &quot; + type + &quot;: &quot; + error)
+        );
+        requestQueue.add(req);
+    }
+    */
+
+    private void populateSection(LinearLayout container, JSONArray users, SectionType type, Set&lt;Integer&gt; displayedUsers) {
+<span class="fc" id="L149">        container.removeAllViews();</span>
+<span class="fc" id="L150">        int margin = (int) (8 * getResources().getDisplayMetrics().density);</span>
+
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int i = 0; i &lt; users.length(); i++) {</span>
+            try {
+<span class="fc" id="L154">                JSONObject user = users.getJSONObject(i);</span>
+<span class="fc" id="L155">                Log.i(&quot;friend user JSON&quot;, user.toString());</span>
+<span class="fc" id="L156">                int friendId = user.getInt(&quot;id&quot;);</span>
+
+                // Skip users already displayed or self
+<span class="pc bpc" id="L159" title="2 of 4 branches missed.">                if (displayedUsers.contains(friendId) || friendId == userId) continue;</span>
+<span class="fc" id="L160">                displayedUsers.add(friendId);</span>
+
+<span class="fc" id="L162">                String username = user.getString(&quot;username&quot;);</span>
+
+                // Row container
+<span class="fc" id="L165">                LinearLayout row = new LinearLayout(this);</span>
+<span class="fc" id="L166">                row.setOrientation(LinearLayout.HORIZONTAL);</span>
+<span class="fc" id="L167">                row.setPadding(margin, margin, margin, margin);</span>
+<span class="fc" id="L168">                row.setLayoutParams(new LinearLayout.LayoutParams(</span>
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                ));
+
+                // Profile image
+<span class="fc" id="L174">                ImageButton profileImage = new ImageButton(this);</span>
+<span class="fc" id="L175">                int size = (int) (48 * getResources().getDisplayMetrics().density);</span>
+<span class="fc" id="L176">                LinearLayout.LayoutParams imageParams = new LinearLayout.LayoutParams(size, size);</span>
+<span class="fc" id="L177">                imageParams.setMargins(0, 0, margin * 2, 0);</span>
+<span class="fc" id="L178">                profileImage.setLayoutParams(imageParams);</span>
+
+                // Circular background using circle.xml
+<span class="fc" id="L181">                profileImage.setBackgroundResource(R.drawable.circle);</span>
+<span class="fc" id="L182">                profileImage.setScaleType(ImageView.ScaleType.CENTER_CROP);</span>
+<span class="fc" id="L183">                profileImage.setClipToOutline(true); // makes it follow the circle shape</span>
+<span class="fc" id="L184">                profileImage.setPadding(0, 0, 0, 0);</span>
+
+                // Default fallback image
+<span class="fc" id="L187">                profileImage.setImageResource(R.drawable.imp3);</span>
+
+                // Click opens new activity and sends friendId
+<span class="fc" id="L190">                profileImage.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L191">                    Intent intent = new Intent(FollowerView.this, OtherUserProfile.class);</span>
+<span class="nc" id="L192">                    intent.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L193">                    intent.putExtra(&quot;otherUserId&quot;, friendId);</span>
+<span class="nc" id="L194">                    startActivity(intent);</span>
+<span class="nc" id="L195">                });</span>
+
+<span class="fc" id="L197">                row.addView(profileImage);</span>
+
+                // Load actual profile picture
+<span class="fc" id="L200">                loadFriendProfileImage(friendId, profileImage);</span>
+
+                // Username
+<span class="fc" id="L203">                TextView tvName = new TextView(this);</span>
+<span class="fc" id="L204">                tvName.setText(username);</span>
+<span class="fc" id="L205">                tvName.setTextSize(16);</span>
+<span class="fc" id="L206">                tvName.setLayoutParams(new LinearLayout.LayoutParams(</span>
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                ));
+<span class="fc" id="L211">                row.addView(tvName);</span>
+
+                // Action button
+<span class="fc" id="L214">                Button actionBtn = new Button(this);</span>
+<span class="fc" id="L215">                actionBtn.setAllCaps(false);</span>
+<span class="fc" id="L216">                actionBtn.setLayoutParams(new LinearLayout.LayoutParams(</span>
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                ));
+
+<span class="pc bpc" id="L221" title="2 of 3 branches missed.">                switch (type) {</span>
+                    case ALL_USERS:
+                    case FOLLOWERS:
+<span class="fc" id="L224">                        actionBtn.setText(&quot;Follow&quot;);</span>
+<span class="pc" id="L225">                        actionBtn.setOnClickListener(v -&gt; followUser(friendId));</span>
+<span class="fc" id="L226">                        break;</span>
+                    case FOLLOWING:
+                    case MUTUALS:
+<span class="nc" id="L229">                        actionBtn.setText(&quot;Unfollow&quot;);</span>
+<span class="nc" id="L230">                        actionBtn.setOnClickListener(v -&gt; unfollowUser(friendId));</span>
+                        break;
+                }
+<span class="fc" id="L233">                row.addView(actionBtn);</span>
+
+<span class="fc" id="L235">                container.addView(row);</span>
+
+<span class="nc" id="L237">            } catch (JSONException e) {</span>
+<span class="nc" id="L238">                e.printStackTrace();</span>
+<span class="fc" id="L239">            }</span>
+        }
+<span class="fc" id="L241">    }</span>
+
+    private void loadFriendProfileImage(int friendId, ImageView profileImageView) {
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">        if (profileCache.containsKey(friendId)) {</span>
+<span class="nc" id="L245">            Bitmap bmp = profileCache.get(friendId);</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">            if (bmp != null) profileImageView.setImageBitmap(bmp);</span>
+<span class="nc" id="L247">            return;</span>
+        }
+
+<span class="fc" id="L250">        String url = serverUrl + &quot;/users/&quot; + friendId;</span>
+<span class="fc" id="L251">        JsonObjectRequest request = new JsonObjectRequest(</span>
+                Request.Method.GET,
+                url,
+                null,
+                response -&gt; {
+<span class="fc" id="L256">                    String base64 = response.optString(&quot;picture&quot;, &quot;&quot;);</span>
+<span class="fc" id="L257">                    Bitmap bmp = null;</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">                    if (!base64.isEmpty()) {</span>
+<span class="fc" id="L259">                        byte[] decoded = Base64.decode(base64, Base64.NO_WRAP);</span>
+<span class="fc" id="L260">                        bmp = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);</span>
+
+                        // Make bitmap fill ImageView properly
+<span class="fc" id="L263">                        profileImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);</span>
+<span class="fc" id="L264">                        profileImageView.setImageBitmap(bmp);</span>
+                    }
+<span class="fc" id="L266">                    profileCache.put(friendId, bmp);</span>
+<span class="fc" id="L267">                },</span>
+                error -&gt; {
+<span class="nc" id="L269">                    profileImageView.setImageResource(R.drawable.ic_settings);</span>
+<span class="nc" id="L270">                    profileCache.put(friendId, null);</span>
+<span class="nc" id="L271">                }</span>
+        );
+<span class="fc" id="L273">        requestQueue.add(request);</span>
+<span class="fc" id="L274">    }</span>
+
+    private void followUser(int friendId) {
+<span class="nc" id="L277">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                Request.Method.POST,
+                serverUrl + &quot;/users/&quot; + friendId + &quot;/follow&quot;,
+                null,
+                response -&gt; {
+<span class="nc" id="L282">                    Log.i(&quot;FollowerView&quot;, &quot;Followed user &quot; + friendId);</span>
+<span class="nc" id="L283">                    sendFollowNotification(friendId, userId);</span>
+<span class="nc" id="L284">                    loadAllSections();</span>
+<span class="nc" id="L285">                },</span>
+<span class="nc" id="L286">                error -&gt; Log.e(&quot;FollowerView&quot;, &quot;Failed to follow user &quot; + friendId)</span>
+        );
+<span class="nc" id="L288">        requestQueue.add(req);</span>
+<span class="nc" id="L289">    }</span>
+
+    private void unfollowUser(int friendId) {
+<span class="nc" id="L292">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                Request.Method.DELETE,
+                serverUrl + &quot;/users/&quot; + friendId + &quot;/follow&quot;,
+                null,
+                response -&gt; {
+<span class="nc" id="L297">                    Log.i(&quot;FollowerView&quot;, &quot;Unfollowed user &quot; + friendId);</span>
+<span class="nc" id="L298">                    loadAllSections();</span>
+<span class="nc" id="L299">                },</span>
+<span class="nc" id="L300">                error -&gt; Log.e(&quot;FollowerView&quot;, &quot;Failed to unfollow user &quot; + friendId + &quot;: &quot; + error)</span>
+        );
+<span class="nc" id="L302">        requestQueue.add(req);</span>
+<span class="nc" id="L303">    }</span>
+
+    private void sendFollowNotification(int recipientId, int followerId) {
+<span class="nc" id="L306">        String url = &quot;http://coms-3090-027.class.las.iastate.edu:8080/notif&quot;;</span>
+
+<span class="nc" id="L308">        JSONObject notifBody = new JSONObject();</span>
+        try {
+<span class="nc" id="L310">            notifBody.put(&quot;recipientId&quot;, recipientId);</span>
+<span class="nc" id="L311">            notifBody.put(&quot;message&quot;, &quot;User &quot; + followerId + &quot; followed you!&quot;);</span>
+<span class="nc" id="L312">            notifBody.put(&quot;type&quot;, &quot;FOLLOW&quot;);</span>
+<span class="nc" id="L313">        } catch (JSONException e) {</span>
+<span class="nc" id="L314">            e.printStackTrace();</span>
+<span class="nc" id="L315">            return;</span>
+<span class="nc" id="L316">        }</span>
+
+<span class="nc" id="L318">        JsonObjectRequest notifRequest = new JsonObjectRequest(</span>
+                Request.Method.POST,
+                url,
+                notifBody,
+                response -&gt; {
+<span class="nc" id="L323">                    Log.i(&quot;FollowerView&quot;, &quot;Follow notification sent to user &quot; + recipientId);</span>
+<span class="nc" id="L324">                },</span>
+<span class="nc" id="L325">                error -&gt; Log.e(&quot;FollowerView&quot;, &quot;Failed to send follow notification: &quot; + error)</span>
+<span class="nc" id="L326">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L329">                HashMap&lt;String, String&gt; headers = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L330">                headers.put(&quot;Content-Type&quot;, &quot;application/json&quot;);</span>
+<span class="nc" id="L331">                return headers;</span>
+            }
+        };
+
+<span class="nc bnc" id="L335" title="All 2 branches missed.">        if (requestQueue == null) {</span>
+<span class="nc" id="L336">            requestQueue = QueueApplication.getQueue();</span>
+        }
+<span class="nc" id="L338">        requestQueue.add(notifRequest);</span>
+<span class="nc" id="L339">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationsPage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">NotificationsPage.java</span></div><h1>NotificationsPage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.format.DateUtils;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.*;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.java_websocket.handshake.ServerHandshake;
+
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.HttpCookie;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Locale;
+import java.util.TimeZone;
+
+/**
+ * Notifications page that displays a list of user notifications,
+ * supports marking as read, deleting, and real-time updates via WebSocket.
+ */
+<span class="nc" id="L41">public class NotificationsPage extends AppCompatActivity {</span>
+    private static final String TAG = &quot;NotificationsPage&quot;;
+<span class="nc" id="L43">    private final String serverBase = &quot;http://coms-3090-027.class.las.iastate.edu:8080&quot;;</span>
+<span class="nc" id="L44">    private final String websocketBase = &quot;ws://coms-3090-027.class.las.iastate.edu:8080&quot;;</span>
+    private RequestQueue requestQueue;
+    private RecyclerView rv;
+    private NotificationsAdapter adapter;
+<span class="nc" id="L48">    private List&lt;NotificationModel&gt; notifications = new ArrayList&lt;&gt;();</span>
+    private int userId;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="nc" id="L53">        super.onCreate(savedInstanceState);</span>
+<span class="nc" id="L54">        setContentView(R.layout.notifications_page);</span>
+
+<span class="nc" id="L56">        Log.d(TAG, &quot;onCreate called&quot;);</span>
+
+<span class="nc" id="L58">        Intent intent = getIntent();</span>
+<span class="nc" id="L59">        userId = intent.getIntExtra(&quot;userId&quot;, -1);</span>
+<span class="nc" id="L60">        Log.d(TAG, &quot;Received userId: &quot; + userId);</span>
+
+<span class="nc" id="L62">        requestQueue = QueueApplication.getQueue();</span>
+<span class="nc" id="L63">        Log.d(TAG, &quot;RequestQueue initialized&quot;);</span>
+
+        // Use global QueueApplication request queue
+<span class="nc" id="L66">        requestQueue = QueueApplication.getQueue();</span>
+
+        // Confirm cookies exist
+<span class="nc" id="L69">        CookieManager cookieManager = (CookieManager) CookieHandler.getDefault();</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">        if (cookieManager != null &amp;&amp; cookieManager.getCookieStore() != null) {</span>
+<span class="nc" id="L71">            List&lt;HttpCookie&gt; cookies = cookieManager.getCookieStore().getCookies();</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">            if (cookies.isEmpty()) {</span>
+<span class="nc" id="L73">                Log.w(TAG, &quot;No cookies found in CookieManager&quot;);</span>
+            } else {
+<span class="nc bnc" id="L75" title="All 2 branches missed.">                for (HttpCookie cookie : cookies) {</span>
+<span class="nc" id="L76">                    Log.d(TAG, &quot;Cookie: &quot; + cookie.toString());</span>
+<span class="nc" id="L77">                }</span>
+            }
+<span class="nc" id="L79">        } else {</span>
+<span class="nc" id="L80">            Log.e(TAG, &quot;CookieManager or CookieStore is null!&quot;);</span>
+        }
+
+<span class="nc" id="L83">        rv = findViewById(R.id.rvNotifications);</span>
+<span class="nc" id="L84">        rv.setLayoutManager(new LinearLayoutManager(this));</span>
+<span class="nc" id="L85">        adapter = new NotificationsAdapter(notifications);</span>
+<span class="nc" id="L86">        rv.setAdapter(adapter);</span>
+<span class="nc" id="L87">        Log.d(TAG, &quot;RecyclerView + Adapter initialized&quot;);</span>
+
+<span class="nc" id="L89">        Button btnReturn = findViewById(R.id.btnReturn);</span>
+<span class="nc" id="L90">        btnReturn.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L91">            Intent back = new Intent();</span>
+<span class="nc" id="L92">            back.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L93">            setResult(RESULT_OK, back);</span>
+<span class="nc" id="L94">            finish();</span>
+<span class="nc" id="L95">        });</span>
+
+<span class="nc" id="L97">        Button btnReadAll = findViewById(R.id.btnReadAll);</span>
+<span class="nc" id="L98">        btnReadAll.setOnClickListener(v -&gt; readAllNotifications());</span>
+
+<span class="nc" id="L100">        fetchNotifications();</span>
+<span class="nc" id="L101">        startWebSocket();</span>
+<span class="nc" id="L102">    }</span>
+
+    @Override
+    protected void onDestroy() {
+<span class="nc" id="L106">        super.onDestroy();</span>
+<span class="nc" id="L107">        Log.d(TAG, &quot;onDestroy - disconnecting WebSocket&quot;);</span>
+<span class="nc" id="L108">        WebSocketManager.getInstance().disconnectWebSocket();</span>
+<span class="nc" id="L109">    }</span>
+
+    /** ---------------- REST CALLS ---------------- **/
+
+    private void fetchNotifications() {
+<span class="nc" id="L114">        String url = serverBase + &quot;/notif&quot;;</span>
+<span class="nc" id="L115">        Log.d(TAG, &quot;fetchNotifications called: &quot; + url);</span>
+
+<span class="nc" id="L117">        JsonArrayRequest req = new JsonArrayRequest(</span>
+                com.android.volley.Request.Method.GET,
+                url,
+                null,
+                response -&gt; {
+<span class="nc" id="L122">                    Log.d(TAG, &quot;Fetched &quot; + response.length() + &quot; notifications from server&quot;);</span>
+<span class="nc" id="L123">                    notifications.clear();</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">                    for (int i = 0; i &lt; response.length(); i++) {</span>
+                        try {
+<span class="nc" id="L126">                            JSONObject o = response.getJSONObject(i);</span>
+<span class="nc" id="L127">                            notifications.add(NotificationModel.fromJson(o));</span>
+<span class="nc" id="L128">                        } catch (JSONException e) {</span>
+<span class="nc" id="L129">                            e.printStackTrace();</span>
+<span class="nc" id="L130">                        }</span>
+                    }
+<span class="nc" id="L132">                    adapter.notifyDataSetChanged();</span>
+<span class="nc" id="L133">                },</span>
+<span class="nc" id="L134">                error -&gt; Log.e(TAG, &quot;fetchNotifications error: &quot; + error.toString())</span>
+        );
+<span class="nc" id="L136">        requestQueue.add(req);</span>
+<span class="nc" id="L137">    }</span>
+
+    private void markAsRead(NotificationModel n, int position) {
+<span class="nc" id="L140">        String url = serverBase + &quot;/notif/&quot; + n.notifId + &quot;/read&quot;;</span>
+<span class="nc" id="L141">        Log.d(TAG, &quot;markAsRead: &quot; + url);</span>
+
+<span class="nc" id="L143">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                com.android.volley.Request.Method.PUT,
+                url,
+                null,
+                response -&gt; {
+<span class="nc" id="L148">                    n.readAt = System.currentTimeMillis();</span>
+<span class="nc" id="L149">                    adapter.notifyItemChanged(position);</span>
+<span class="nc" id="L150">                    Log.d(TAG, &quot;Notification &quot; + n.notifId + &quot; marked as read&quot;);</span>
+<span class="nc" id="L151">                },</span>
+<span class="nc" id="L152">                error -&gt; Log.e(TAG, &quot;markAsRead error: &quot; + error.toString())</span>
+        );
+
+<span class="nc" id="L155">        requestQueue.add(req);</span>
+<span class="nc" id="L156">    }</span>
+
+    private void deleteNotification(NotificationModel n, int position) {
+<span class="nc" id="L159">        String url = serverBase + &quot;/notif/&quot; + n.notifId;</span>
+<span class="nc" id="L160">        Log.d(TAG, &quot;DELETE URL: &quot; + url);</span>
+
+<span class="nc" id="L162">        StringRequest req = new StringRequest(</span>
+            com.android.volley.Request.Method.DELETE,
+            url,
+            response -&gt; {
+                // Success: remove notification locally
+<span class="nc" id="L167">                notifications.remove(position);</span>
+<span class="nc" id="L168">                adapter.notifyItemRemoved(position);</span>
+<span class="nc" id="L169">                Log.d(TAG, &quot;Deleted notification &quot; + n.notifId + &quot; successfully&quot;);</span>
+<span class="nc" id="L170">            },</span>
+            error -&gt; {
+<span class="nc bnc" id="L172" title="All 2 branches missed.">                if (error.networkResponse != null) {</span>
+<span class="nc" id="L173">                    int statusCode = error.networkResponse.statusCode;</span>
+<span class="nc" id="L174">                    String respData = new String(error.networkResponse.data);</span>
+<span class="nc" id="L175">                    Log.e(TAG, &quot;DELETE failed. Status: &quot; + statusCode + &quot;, Response: &quot; + respData);</span>
+<span class="nc" id="L176">                } else {</span>
+<span class="nc" id="L177">                    Log.e(TAG, &quot;DELETE error: &quot; + error.toString());</span>
+                }
+<span class="nc" id="L179">            }</span>
+<span class="nc" id="L180">        ) {</span>
+            @Override
+            public Map&lt;String, String&gt; getHeaders() {
+<span class="nc" id="L183">                Map&lt;String, String&gt; headers = new HashMap&lt;&gt;();</span>
+
+                // Grab cookies from CookieManager
+<span class="nc" id="L186">                CookieManager cookieManager = (CookieManager) CookieHandler.getDefault();</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">                if (cookieManager != null) {</span>
+<span class="nc" id="L188">                    List&lt;HttpCookie&gt; cookies = cookieManager.getCookieStore().getCookies();</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">                    if (!cookies.isEmpty()) {</span>
+<span class="nc" id="L190">                        StringBuilder cookieHeader = new StringBuilder();</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">                        for (HttpCookie cookie : cookies) {</span>
+<span class="nc" id="L192">                            cookieHeader.append(cookie.getName()).append(&quot;=&quot;).append(cookie.getValue()).append(&quot;; &quot;);</span>
+<span class="nc" id="L193">                        }</span>
+<span class="nc" id="L194">                        headers.put(&quot;Cookie&quot;, cookieHeader.toString());</span>
+<span class="nc" id="L195">                        Log.d(TAG, &quot;Sending cookies: &quot; + cookieHeader.toString());</span>
+                    }
+                }
+<span class="nc" id="L198">                return headers;</span>
+            }
+        };
+<span class="nc" id="L201">        requestQueue.add(req);</span>
+<span class="nc" id="L202">    }</span>
+
+    private void readAllNotifications() {
+<span class="nc" id="L205">        String url = serverBase + &quot;/notif/read&quot;;</span>
+<span class="nc" id="L206">        Log.d(TAG, &quot;readAllNotifications called: &quot; + url);</span>
+
+<span class="nc" id="L208">        JsonArrayRequest req = new JsonArrayRequest(</span>
+                com.android.volley.Request.Method.PUT,
+                url,
+                null,
+                response -&gt; {
+<span class="nc" id="L213">                    Log.d(TAG, &quot;readAllNotifications success&quot;);</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                    for (NotificationModel n : notifications) {</span>
+<span class="nc" id="L215">                        n.readAt = System.currentTimeMillis();</span>
+<span class="nc" id="L216">                    }</span>
+<span class="nc" id="L217">                    adapter.notifyDataSetChanged();</span>
+<span class="nc" id="L218">                },</span>
+<span class="nc" id="L219">                error -&gt; Log.e(TAG, &quot;readAllNotifications error: &quot; + error.toString())</span>
+        );
+<span class="nc" id="L221">        requestQueue.add(req);</span>
+<span class="nc" id="L222">    }</span>
+
+    /** ---------------- WEBSOCKET ---------------- **/
+
+    private void startWebSocket() {
+<span class="nc" id="L227">        String wsUrl = websocketBase + &quot;/ws/notif/&quot; + userId;</span>
+<span class="nc" id="L228">        Log.d(TAG, &quot;startWebSocket called with &quot; + wsUrl);</span>
+<span class="nc" id="L229">        WebSocketManager wsManager = WebSocketManager.getInstance();</span>
+
+<span class="nc" id="L231">        wsManager.setWebSocketListener(new com.example.androidexample.WebSocketListener() {</span>
+            @Override
+            public void onWebSocketOpen(ServerHandshake handshakedata) {
+<span class="nc" id="L234">                Log.i(TAG, &quot;WebSocket connected&quot;);</span>
+<span class="nc" id="L235">            }</span>
+
+            @Override
+            public void onWebSocketMessage(String message) {
+<span class="nc" id="L239">                Log.i(TAG, &quot;WebSocket message received: &quot; + message);</span>
+<span class="nc" id="L240">                runOnUiThread(() -&gt; handleIncomingWebsocketMessage(message));</span>
+<span class="nc" id="L241">            }</span>
+
+            @Override
+            public void onWebSocketClose(int code, String reason, boolean remote) {
+<span class="nc" id="L245">                Log.i(TAG, &quot;WebSocket closed: &quot; + reason);</span>
+<span class="nc" id="L246">            }</span>
+
+            @Override
+            public void onWebSocketError(Exception ex) {
+<span class="nc" id="L250">                Log.e(TAG, &quot;WebSocket error: &quot;, ex);</span>
+<span class="nc" id="L251">            }</span>
+        });
+<span class="nc" id="L253">        wsManager.connectWebSocket(wsUrl);</span>
+<span class="nc" id="L254">    }</span>
+
+    private void handleIncomingWebsocketMessage(String jsonText) {
+<span class="nc" id="L257">        Log.d(TAG, &quot;handleIncomingWebsocketMessage thread: &quot; + Thread.currentThread().getName());</span>
+
+        try {
+<span class="nc" id="L260">            JSONObject o = new JSONObject(jsonText);</span>
+<span class="nc" id="L261">            String event = o.optString(&quot;event&quot;, &quot;&quot;);</span>
+<span class="nc" id="L262">            int notifId = o.optInt(&quot;notifId&quot;, -1);</span>
+
+<span class="nc" id="L264">            Log.d(TAG, &quot;Received WebSocket event=&quot; + event + &quot;, notifId=&quot; + notifId);</span>
+
+<span class="nc bnc" id="L266" title="All 4 branches missed.">            if (&quot;NOTIFICATION&quot;.equals(event) &amp;&amp; notifId != -1) {</span>
+<span class="nc" id="L267">                fetchNotificationById(notifId);</span>
+            } else {
+<span class="nc" id="L269">                Log.w(TAG, &quot;Unknown event type or invalid notifId in WS message: &quot; + jsonText);</span>
+            }
+
+<span class="nc" id="L272">        } catch (JSONException e) {</span>
+<span class="nc" id="L273">            Log.e(TAG, &quot;Error parsing WebSocket message&quot;, e);</span>
+<span class="nc" id="L274">        }</span>
+<span class="nc" id="L275">    }</span>
+
+    private void fetchNotificationById(int notifId) {
+<span class="nc" id="L278">        String url = serverBase + &quot;/notif/&quot; + notifId;</span>
+<span class="nc" id="L279">        Log.d(TAG, &quot;Fetching notification by ID: &quot; + url);</span>
+
+<span class="nc" id="L281">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                com.android.volley.Request.Method.GET,
+                url,
+                null,
+                response -&gt; {
+<span class="nc" id="L286">                    Log.d(TAG, &quot;Fetched single notification: &quot; + response.toString());</span>
+                    try {
+<span class="nc" id="L288">                        NotificationModel n = NotificationModel.fromJson(response);</span>
+
+<span class="nc" id="L290">                        notifications.add(0, n);</span>
+
+<span class="nc" id="L292">                        runOnUiThread(() -&gt; {</span>
+<span class="nc" id="L293">                            adapter.notifyItemInserted(0);</span>
+<span class="nc" id="L294">                            rv.scrollToPosition(0);</span>
+<span class="nc" id="L295">                            Log.d(TAG, &quot;UI updated with new notification&quot;);</span>
+<span class="nc" id="L296">                        });</span>
+<span class="nc" id="L297">                    } catch (Exception e) {</span>
+<span class="nc" id="L298">                        Log.e(TAG, &quot;Error parsing fetched notification JSON&quot;, e);</span>
+<span class="nc" id="L299">                    }</span>
+<span class="nc" id="L300">                },</span>
+                error -&gt; {
+<span class="nc" id="L302">                    Log.e(TAG, &quot;Error fetching notification by ID: &quot; + error.toString());</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">                    if (error.networkResponse != null) {</span>
+<span class="nc" id="L304">                        Log.e(TAG, &quot;Status code: &quot; + error.networkResponse.statusCode);</span>
+                    }
+<span class="nc" id="L306">                }</span>
+        );
+
+<span class="nc" id="L309">        requestQueue.add(req);</span>
+<span class="nc" id="L310">    }</span>
+
+    /** ---------------- MODEL ---------------- **/
+
+<span class="nc" id="L314">    static class NotificationModel {</span>
+        int notifId;
+        String message;
+        String type;
+        long createdAt;
+        Long readAt;
+        JSONObject actor;
+static NotificationModel fromJson(JSONObject o) {
+<span class="nc" id="L322">    NotificationModel m = new NotificationModel();</span>
+<span class="nc" id="L323">    m.notifId = o.optInt(&quot;notifId&quot;);</span>
+<span class="nc" id="L324">    m.message = o.optString(&quot;message&quot;);</span>
+<span class="nc" id="L325">    m.type = o.optString(&quot;type&quot;);</span>
+<span class="nc" id="L326">    m.actor = o.optJSONObject(&quot;actor&quot;);</span>
+
+<span class="nc" id="L328">    SimpleDateFormat sdf = new SimpleDateFormat(&quot;yyyy-MM-dd'T'HH:mm:ss&quot;, Locale.US);</span>
+<span class="nc" id="L329">    sdf.setTimeZone(TimeZone.getDefault());</span>
+
+<span class="nc" id="L331">    String created = o.optString(&quot;createdAt&quot;, null);</span>
+<span class="nc bnc" id="L332" title="All 4 branches missed.">    if (created != null &amp;&amp; !created.isEmpty()) {</span>
+        try {
+<span class="nc bnc" id="L334" title="All 2 branches missed.">            if (created.contains(&quot;.&quot;)) {</span>
+<span class="nc" id="L335">                created = created.substring(0, created.indexOf(&quot;.&quot;));</span>
+            }
+<span class="nc" id="L337">            m.createdAt = sdf.parse(created).getTime();</span>
+<span class="nc" id="L338">        } catch (Exception e) {</span>
+<span class="nc" id="L339">            m.createdAt = System.currentTimeMillis();</span>
+<span class="nc" id="L340">        }</span>
+    } else {
+<span class="nc" id="L342">        m.createdAt = System.currentTimeMillis();</span>
+    }
+
+<span class="nc" id="L345">    String read = o.optString(&quot;readAt&quot;, null);</span>
+<span class="nc bnc" id="L346" title="All 6 branches missed.">    if (read != null &amp;&amp; !read.equals(&quot;null&quot;) &amp;&amp; !read.isEmpty()) {</span>
+        try {
+<span class="nc bnc" id="L348" title="All 2 branches missed.">            if (read.contains(&quot;.&quot;)) {</span>
+<span class="nc" id="L349">                read = read.substring(0, read.indexOf(&quot;.&quot;));</span>
+            }
+<span class="nc" id="L351">            m.readAt = sdf.parse(read).getTime();</span>
+<span class="nc" id="L352">        } catch (Exception e) {</span>
+<span class="nc" id="L353">            m.readAt = null;</span>
+<span class="nc" id="L354">        }</span>
+    } else {
+<span class="nc" id="L356">        m.readAt = null;</span>
+    }
+<span class="nc" id="L358">    return m;</span>
+}
+    }
+
+    /** ---------------- ADAPTER ---------------- **/
+
+    private class NotificationsAdapter extends RecyclerView.Adapter&lt;NotificationsAdapter.VH&gt; {
+        private final List&lt;NotificationModel&gt; items;
+
+<span class="nc" id="L367">        NotificationsAdapter(List&lt;NotificationModel&gt; items) { this.items = items; }</span>
+
+        @NonNull
+        @Override
+        public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+<span class="nc" id="L372">            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_notification, parent, false);</span>
+<span class="nc" id="L373">            return new VH(v);</span>
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull VH h, int pos) {
+<span class="nc" id="L378">            NotificationModel m = items.get(pos);</span>
+<span class="nc" id="L379">            Log.d(TAG, &quot;Binding item at pos &quot; + pos + &quot;: &quot; + m.message);</span>
+<span class="nc" id="L380">            h.tvTitle.setText(m.type);</span>
+<span class="nc" id="L381">            h.tvMessage.setText(m.message);</span>
+
+<span class="nc" id="L383">            CharSequence relTime = DateUtils.getRelativeTimeSpanString(</span>
+<span class="nc" id="L384">                    m.createdAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS);</span>
+<span class="nc" id="L385">            h.tvTime.setText(relTime);</span>
+
+<span class="nc bnc" id="L387" title="All 2 branches missed.">            if (m.readAt == null) {</span>
+<span class="nc" id="L388">                h.ivStatus.setImageResource(R.drawable.unread_dot);</span>
+<span class="nc" id="L389">                h.itemView.setAlpha(1f);</span>
+            } else {
+<span class="nc" id="L391">                h.ivStatus.setImageResource(R.drawable.read_dot);</span>
+<span class="nc" id="L392">                h.itemView.setAlpha(0.85f);</span>
+            }
+
+<span class="nc" id="L395">            h.itemView.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L396">                Log.d(TAG, &quot;Clicked notification &quot; + m.notifId);</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">                if (m.readAt == null) markAsRead(m, pos);</span>
+<span class="nc" id="L398">                Toast.makeText(NotificationsPage.this, m.message, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L399">            });</span>
+
+<span class="nc" id="L401">            h.btnDelete.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L402">                Log.d(TAG, &quot;Delete clicked for &quot; + m.notifId);</span>
+<span class="nc" id="L403">                deleteNotification(m, pos);</span>
+<span class="nc" id="L404">            });</span>
+<span class="nc" id="L405">        }</span>
+
+        @Override
+        public int getItemCount() {
+<span class="nc" id="L409">            Log.d(TAG, &quot;getItemCount(): &quot; + items.size());</span>
+<span class="nc" id="L410">            return items.size();</span>
+        }
+
+        class VH extends RecyclerView.ViewHolder {
+            ImageView ivStatus;
+            TextView tvTitle, tvMessage, tvTime;
+            ImageButton btnDelete;
+<span class="nc" id="L417">            VH(@NonNull View itemView) {</span>
+<span class="nc" id="L418">                super(itemView);</span>
+<span class="nc" id="L419">                ivStatus = itemView.findViewById(R.id.ivStatus);</span>
+<span class="nc" id="L420">                tvTitle = itemView.findViewById(R.id.tvTitle);</span>
+<span class="nc" id="L421">                tvMessage = itemView.findViewById(R.id.tvMessage);</span>
+<span class="nc" id="L422">                tvTime = itemView.findViewById(R.id.tvTime);</span>
+<span class="nc" id="L423">                btnDelete = itemView.findViewById(R.id.btnDelete);</span>
+<span class="nc" id="L424">            }</span>
+        }
+    }
+}
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

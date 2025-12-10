@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    tools:context=".SignupPage"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/profile_picture"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="50dp"
+        android:background="@drawable/circle"
+        android:clipToOutline="true"
+        android:scaleType="centerCrop"
+        android:contentDescription="profile picture"
+        app:srcCompat="@drawable/imp3" />
+
+    <EditText
+        android:id="@+id/username_edit"
+        android:layout_width="325dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="45dp"
+        android:layout_gravity="center"
+        android:hint="Username">
+    </EditText>
+
+    <EditText
+        android:id="@+id/email_edit"
+        android:layout_width="325dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:hint="Email">
+    </EditText>
+
+    <EditText
+        android:id="@+id/password_edit"
+        android:layout_width="325dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:hint="Password"
+        android:inputType="textPassword">
+    </EditText>
+
+    <EditText
+        android:id="@+id/confirm_edit"
+        android:layout_width="325dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:hint="Confirm Password"
+        android:inputType="textPassword">
+    </EditText>
+
+    <Button
+        android:id="@+id/signup_btn"
+        style="@style/Widget.MaterialComponents.Button"
+        android:layout_width="325dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:text="Signup"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+        android:textColor="#ffffff"
+        android:textSize="20sp">
+    </Button>
+
+    <LinearLayout
+        android:layout_width="325dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:orientation="horizontal"
+        android:baselineAligned="true">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="top|start"
+            android:text="Already have an account? "
+            android:textColor="#000000"
+            android:textSize="15sp">
+        </TextView>
+
+        <Button
+            android:id="@+id/login_btn"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="top|start"
+            android:text="Login"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+            android:textColor="@color/black"
+            android:textSize="15sp"
+            app:rippleColor="@color/white">
+        </Button>
+
+    </LinearLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

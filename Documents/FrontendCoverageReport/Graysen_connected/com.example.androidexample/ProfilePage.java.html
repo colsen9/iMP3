@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProfilePage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.example.androidexample</a> &gt; <span class="el_source">ProfilePage.java</span></div><h1>ProfilePage.java</h1><pre class="source lang-java linenums">package com.example.androidexample;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.Bundle;
+import android.util.Base64;
+import android.util.Log;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
+import com.google.android.flexbox.FlexboxLayout;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+<span class="nc" id="L30">public class ProfilePage extends AppCompatActivity {</span>
+    private ImageButton settings, admin;
+    private Button tempMain, music, lists;
+    private Button friends;
+    private Button login, signup;
+    private Button spotifyLinkBtn;
+    private Button spotifyUnlinkBtn;
+    private ImageView profilePicture;
+    private TextView bioView, fullname, spotifyStatusText;
+<span class="nc" id="L39">    private int userId = -1;</span>
+    private RequestQueue requestQueue;
+    private static final String BASE_URL = &quot;http://coms-3090-027.class.las.iastate.edu:8080&quot;;
+    private static final String SPOTIFY_URL = &quot;https://coms-3090-027.class.las.iastate.edu&quot;;
+
+    private FlexboxLayout userTagContainer;
+    private TextView addUserTagButton;
+    private Button spotifyGenerateTagsBtn;
+
+    private TagManager tagService;
+    private UserTagUIManager userTagUIManager;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+<span class="nc" id="L53">        super.onCreate(savedInstanceState);</span>
+<span class="nc" id="L54">        setContentView(R.layout.profile_page);</span>
+
+        /* initialize UI elements */
+<span class="nc" id="L57">        profilePicture = findViewById(R.id.profile_picture);</span>
+<span class="nc" id="L58">        settings = findViewById(R.id.settings_btn);</span>
+<span class="nc" id="L59">        friends = findViewById(R.id.friends_btn);</span>
+<span class="nc" id="L60">        tempMain = findViewById(R.id.temp_main_btn);</span>
+<span class="nc" id="L61">        login = findViewById(R.id.login_btn);</span>
+<span class="nc" id="L62">        bioView = findViewById(R.id.user_bio);</span>
+<span class="nc" id="L63">        music = findViewById(R.id.music_btn);</span>
+<span class="nc" id="L64">        lists = findViewById(R.id.lists_btn);</span>
+<span class="nc" id="L65">        fullname = findViewById(R.id.user_fullname);</span>
+<span class="nc" id="L66">        admin = findViewById(R.id.admin_btn);</span>
+<span class="nc" id="L67">        signup = findViewById(R.id.signup_btn);</span>
+<span class="nc" id="L68">        spotifyLinkBtn = findViewById(R.id.spotify_link_btn);</span>
+<span class="nc" id="L69">        spotifyUnlinkBtn = findViewById(R.id.spotify_unlink_btn);</span>
+<span class="nc" id="L70">        spotifyStatusText = findViewById(R.id.spotify_status_text);</span>
+
+        /* UserTag Initialization */
+<span class="nc" id="L73">        userTagContainer = findViewById(R.id.userTagContainer);</span>
+<span class="nc" id="L74">        addUserTagButton = findViewById(R.id.addUserTagButton);</span>
+<span class="nc" id="L75">        spotifyGenerateTagsBtn = findViewById(R.id.spotify_generate_btn);</span>
+
+<span class="nc" id="L77">        spotifyGenerateTagsBtn.setOnClickListener(v -&gt; generateSpotifyTags());</span>
+<span class="nc" id="L78">        tagService = new TagManager(this);</span>
+<span class="nc" id="L79">        userTagUIManager = new UserTagUIManager(this, userTagContainer);</span>
+<span class="nc" id="L80">        addUserTagButton.setOnClickListener(v -&gt; showAddTagDialog());</span>
+
+        /* initialize Volley */
+<span class="nc" id="L83">        requestQueue = QueueApplication.getQueue();</span>
+
+        /* retrieve userId from previous activity */
+<span class="nc" id="L86">        Intent intent = getIntent();</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">        if (intent != null &amp;&amp; intent.getData() != null) {</span>
+<span class="nc" id="L88">            Uri data = intent.getData();</span>
+<span class="nc" id="L89">            String uidStr = data.getQueryParameter(&quot;uid&quot;);</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">            if (uidStr != null) {</span>
+<span class="nc" id="L91">                userId = Integer.parseInt(uidStr);</span>
+            }
+        }
+
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (userId == -1) {</span>
+<span class="nc" id="L96">            userId = intent.getIntExtra(&quot;userId&quot;, -1);</span>
+        }
+
+<span class="nc bnc" id="L99" title="All 4 branches missed.">        if (userId == -1 &amp;&amp; savedInstanceState != null) {</span>
+<span class="nc" id="L100">            userId = savedInstanceState.getInt(&quot;userId&quot;, -1);</span>
+        }
+
+<span class="nc" id="L103">        loadUserTags();</span>
+
+        /* set onClickListeners for edit user page and pass the current user id */
+<span class="nc" id="L106">        settings.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L107">            Intent editUser = new Intent(ProfilePage.this, EditUser.class);</span>
+<span class="nc" id="L108">            editUser.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L109">            startActivity(editUser);</span>
+<span class="nc" id="L110">        });</span>
+
+        /* set onClickListeners for admin page and pass the current user id */
+<span class="nc" id="L113">        admin.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L114">            Intent adminPage = new Intent(ProfilePage.this, AdminPage.class);</span>
+<span class="nc" id="L115">            adminPage.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L116">            startActivity(adminPage);</span>
+<span class="nc" id="L117">        });</span>
+
+        /* set onClickListeners for temporary main page and pass the current user id */
+<span class="nc" id="L120">        tempMain.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L121">            Intent mainPage = new Intent(ProfilePage.this, MainActivity.class);</span>
+<span class="nc" id="L122">            mainPage.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L123">            startActivity(mainPage);</span>
+<span class="nc" id="L124">        });</span>
+
+        /* set onClickListeners for music catalogue and pass the current user id */
+<span class="nc" id="L127">        music.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L128">            Intent tempMain = new Intent(ProfilePage.this, MusicCatalogue.class);</span>
+<span class="nc" id="L129">            tempMain.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L130">            startActivity(tempMain);</span>
+<span class="nc" id="L131">        });</span>
+
+        /* set onClickListeners for custom lists view and pass the current user id */
+<span class="nc" id="L134">        lists.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L135">            Intent tempMain = new Intent(ProfilePage.this, CustomListListPage.class);</span>
+<span class="nc" id="L136">            tempMain.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L137">            startActivity(tempMain);</span>
+<span class="nc" id="L138">        });</span>
+
+        /* set onClickListeners for follower view and pass the current user id */
+<span class="nc" id="L141">        friends.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L142">            Intent tempMain = new Intent(ProfilePage.this, FollowerView.class);</span>
+<span class="nc" id="L143">            tempMain.putExtra(&quot;userId&quot;, userId);</span>
+<span class="nc" id="L144">            startActivity(tempMain);</span>
+<span class="nc" id="L145">        });</span>
+
+<span class="nc" id="L147">        login.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L148">            Intent loginUser = new Intent(ProfilePage.this, LoginPage.class);</span>
+<span class="nc" id="L149">            startActivity(loginUser);</span>
+<span class="nc" id="L150">        });</span>
+
+<span class="nc" id="L152">        signup.setOnClickListener(v -&gt; {</span>
+<span class="nc" id="L153">            Intent loginUser = new Intent(ProfilePage.this, SignupPage.class);</span>
+<span class="nc" id="L154">            startActivity(loginUser);</span>
+<span class="nc" id="L155">        });</span>
+
+<span class="nc" id="L157">        spotifyLinkBtn.setOnClickListener(v -&gt; {</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">            if (userId == -1) {</span>
+<span class="nc" id="L159">                Toast.makeText(this, &quot;User not logged in&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L160">                return;</span>
+            }
+<span class="nc" id="L162">            openSpotifyLoginBrowser();</span>
+<span class="nc" id="L163">        });</span>
+
+<span class="nc" id="L165">        spotifyUnlinkBtn.setOnClickListener(v -&gt; unlinkSpotify());</span>
+
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        if (userId != -1) {</span>
+<span class="nc" id="L168">            login.setVisibility(Button.GONE);</span>
+<span class="nc" id="L169">            signup.setVisibility(Button.GONE);</span>
+        }
+
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (userId != -1) {</span>
+<span class="nc" id="L173">            loadUserBio(userId);</span>
+<span class="nc" id="L174">            loadProfilePicture(userId);</span>
+<span class="nc" id="L175">            loadSpotifyStatus(userId);</span>
+<span class="nc" id="L176">            loadUserPermissions(userId);</span>
+        }
+<span class="nc" id="L178">    }</span>
+
+    @Override
+    protected void onResume() {
+<span class="nc" id="L182">        super.onResume();</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">        if (userId != -1) {</span>
+<span class="nc" id="L184">            loadSpotifyStatus(userId);</span>
+        }
+<span class="nc" id="L186">    }</span>
+
+    private void openSpotifyLoginBrowser() {
+<span class="nc" id="L189">        String loginUrl = SPOTIFY_URL + &quot;/api/spotify/login?uid=&quot; + userId;</span>
+<span class="nc" id="L190">        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(loginUrl));</span>
+<span class="nc" id="L191">        startActivity(browserIntent);</span>
+<span class="nc" id="L192">    }</span>
+
+    /* Load Spotify link status */
+    private void loadSpotifyStatus(int userId) {
+<span class="nc" id="L196">        String url = BASE_URL + &quot;/api/spotify/token?uid=&quot; + userId;</span>
+
+<span class="nc" id="L198">        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,</span>
+                response -&gt; {
+<span class="nc bnc" id="L200" title="All 2 branches missed.">                    if(response.has(&quot;accessToken&quot;)) {</span>
+<span class="nc" id="L201">                        String spotifyId = response.optString(&quot;spotifyUserId&quot;, &quot;&quot;);</span>
+<span class="nc" id="L202">                        showLinkedUI(spotifyId);</span>
+<span class="nc bnc" id="L203" title="All 4 branches missed.">                    } else if (response.has(&quot;needsAuth&quot;) &amp;&amp; response.optBoolean(&quot;needsAuth&quot;, false)) {</span>
+<span class="nc" id="L204">                        showNotLinkedUI();</span>
+                    } else {
+<span class="nc" id="L206">                        showNotLinkedUI();</span>
+                    }
+<span class="nc" id="L208">                },</span>
+                error -&gt; {
+<span class="nc" id="L210">                    Toast.makeText(ProfilePage.this, &quot;Failed to load Spotify status&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L211">                    showNotLinkedUI();</span>
+<span class="nc" id="L212">                });</span>
+
+<span class="nc" id="L214">        requestQueue.add(request);</span>
+<span class="nc" id="L215">    }</span>
+
+    private void showNotLinkedUI() {
+<span class="nc" id="L218">        spotifyLinkBtn.setVisibility(Button.VISIBLE);</span>
+<span class="nc" id="L219">        spotifyUnlinkBtn.setVisibility(Button.GONE);</span>
+<span class="nc" id="L220">        spotifyStatusText.setText(&quot;Spotify account not linked&quot;);</span>
+
+<span class="nc" id="L222">        spotifyGenerateTagsBtn.setVisibility(Button.GONE);</span>
+<span class="nc" id="L223">    }</span>
+
+    private void showLinkedUI(String spotifyId) {
+<span class="nc" id="L226">        spotifyLinkBtn.setVisibility(Button.GONE);</span>
+<span class="nc" id="L227">        spotifyUnlinkBtn.setVisibility(Button.VISIBLE);</span>
+<span class="nc" id="L228">        spotifyStatusText.setText(&quot;Linked to Spotify \nID: &quot; + spotifyId);</span>
+
+<span class="nc" id="L230">        spotifyGenerateTagsBtn.setVisibility(Button.VISIBLE);</span>
+<span class="nc" id="L231">    }</span>
+
+    /* Unlink Spotify account */
+    private void unlinkSpotify() {
+<span class="nc bnc" id="L235" title="All 2 branches missed.">        if (userId == -1) {</span>
+<span class="nc" id="L236">            Toast.makeText(this, &quot;User not logged in&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L237">            return;</span>
+        }
+<span class="nc" id="L239">        String url = BASE_URL + &quot;/api/spotify/unlink&quot;;</span>
+<span class="nc" id="L240">        JsonObjectRequest request = new JsonObjectRequest(</span>
+                Request.Method.DELETE,
+                url,
+                null,
+                response -&gt; {
+<span class="nc" id="L245">                    Toast.makeText(ProfilePage.this, &quot;Spotify account unlinked&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L246">                    showNotLinkedUI();</span>
+<span class="nc" id="L247">                },</span>
+                error -&gt; {
+<span class="nc" id="L249">                    Log.e(&quot;UNLINK_ERROR&quot;, &quot;Failed to unlink: &quot; + error.toString());</span>
+<span class="nc" id="L250">                    Toast.makeText(ProfilePage.this, &quot;Unlink failed&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L251">                }</span>
+        );
+<span class="nc" id="L253">        request.setShouldCache(false);</span>
+<span class="nc" id="L254">        requestQueue.add(request);</span>
+<span class="nc" id="L255">    }</span>
+
+    /* Fetch profile picture from backend */
+    private void loadProfilePicture(int id) {
+<span class="nc" id="L259">        String url = BASE_URL + &quot;/users/&quot; + id;</span>
+<span class="nc" id="L260">        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null, response -&gt; {</span>
+<span class="nc" id="L261">            String base64Image = response.optString(&quot;picture&quot;, &quot;&quot;);</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">            if (!base64Image.isEmpty()) {</span>
+<span class="nc" id="L263">                byte[] decodedString = Base64.decode(base64Image, Base64.DEFAULT);</span>
+<span class="nc" id="L264">                Bitmap decodedBitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);</span>
+<span class="nc" id="L265">                profilePicture.setImageBitmap(decodedBitmap);</span>
+            }
+<span class="nc" id="L267">        }, error -&gt; Toast.makeText(ProfilePage.this, &quot;Failed to load profile picture&quot;, Toast.LENGTH_SHORT).show());</span>
+<span class="nc" id="L268">        requestQueue.add(request);</span>
+<span class="nc" id="L269">    }</span>
+
+    /* Fetch user bio from backend */
+    private void loadUserBio(int id) {
+<span class="nc" id="L273">        String url = BASE_URL + &quot;/users/&quot; + id;</span>
+<span class="nc" id="L274">        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null, response -&gt; {</span>
+<span class="nc" id="L275">            String bio = response.optString(&quot;bio&quot;, &quot;&quot;).trim();</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">            if (!bio.isEmpty()) {</span>
+<span class="nc" id="L277">                bioView.setText(bio);</span>
+<span class="nc" id="L278">                bioView.setVisibility(TextView.VISIBLE);</span>
+            } else {
+<span class="nc" id="L280">                bioView.setVisibility(TextView.GONE);</span>
+            }
+<span class="nc" id="L282">            String first = response.optString(&quot;firstname&quot;, &quot;&quot;);</span>
+<span class="nc" id="L283">            String last = response.optString(&quot;lastname&quot;, &quot;&quot;);</span>
+<span class="nc bnc" id="L284" title="All 4 branches missed.">            if (!first.isEmpty() || !last.isEmpty()) {</span>
+<span class="nc" id="L285">                fullname.setText(first + &quot; &quot; + last);</span>
+<span class="nc" id="L286">                fullname.setVisibility(TextView.VISIBLE);</span>
+            }
+<span class="nc" id="L288">        }, error -&gt; Toast.makeText(ProfilePage.this, &quot;Failed to load bio&quot;, Toast.LENGTH_SHORT).show());</span>
+<span class="nc" id="L289">        requestQueue.add(request);</span>
+<span class="nc" id="L290">    }</span>
+
+    /* Fetch user permissions from backend */
+    private void loadUserPermissions(int id) {
+<span class="nc" id="L294">        String url = BASE_URL + &quot;/users/&quot; + id;</span>
+<span class="nc" id="L295">        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null, response -&gt; {</span>
+<span class="nc" id="L296">            String permission = response.optString(&quot;type&quot;, &quot;&quot;);</span>
+<span class="nc" id="L297">            ImageButton adminBtn = findViewById(R.id.admin_btn);</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">            if (permission.equalsIgnoreCase(&quot;admin&quot;)) {</span>
+<span class="nc" id="L299">                adminBtn.setVisibility(ImageButton.VISIBLE);</span>
+<span class="nc" id="L300">                tempMain.setVisibility(Button.VISIBLE);</span>
+            } else {
+<span class="nc" id="L302">                adminBtn.setVisibility(ImageButton.GONE);</span>
+<span class="nc" id="L303">                tempMain.setVisibility(Button.GONE);</span>
+            }
+<span class="nc" id="L305">        }, error -&gt; Toast.makeText(ProfilePage.this, &quot;Failed to load permissions&quot;, Toast.LENGTH_SHORT).show());</span>
+<span class="nc" id="L306">        requestQueue.add(request);</span>
+<span class="nc" id="L307">    }</span>
+
+    private void loadUserTags() {
+<span class="nc" id="L310">        tagService.getUsersTags(new TagManager.TagListCallback() {</span>
+            @Override
+            public void onSuccess(JSONArray tags) {
+<span class="nc" id="L313">                Log.i(&quot;LoadUserTags tags JSON Array&quot;, tags.toString());</span>
+<span class="nc" id="L314">                userTagUIManager.displayUserTags(tags, tagService);</span>
+<span class="nc" id="L315">            }</span>
+
+            @Override
+            public void onError(String message) {
+<span class="nc" id="L319">                Toast.makeText(ProfilePage.this, &quot;Failed to load tags&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L320">            }</span>
+        }, userId);
+<span class="nc" id="L322">    }</span>
+    private void showAddTagDialog() {
+<span class="nc" id="L324">        AlertDialog.Builder b = new AlertDialog.Builder(this);</span>
+<span class="nc" id="L325">        b.setTitle(&quot;Create Tag&quot;);</span>
+
+<span class="nc" id="L327">        final EditText input = new EditText(this);</span>
+<span class="nc" id="L328">        input.setHint(&quot;Tag name&quot;);</span>
+
+<span class="nc" id="L330">        b.setView(input);</span>
+
+<span class="nc" id="L332">        b.setPositiveButton(&quot;Create&quot;, (dialog, which) -&gt; {</span>
+<span class="nc" id="L333">            String name = input.getText().toString().trim();</span>
+
+<span class="nc bnc" id="L335" title="All 2 branches missed.">            if (name.isEmpty()) {</span>
+<span class="nc" id="L336">                Toast.makeText(this, &quot;Tag name required&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L337">                return;</span>
+            }
+
+<span class="nc" id="L340">            tagService.createTag(name, null, null, new TagManager.TagCallback() {</span>
+                @Override
+                public void onSuccess(JSONObject tag) {
+<span class="nc" id="L343">                    int tagId = tag.optInt(&quot;tagId&quot;);</span>
+
+<span class="nc" id="L345">                    tagService.addTagToUser(userId, tagId, new TagManager.EmptyCallback() {</span>
+                        @Override
+<span class="nc" id="L347">                        public void onSuccess() { loadUserTags(); }</span>
+
+                        @Override
+                        public void onError(String msg) {
+<span class="nc" id="L351">                            Toast.makeText(ProfilePage.this, &quot;Failed to assign tag&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L352">                        }</span>
+                    });
+<span class="nc" id="L354">                }</span>
+
+                @Override
+                public void onError(String message) {
+<span class="nc" id="L358">                    Toast.makeText(ProfilePage.this, &quot;Failed to create tag&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L359">                }</span>
+            });
+<span class="nc" id="L361">        });</span>
+
+<span class="nc" id="L363">        b.setNegativeButton(&quot;Cancel&quot;, null);</span>
+<span class="nc" id="L364">        b.show();</span>
+<span class="nc" id="L365">    }</span>
+    private void generateSpotifyTags() {
+<span class="nc" id="L367">        String url = BASE_URL + &quot;/usertag/generate&quot;;</span>
+
+<span class="nc" id="L369">        JsonObjectRequest req = new JsonObjectRequest(</span>
+                Request.Method.POST,
+                url,
+                null,
+                response -&gt; {
+<span class="nc" id="L374">                    Toast.makeText(this, &quot;Generated tags!&quot;, Toast.LENGTH_SHORT).show();</span>
+<span class="nc" id="L375">                    loadUserTags();</span>
+<span class="nc" id="L376">                },</span>
+<span class="nc" id="L377">                error -&gt; Toast.makeText(this, &quot;Failed to generate tags&quot;, Toast.LENGTH_SHORT).show()</span>
+        );
+
+<span class="nc" id="L380">        requestQueue.add(req);</span>
+<span class="nc" id="L381">    }</span>
+
+
+}
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span>Generated by the Android Gradle plugin 8.13.0</div></body></html>

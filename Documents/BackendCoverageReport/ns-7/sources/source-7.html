@@ -1,0 +1,212 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > MusicMapper</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.music</a>
+</div>
+
+<h1>Coverage Summary for Class: MusicMapper (com.imp3.Backend.music)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">MusicMapper</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (3/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    21.4%
+  </span>
+  <span class="absValue">
+    (3/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    58.3%
+  </span>
+  <span class="absValue">
+    (21/36)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.music;
+&nbsp;
+&nbsp;import com.imp3.Backend.music.AlbumDTO;
+&nbsp;import com.imp3.Backend.music.ArtistDTO;
+&nbsp;import com.imp3.Backend.music.TrackDTO;
+&nbsp;import com.imp3.Backend.tag.Tag;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.web.server.ResponseStatusException;
+&nbsp;
+&nbsp;import java.util.Set;
+&nbsp;import java.util.HashSet;
+&nbsp;import java.util.Collections;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;public class MusicMapper {
+&nbsp;
+<b class="nc">&nbsp;    public MusicMapper() {}</b>
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Object -&gt; DTO (one way!)
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    public static ArtistDTO toArtistDTO(Artist artist) {
+<b class="fc">&nbsp;        Set&lt;Integer&gt; albumIds = artist.getAlbums().stream().map(Album::getId).collect(Collectors.toSet());</b>
+<b class="fc">&nbsp;        Set&lt;Integer&gt; trackIds = artist.getTracks().stream().map(Track::getId).collect(Collectors.toSet());</b>
+<b class="pc">&nbsp;        Set&lt;String&gt; tags = artist.getTags() != null</b>
+<b class="fc">&nbsp;                ? artist.getTags().stream().map(Tag::getName).collect(Collectors.toSet())</b>
+<b class="fc">&nbsp;                : Set.of();</b>
+&nbsp;
+<b class="fc">&nbsp;        return new ArtistDTO(artist.getId(), artist.getSpotifyId(), artist.getName(), artist.getBio(),</b>
+<b class="fc">&nbsp;                artist.getPicture(), artist.getPictureUrl(), artist.getYears(), albumIds, trackIds, tags);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static AlbumDTO toAlbumDTO(Album album) {
+<b class="fc">&nbsp;        Set&lt;Integer&gt; artistIds = album.getArtists().stream().map(Artist::getId).collect(Collectors.toSet());</b>
+<b class="fc">&nbsp;        Set&lt;Integer&gt; trackIds = album.getTracks().stream().map(Track::getId).collect(Collectors.toSet());</b>
+<b class="pc">&nbsp;        Set&lt;String&gt; tags = album.getTags() != null</b>
+<b class="fc">&nbsp;                ? album.getTags().stream().map(Tag::getName).collect(Collectors.toSet())</b>
+<b class="fc">&nbsp;                : Set.of();</b>
+&nbsp;
+<b class="fc">&nbsp;        return new AlbumDTO(album.getId(), album.getSpotifyId(), album.getName(), album.getAlbumArt(), album.getAlbumArtUrl(),</b>
+<b class="fc">&nbsp;                album.getDuration(), album.getReleaseDate(), artistIds, trackIds, tags);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static TrackDTO toTrackDTO(Track track) {
+<b class="fc">&nbsp;        Set&lt;Integer&gt; artistIds = track.getArtists().stream().map(Artist::getId).collect(Collectors.toSet());</b>
+<b class="fc">&nbsp;        Set&lt;Integer&gt; albumIds = track.getAlbums().stream().map(Album::getId).collect(Collectors.toSet());</b>
+<b class="pc">&nbsp;        Set&lt;String&gt; tags = track.getTags() != null</b>
+<b class="fc">&nbsp;                ? track.getTags().stream().map(Tag::getName).collect(Collectors.toSet())</b>
+<b class="fc">&nbsp;                : Set.of();</b>
+&nbsp;
+<b class="fc">&nbsp;        return new TrackDTO(track.getId(), track.getSpotifyId(), track.getName(), track.getGenre(),</b>
+<b class="fc">&nbsp;                track.getDuration(), track.getTrackNumber(), track.getMood(), track.getBpm(),</b>
+&nbsp;                artistIds, albumIds, tags);
+&nbsp;    }
+&nbsp;
+&nbsp;    // ============================================================
+&nbsp;    // Helper Functions
+&nbsp;    // ============================================================
+&nbsp;
+&nbsp;    static Set&lt;Artist&gt; getArtistsById(Set&lt;Integer&gt; artistIds, ArtistRepository artistrepository) {
+&nbsp;
+&nbsp;        // nothing in, nothing out
+<b class="nc">&nbsp;        if (artistIds == null) {</b>
+<b class="nc">&nbsp;            return Collections.emptySet();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // make and populate the set of artists that will be returned
+<b class="nc">&nbsp;        Set&lt;Artist&gt; artistSet = new HashSet&lt;&gt;(Set.of());</b>
+<b class="nc">&nbsp;        for (Integer id : artistIds) {</b>
+<b class="nc">&nbsp;            Artist artist = artistrepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Arist not found: &quot; + id));</b>
+<b class="nc">&nbsp;            artistSet.add(artist);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return artistSet;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    static Set&lt;Album&gt; getAlbumsById(Set&lt;Integer&gt; albumIds, AlbumRepository albumrepository) {
+&nbsp;
+&nbsp;        // nothing in, nothing out
+<b class="nc">&nbsp;        if (albumIds == null) {</b>
+<b class="nc">&nbsp;            return Collections.emptySet();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // make and populate the set of albums that will be returned
+<b class="nc">&nbsp;        Set&lt;Album&gt; albumSet = new HashSet&lt;&gt;(Set.of());</b>
+<b class="nc">&nbsp;        for (Integer id : albumIds) {</b>
+<b class="nc">&nbsp;            Album album = albumrepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Album not found: &quot; + id));</b>
+<b class="nc">&nbsp;            albumSet.add(album);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return albumSet;</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-07 14:28</div>
+</div>
+</body>
+</html>

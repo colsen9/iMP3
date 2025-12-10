@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FAFAFA"
+    android:padding="8dp"
+    tools:context=".MusicCatalogue">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Top Navbar -->
+        <LinearLayout
+            android:id="@+id/topNavbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp"
+            android:layout_marginBottom="9dp">
+
+            <ImageButton
+                android:id="@+id/profileBtn"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:src="@drawable/profile"
+                android:contentDescription="Profile"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:scaleType="centerInside"
+                android:padding="4dp" />
+
+            <ImageButton
+                android:id="@+id/chatBtn"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:src="@drawable/chat"
+                android:contentDescription="Chat"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:scaleType="centerInside"
+                android:padding="4dp" />
+
+            <ImageButton
+                android:id="@+id/sotdBtn"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:src="@drawable/sotd"
+                android:contentDescription="Song of The Day"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:scaleType="centerInside"
+                android:padding="4dp"/>
+
+            <ImageButton
+                android:id="@+id/notificationsBtn"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:src="@drawable/notis"
+                android:contentDescription="Notifications"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:scaleType="centerInside"
+                android:padding="4dp" />
+
+            <ImageButton
+                android:id="@+id/recommendationsBtn"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:src="@drawable/recs"
+                android:contentDescription="Recommendations"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:scaleType="centerInside"
+                android:padding="4dp" />
+
+        </LinearLayout>
+
+        <!-- Login Button -->
+        <Button
+            android:id="@+id/login_btn"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="Not logged in, click to login."
+            android:textAlignment="viewStart"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Recommended Albums -->
+        <TextView
+            android:id="@+id/pageTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Recommended Albums"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#222"
+            android:layout_marginBottom="8dp" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:layout_marginBottom="12dp"
+            android:clipToPadding="false">
+
+            <LinearLayout
+                android:id="@+id/recommendedAlbumContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:dividerPadding="4dp"
+                android:showDividers="none" />
+        </HorizontalScrollView>
+
+        <!-- Search Bar -->
+        <SearchView
+            android:id="@+id/searchBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:queryHint="Search by title"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Filter Buttons -->
+        <LinearLayout
+            android:id="@+id/filterButtonContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3"
+            android:layout_marginBottom="12dp">
+
+            <Button
+                android:id="@+id/filterSongsBtn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Songs"
+                android:layout_marginEnd="6dp"
+                android:backgroundTint="@color/music_catalogue"/>
+
+            <Button
+                android:id="@+id/filterAlbumsBtn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Albums"
+                android:layout_marginEnd="6dp"
+                android:backgroundTint="@color/music_catalogue"/>
+
+            <Button
+                android:id="@+id/clearFiltersBtn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Clear Filters"
+                android:backgroundTint="@color/music_catalogue"/>
+        </LinearLayout>
+
+        <!-- General Catalogue -->
+        <TextView
+            android:id="@+id/generalCatalogueLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="General Catalogue"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#222"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:id="@+id/generalListContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <!-- Manage Music Button -->
+        <Button
+            android:id="@+id/manageMusicBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Manage Music"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            android:backgroundTint="#4CAF50"
+            android:textColor="@android:color/white"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+</ScrollView>
+
+
+

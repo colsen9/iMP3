@@ -1,0 +1,4 @@
+Added Increment counter
+Added Increment altering buttons
+Added Increment text 
+Adjusted all button locations

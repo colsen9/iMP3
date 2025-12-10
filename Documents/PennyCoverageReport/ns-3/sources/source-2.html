@@ -1,0 +1,315 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > GeminiService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.imp3.Backend.common</a>
+</div>
+
+<h1>Coverage Summary for Class: GeminiService (com.imp3.Backend.common)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">GeminiService</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    33.3%
+  </span>
+  <span class="absValue">
+    (2/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/34)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    9.3%
+  </span>
+  <span class="absValue">
+    (5/54)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.imp3.Backend.common;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.core.JsonProcessingException;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.fasterxml.jackson.databind.ObjectMapper;
+&nbsp;import com.google.genai.Client;
+&nbsp;import com.google.genai.types.GenerateContentConfig;
+&nbsp;import com.google.genai.types.GenerateContentResponse;
+&nbsp;import org.springframework.http.*;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;import org.springframework.web.client.HttpClientErrorException;
+&nbsp;import org.springframework.web.client.RestTemplate;
+&nbsp;import org.springframework.web.server.ResponseStatusException;
+&nbsp;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;@Service
+&nbsp;public class GeminiService {
+&nbsp;    private static final String GENERATION_MODEL = &quot;gemini-2.5-flash&quot;;
+&nbsp;    private static final String JSON_MODEL = &quot;models/gemini-2.5-flash&quot;;
+&nbsp;    private static final String GEMINI_BASE_URL = &quot;https://generativelanguage.googleapis.com/v1beta/&quot;;
+&nbsp;
+&nbsp;    private final Client client;
+&nbsp;    private final RestTemplate restTemplate;
+<b class="fc">&nbsp;    private final ObjectMapper objectMapper = new ObjectMapper();</b>
+<b class="fc">&nbsp;    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GeminiService.class);</b>
+&nbsp;
+<b class="fc">&nbsp;    public GeminiService(){</b>
+<b class="fc">&nbsp;        this.client = new Client();</b>
+<b class="fc">&nbsp;        this.restTemplate = new RestTemplate();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Calls Gemini via the official Java SDK and returns plain text
+&nbsp;     * @param prompt non-empty prompt string
+&nbsp;     * @return model response text (empty string if Gemini returns no text)
+&nbsp;     */
+&nbsp;    public String generate(String prompt){
+<b class="nc">&nbsp;        if(prompt == null || prompt.isBlank()){</b>
+<b class="nc">&nbsp;            throw new IllegalArgumentException(&quot;Prompt must not be empty&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        GenerateContentConfig config = GenerateContentConfig.builder().build();</b>
+&nbsp;
+<b class="nc">&nbsp;        GenerateContentResponse response = client.models.generateContent(GENERATION_MODEL, prompt, config);</b>
+&nbsp;
+<b class="nc">&nbsp;        if(response.text() == null || response.text().isBlank()){</b>
+<b class="nc">&nbsp;            return &quot;&quot;;</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return response.text();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     *  Calls Gemini with the given prompt &amp; returns raw text response
+&nbsp;     * @param prompt non-empty prompt string
+&nbsp;     * @return text from the first candidate/part (should be JSON string)
+&nbsp;     */
+&nbsp;    public String generateJson(String prompt){
+<b class="nc">&nbsp;        if(prompt == null || prompt.isBlank()){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Gemini prompt must not be empty&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        String apiKey = System.getenv(&quot;GEMINI_API_KEY&quot;);</b>
+<b class="nc">&nbsp;        if(apiKey == null || apiKey.isBlank()){</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, &quot;Gemini integration is not configured on the server&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        String url = GEMINI_BASE_URL + JSON_MODEL + &quot;:generateContent?key=&quot; + apiKey;</b>
+&nbsp;
+&nbsp;        //build request body
+&nbsp;        String body;
+&nbsp;        try {
+<b class="nc">&nbsp;            body =&quot;&quot;&quot;</b>
+&nbsp;                    {
+&nbsp;                      &quot;contents&quot;: [
+&nbsp;                        {
+&nbsp;                          &quot;parts&quot;: [
+&nbsp;                            { &quot;text&quot;: %s }
+&nbsp;                          ]
+&nbsp;                        }
+&nbsp;                      ]
+&nbsp;                    }
+<b class="nc">&nbsp;                    &quot;&quot;&quot;.formatted(objectMapper.writeValueAsString(prompt));</b>
+&nbsp;        } catch (JsonProcessingException e){
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Failed to serialize Gemini prompt&quot;, e);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        HttpHeaders headers = new HttpHeaders();</b>
+<b class="nc">&nbsp;        headers.setContentType(MediaType.APPLICATION_JSON);</b>
+&nbsp;
+<b class="nc">&nbsp;        HttpEntity&lt;String&gt; request = new HttpEntity&lt;&gt;(body, headers);</b>
+&nbsp;
+&nbsp;        try{
+<b class="nc">&nbsp;            ResponseEntity&lt;JsonNode&gt; response = restTemplate.exchange(</b>
+&nbsp;                    url,
+&nbsp;                    HttpMethod.POST,
+&nbsp;                    request,
+&nbsp;                    JsonNode.class
+&nbsp;            );
+&nbsp;
+<b class="nc">&nbsp;            JsonNode root = response.getBody();</b>
+<b class="nc">&nbsp;            if(root == null){</b>
+<b class="nc">&nbsp;                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Empty response from Gemini&quot;);</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            JsonNode candidates = root.path(&quot;candidates&quot;);</b>
+<b class="nc">&nbsp;            if(!candidates.isArray() || candidates.isEmpty()){</b>
+<b class="nc">&nbsp;                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;No candidates returned by Gemini&quot;);</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            JsonNode parts = candidates.get(0).path(&quot;content&quot;).path(&quot;parts&quot;);</b>
+<b class="nc">&nbsp;            if (!parts.isArray() || parts.isEmpty()) {</b>
+<b class="nc">&nbsp;                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;No content parts returned by Gemini&quot;);</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            String text = parts.get(0).path(&quot;text&quot;).asText(null);</b>
+<b class="nc">&nbsp;            if(text == null || text.isBlank()){</b>
+<b class="nc">&nbsp;                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Gemini returned empty text&quot;);</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            return text;</b>
+&nbsp;        } catch (HttpClientErrorException e){
+<b class="nc">&nbsp;            System.err.println(&quot;Gemini call failed: &quot; + e.getMessage());</b>
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Gemini HTTP error: &quot; + e.getStatusCode() + &quot; &quot; + e.getResponseBodyAsString());</b>
+&nbsp;        } catch (Exception e){
+<b class="nc">&nbsp;            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, &quot;Error calling Gemini&quot; +  e.getMessage(), e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Ask Gemini to analyze user&#39;s music taste &amp; generate Spotify search queries
+&nbsp;     * @param topTracksJson JSON string of User&#39;s top tracks
+&nbsp;     * @param topArtistsJson JSON string of user&#39;s top artists
+&nbsp;     * @return JSON array of search query strings
+&nbsp;     */
+&nbsp;    public List&lt;String&gt; generateSearchQueries(String topTracksJson, String topArtistsJson){
+<b class="nc">&nbsp;        String prompt = String.format(&quot;&quot;&quot;</b>
+&nbsp;        You are a music recommendation expert. Analyze this user&#39;s Spotify listening data and generate 5-7 diverse Spotify search queries to discover NEW music they haven&#39;t heard.
+&nbsp;        User&#39;s Top Tracks:
+&nbsp;        %s
+&nbsp;        User&#39;s Top Artists:
+&nbsp;        %s
+&nbsp;        Based on their taste, generate search queries using Spotify&#39;s search syntax:
+&nbsp;        - PRIORITIZE artist searches using &quot;artist:X&quot; (e.g., &quot;artist:Radiohead&quot;)  
+&nbsp;        - For genres, use ONLY simple, common, single-word genres: indie, rock, pop, electronic, jazz, folk, metal, classical, ambient, blues
+&nbsp;        - DO NOT use multi-word genres
+&nbsp;        - Focus on WELL-KNOWN artists with simple names (no special characters like ö, ð, ø, etc.)
+&nbsp;        - Mix popular and indie artists for variety
+&nbsp;    
+&nbsp;        Return ONLY a JSON array of 8-10 query strings, nothing else. Example format:
+&nbsp;        [&quot;artist:Radiohead&quot;, &quot;artist:Arcade Fire&quot;, &quot;genre:indie&quot;, &quot;artist:MGMT&quot;, &quot;genre:electronic&quot;]
+&nbsp;    
+&nbsp;        Your response:
+&nbsp;        &quot;&quot;&quot;, topTracksJson, topArtistsJson);
+&nbsp;
+<b class="nc">&nbsp;        String response = generateJson(prompt);</b>
+&nbsp;        //parse the JSON array from Gemini&#39;s response
+&nbsp;        try {
+&nbsp;            //remove markdown code blocks if present
+<b class="nc">&nbsp;            String cleaned = response.replaceAll(&quot;```json|```&quot;, &quot;&quot;).trim();</b>
+<b class="nc">&nbsp;            JsonNode jsonArray = objectMapper.readTree(cleaned);</b>
+&nbsp;
+<b class="nc">&nbsp;            List&lt;String&gt; queries =new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;            if(jsonArray.isArray()){</b>
+<b class="nc">&nbsp;                for(JsonNode node : jsonArray){</b>
+<b class="nc">&nbsp;                    queries.add(node.asText());</b>
+&nbsp;                }
+&nbsp;            }
+<b class="nc">&nbsp;            return queries;</b>
+&nbsp;        } catch (JsonProcessingException e){
+<b class="nc">&nbsp;            log.error(&quot;Failed to parse Gemini search queries: {}&quot;, response, e);</b>
+&nbsp;            //fallback queries (for now)
+<b class="nc">&nbsp;            return List.of(&quot;genre:indie&quot;, &quot;genre:alternative&quot;, &quot;genre:electronic&quot;);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Generate a personalized rationale for why a track is recommended to the user
+&nbsp;     * @param trackName name of recommended track
+&nbsp;     * @param artistName artist of the track
+&nbsp;     * @param userTopData brief summary of user&#39;s listening history
+&nbsp;     * @return 1-2 sentence rationale
+&nbsp;     */
+&nbsp;    public String generateRecommendationRationale(String trackName, String artistName, String userTopData){
+<b class="nc">&nbsp;        String prompt = String.format(&quot;&quot;&quot;</b>
+&nbsp;                A user who listens to: %s
+&nbsp;                
+&nbsp;                We&#39;re recommending the track &quot;%s&quot; by %s.
+&nbsp;                
+&nbsp;                In 1-2 sentences, explain why this track would appeal to them based on their taste. Be specific and enthusiastic.
+&nbsp;                &quot;&quot;&quot;, userTopData, trackName, artistName);
+&nbsp;
+<b class="nc">&nbsp;        return generate(prompt);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-12-09 15:12</div>
+</div>
+</body>
+</html>
