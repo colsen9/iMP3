@@ -31,7 +31,7 @@ active as of 12/10/2025. Please watch [this video](https://youtu.be/kHMzPLT80t8)
 - **Architecture**: REST + WebSocket hybrid with Model-View-Controller organization
 - **API**: Spotify and Gemini Generative Language
 
-## Git usage
+## Git Usage
 COM S 3090 uses Gitlab to replicate a professional full stack environment
 * Use Git version control with staging, committing, pushing, merging, and pulling
 * iMP3 was developed with over 600 commits and 50 branches to create our
@@ -55,7 +55,7 @@ Frontend developers were required to create JavaDocs for 2 of their classes usin
 Android Studio. My JavaDocs are located in /Documents/MusicCatalogue_JavaDoc and
 /Documents/NotificationsPage_JavaDoc
 
-## Authors and acknowledgment
+## Authors and Acknowledgment
 - **Jubair Mostafa**: Team lead/Teaching Assistant
 - **Sara Theriault**: Backend Developer
 - **Penny Mayer**: Backend Developer
