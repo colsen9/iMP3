@@ -23,8 +23,7 @@ The iMP3 Project is a full-stack music application that mimics key features of m
 Graysen Schwaller, Penny Mayer, and Sara Theriault. This project is for viewing purposes only
 * All frontend classes & methods developed by myself are labeled with /** @author Cayden Olsen **/
 * Since the project's server was based on an Iowa State University domain, the server is no longer
-active as of 12/10/2025.
--Please watch [this video](https://youtu.be/kHMzPLT80t8) to see the app's functionality.
+active as of 12/10/2025. Please watch [this video](https://youtu.be/kHMzPLT80t8) to see the app's functionality.
 
 ## Tech Overview
 - **Backend**: Java 17, Spring Boot 3, Maven, JPA (Hibernate), MariaDB
