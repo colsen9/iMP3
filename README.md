@@ -39,26 +39,26 @@ COM S 3090 uses Gitlab to replicate a professional full stack environment
   own work/group environment
 * Use labels, issues, and the issue board
 
-![Project Media](documents/ProjectMedia/IssueBoard)
+![Project Media](Documents/ProjectMedia/IssueBoard.png)
 
 * Use CI/CD for continuous development
 
-![Project Media](documents/ProjectMedia/CI/CDRunners)
+![Project Media](Documents/ProjectMedia/CICDRunners.png)
 
-![Project Media](documents/ProjectMedia/CI/CD)
+![Project Media](Documents/ProjectMedia/CICD.png)
 
 ## Visuals
-All visual requirements for this project are in the /DOCUMENTS/ProjectMedia directory 
-named 'PO3_BlockDiagramsAndApi' and 'Screen_Sketches_2_jubair_2'
+All visual requirements for this project are located in the /Documents/ProjectMedia 
+directory named 'PO3_BlockDiagramsAndApi' and 'Screen_Sketches_2_jubair_2'
 
 ## Documentation
 Frontend developers were required to create JavaDocs for 2 of their classes using
-Android Studio. My JavaDocs are located in /DOCUMENTS/MusicCatalogue_JavaDoc and
-/DOCUMENTS/NotificationsPage_JavaDoc
+Android Studio. My JavaDocs are located in /Documents/MusicCatalogue_JavaDoc and
+/Documents/NotificationsPage_JavaDoc
 
 ## Authors and acknowledgment
-- **Jubair**: Team lead/TA
-- **Sara**: Backend Developer
-- **Penny**: Backend Developer
-- **Cayden**: Frontend Developer
-- **Graysen**: Frontend Developer
+- **Jubair Mostafa**: Team lead/Teaching Assistant
+- **Sara Theriault**: Backend Developer
+- **Penny Mayer**: Backend Developer
+- **Cayden Olsen**: Frontend Developer
+- **Graysen Schwaller**: Frontend Developer
